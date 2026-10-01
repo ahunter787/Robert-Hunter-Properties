@@ -41,7 +41,9 @@ documentation set (architecture, database, deployment, security, ADRs, this road
 
 Acceptance criteria from the specification:
 
-- [x] A clean clone launches from the documented instructions (`make init`)
+- [x] A clean clone launches from the documented instructions (`make init`) — verified by cloning
+      the pushed repository into a fresh directory and running the first-run path end to end
+      (stack up, migrations applied, `/healthz` 200, landing page, static CSS, admin login, 26 tests)
 - [x] PostgreSQL persists across container restarts (named `pgdata` volume)
 - [x] The application starts without manual hacks (entrypoint migrates, then serves)
 - [x] Tests run (`make test`, against PostgreSQL)

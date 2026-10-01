@@ -125,4 +125,6 @@ retention, encryption, and a documented disaster-recovery procedure.
 | CSRF failure on sign-in | Hostname missing from `DJANGO_CSRF_TRUSTED_ORIGINS` (scheme included). |
 | Static files 404 | `collectstatic` did not run: check `make prod-logs`, then restart the stack. |
 | `exec: "/app/docker/entrypoint.sh": permission denied` | The development bind mount lost the executable bit (also happens on Windows/Samba shares that do not carry Unix modes): `chmod +x docker/entrypoint.sh`. |
+| `exec: "/app/docker/entrypoint.sh": no such file or directory` (or an empty `/app`) | The Docker daemon cannot see the bind-mount path. Run Compose from a checkout that exists on the host filesystem — not from inside a container or a shell with a private `/tmp` mount namespace. |
+| A second checkout steals the first one's stack | `docker-compose.yml` pins `name: rhp`, so every checkout on a host shares one Compose project and one set of volumes. Give the second checkout its own project: add `COMPOSE_PROJECT_NAME=rhpclone` to its `.env`, or prefix the command. |
 | Port 5432 already in use | Another PostgreSQL is running on the host (or a leftover container): `docker ps`, then set `POSTGRES_PORT` in `.env` or remove the other container. |
