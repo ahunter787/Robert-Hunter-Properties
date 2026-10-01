@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint and test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: rhp
+          POSTGRES_USER: rhp
+          POSTGRES_PASSWORD: rhp-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rhp -d rhp"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: rhp
+      POSTGRES_USER: rhp
+      POSTGRES_PASSWORD: rhp-ci-password
+      DJANGO_SECRET_KEY: ci-only-secret-key-that-is-not-used-anywhere-real
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.1"
+          enable-cache: true
+
+      - name: Install Python and dependencies
+        run: |
+          uv python install 3.14
+          uv sync --frozen
+
+      - name: Lint and format check
+        run: make lint
+
+      - name: Django system checks
+        run: uv run python manage.py check
+
+      - name: Verify no migrations are missing
+        run: uv run python manage.py makemigrations --check --dry-run
+
+      - name: Test
+        run: uv run pytest --cov --cov-report=term-missing
+
+      - name: Production deployment checks
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.production
+          DJANGO_SECURE_PROXY_SSL_HEADER: "1"
+          DJANGO_EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
+        run: uv run python manage.py check --deploy
