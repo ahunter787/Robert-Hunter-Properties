@@ -8,7 +8,7 @@ pass.
 | --- | --- | --- |
 | 0 | Foundation and architecture | **Complete** |
 | 1 | Authentication and authorization | **Complete** |
-| 2 | Property and tenant management | **Complete** |
+| 2 | Property and tenant management | **In review** (owner testing) |
 | 3 | Lease management | Not started |
 | 4 | Rent ledger | Not started |
 | 5 | Tenant dashboard | Not started |
@@ -73,7 +73,11 @@ Acceptance criteria from the specification, each proven by tests in `tests/accou
 Also verified: role changes require a superadmin, invitations and resets are single-use, password
 reset never reveals whether an address exists, and a deactivated account cannot sign in.
 
-## Phase 2 — Property and tenant management (complete)
+## Phase 2 — Property and tenant management (in review: owner testing)
+
+**Status note:** the implementation is complete and tested, but the phase is not signed off. It returns
+to "complete" once the owner has exercised it. Work continues on the `rhp-2` branch until then; `main`
+keeps the squashed Phase 2 commit and is not updated again until the review finishes.
 
 Delivered: the portfolio — properties and their units — with staff screens for listing, creating,
 editing, and taking records out of service; admin-only deletion behind a confirmation page; a
@@ -88,6 +92,17 @@ Acceptance criteria from the specification:
 - [x] Tenants can be associated with leases later: `Unit` is a first-class record with a stable id, so
       Phase 3 attaches `Lease.unit` without reshaping anything
 - [x] Destructive operations require confirmation, and deletion is admin-only
+
+Review round (ADR-006), added while the phase is open:
+
+- [x] Units carry a **type** (Residential / Commercial); bedrooms and bathrooms are refused on a
+      commercial unit and the screens say "Not applicable" rather than "Not recorded"
+- [x] A property stores a **map pin** (pasted Google Maps link — full *or shortened* — or coordinates)
+      and shows it, with an "Open in Google Maps" link; the *place* is pinned, not the map camera
+- [x] A property has a **banner photo**, validated (size, type, dimensions), stored under a randomised
+      name, served through a permission-checked view, and removed when replaced or when the property is
+      deleted
+- [x] Unit screens read **identifier first, property second** (`Storefront` / `- 910 Stark`)
 
 Deferred on purpose, each labelled in the UI rather than faked (ADR-005):
 

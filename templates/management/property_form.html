@@ -18,7 +18,8 @@
     </div>
 
     <div class="rhp-card">
-      <form method="post" novalidate>
+      {# multipart: the banner photo is uploaded here #}
+      <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         {% include "components/form.html" with form=form %}
         <div class="mt-6 flex items-center gap-3">

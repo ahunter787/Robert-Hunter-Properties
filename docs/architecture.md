@@ -130,6 +130,7 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/account/` | role-aware landing: staff → `/manage/`, tenant → `/account/profile/` |
 | `/manage/` | staff landing page with the counters that role can use |
 | `/manage/properties/…` | portfolio: list, create, detail, edit, take out of service, delete (admin) |
+| `/manage/properties/<pk>/banner/` | the banner photo, served by a permission-checked view (never a public media path) |
 | `/manage/units/…` | units the same way, attached to a property |
 | `/manage/accounts/…` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
 | `/admin/` | Django back office (`is_staff` gate) |

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}{{ unit.label }} — RHP{% endblock %}
+{% block title %}{{ unit.display_name }} - {{ unit.property.name }} — RHP{% endblock %}
 
 {% block content %}
   <div class="mx-auto w-full max-w-3xl space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="rhp-eyebrow">Portfolio</p>
-        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Unit {{ unit.identifier }}</h1>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ unit.display_name }}</h1>
         <p class="mt-2 text-sm text-ink-muted">
-          <a href="{% url 'portfolio:property-detail' unit.property.pk %}"
-             class="font-medium text-primary underline-offset-2 hover:underline">{{ unit.property.name }}</a>
+          - <a href="{% url 'portfolio:property-detail' unit.property.pk %}"
+               class="font-medium text-primary underline-offset-2 hover:underline">{{ unit.property.name }}</a>
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
@@ -30,11 +30,16 @@
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Details</h2>
-        {% if unit.is_active %}
-          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
-        {% else %}
-          <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
-        {% endif %}
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
+            {{ unit.get_unit_type_display }}
+          </span>
+          {% if unit.is_active %}
+            <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+          {% else %}
+            <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+          {% endif %}
+        </div>
       </div>
       <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
         <div>
@@ -46,14 +51,25 @@
           <dd class="font-medium">{{ unit.property.address_line }}</dd>
         </div>
         <div>
+          <dt class="text-ink-muted">Type</dt>
+          <dd class="font-medium">{{ unit.get_unit_type_display }}</dd>
+        </div>
+        <div>
           <dt class="text-ink-muted">Bedrooms</dt>
-          <dd class="font-medium">{{ unit.bedrooms|default_if_none:"Not recorded" }}</dd>
+          <dd class="font-medium">
+            {% if unit.is_commercial %}Not applicable{% else %}{{ unit.bedrooms|default_if_none:"Not recorded" }}{% endif %}
+          </dd>
         </div>
         <div>
           <dt class="text-ink-muted">Bathrooms</dt>
-          <dd class="font-medium">{{ unit.bathrooms|default_if_none:"Not recorded" }}</dd>
+          <dd class="font-medium">
+            {% if unit.is_commercial %}Not applicable{% else %}{{ unit.bathrooms|default_if_none:"Not recorded" }}{% endif %}
+          </dd>
         </div>
       </dl>
+      {% if unit.is_commercial %}
+        <p class="rhp-help mt-4">Bedrooms and bathrooms are residential details, so they are not recorded for a commercial unit.</p>
+      {% endif %}
     </section>
 
     <section class="rhp-card">

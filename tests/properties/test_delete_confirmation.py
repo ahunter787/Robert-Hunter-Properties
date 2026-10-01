@@ -70,7 +70,8 @@ def test_unit_delete_asks_for_confirmation_and_deletes(as_admin):
     unit = make_unit(make_property(), identifier="A")
 
     confirmation = as_admin.get(reverse("portfolio:unit-delete", args=[unit.pk])).content.decode()
-    assert "Delete unit A?" in confirmation
+    assert "Delete A?" in confirmation
+    assert f"- {unit.property.name}" in confirmation
 
     response = as_admin.post(reverse("portfolio:unit-delete", args=[unit.pk]))
 

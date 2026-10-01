@@ -52,7 +52,10 @@ def boot_production(**overrides) -> subprocess.CompletedProcess:
 
 
 def test_test_process_uses_development_settings():
-    assert settings.SETTINGS_MODULE == "config.settings.development"
+    # Read from the environment rather than django.conf.settings: any test using
+    # override_settings wraps the settings object, and that wrapper reports
+    # SETTINGS_MODULE as None by design.
+    assert os.environ.get("DJANGO_SETTINGS_MODULE") == "config.settings.development"
     assert settings.AUTH_USER_MODEL == "accounts.User"
 
 

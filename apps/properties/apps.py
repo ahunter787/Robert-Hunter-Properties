@@ -8,3 +8,8 @@ class PropertiesConfig(AppConfig):
     name = "apps.properties"
     label = "properties"
     verbose_name = "Portfolio"
+
+    def ready(self):
+        # Registers the banner-file cleanup; imported here because models are not
+        # loaded yet when the app config is created.
+        from apps.properties import signals  # noqa: F401

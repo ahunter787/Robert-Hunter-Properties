@@ -48,6 +48,7 @@
             <tr>
               <th scope="col" class="py-2 pr-4">Unit</th>
               <th scope="col" class="py-2 pr-4">Property</th>
+              <th scope="col" class="py-2 pr-4">Type</th>
               <th scope="col" class="py-2 pr-4">Bedrooms</th>
               <th scope="col" class="py-2 pr-4">Bathrooms</th>
               <th scope="col" class="py-2 pr-4">Status</th>
@@ -59,8 +60,9 @@
               <tr>
                 <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
                 <td class="py-3 pr-4">{{ unit.property.name }}</td>
-                <td class="py-3 pr-4">{{ unit.bedrooms|default_if_none:"—" }}</td>
-                <td class="py-3 pr-4">{{ unit.bathrooms|default_if_none:"—" }}</td>
+                <td class="py-3 pr-4">{{ unit.get_unit_type_display }}</td>
+                <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bedrooms|default_if_none:"—" }}{% endif %}</td>
+                <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bathrooms|default_if_none:"—" }}{% endif %}</td>
                 <td class="py-3 pr-4">
                   {% if unit.is_active %}
                     <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>

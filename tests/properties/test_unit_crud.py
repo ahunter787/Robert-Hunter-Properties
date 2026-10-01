@@ -23,6 +23,7 @@ def test_create_a_unit_from_a_property(signed_in):
         {
             "property": property_.pk,
             "identifier": "B",
+            "unit_type": "RESIDENTIAL",
             "bedrooms": 2,
             "bathrooms": "1.5",
             "is_active": "on",
@@ -50,7 +51,12 @@ def test_duplicate_identifier_at_the_same_property_is_reported(signed_in):
 
     response = signed_in.post(
         reverse("portfolio:unit-create"),
-        {"property": property_.pk, "identifier": "A", "is_active": "on"},
+        {
+            "property": property_.pk,
+            "identifier": "A",
+            "unit_type": "RESIDENTIAL",
+            "is_active": "on",
+        },
     )
 
     assert response.status_code == 200
@@ -63,7 +69,12 @@ def test_identifier_whitespace_is_normalised(signed_in):
 
     signed_in.post(
         reverse("portfolio:unit-create"),
-        {"property": property_.pk, "identifier": "  B 1 ", "is_active": "on"},
+        {
+            "property": property_.pk,
+            "identifier": "  B 1 ",
+            "unit_type": "RESIDENTIAL",
+            "is_active": "on",
+        },
     )
 
     assert Unit.objects.get().identifier == "B 1"
@@ -75,7 +86,7 @@ def test_the_same_identifier_is_allowed_at_another_property(signed_in):
 
     signed_in.post(
         reverse("portfolio:unit-create"),
-        {"property": other.pk, "identifier": "A", "is_active": "on"},
+        {"property": other.pk, "identifier": "A", "unit_type": "RESIDENTIAL", "is_active": "on"},
     )
 
     assert Unit.objects.filter(identifier="A").count() == 2
@@ -89,6 +100,7 @@ def test_edit_a_unit(signed_in):
         {
             "property": unit.property_id,
             "identifier": "A",
+            "unit_type": "RESIDENTIAL",
             "bedrooms": 4,
             "bathrooms": "2.0",
             "is_active": "on",
@@ -137,7 +149,13 @@ def test_negative_bedroom_counts_are_rejected(signed_in):
 
     response = signed_in.post(
         reverse("portfolio:unit-create"),
-        {"property": property_.pk, "identifier": "A", "bedrooms": -2, "is_active": "on"},
+        {
+            "property": property_.pk,
+            "identifier": "A",
+            "unit_type": "RESIDENTIAL",
+            "bedrooms": -2,
+            "is_active": "on",
+        },
     )
 
     assert response.status_code == 200

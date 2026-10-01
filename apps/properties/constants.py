@@ -64,3 +64,20 @@ ZIP_CODE_VALIDATOR = RegexValidator(
     r"^\d{5}(-\d{4})?$",
     "Enter a 5 or 9 digit ZIP code, for example 62704 or 62704-1234.",
 )
+
+
+class UnitType(models.TextChoices):
+    """What kind of space a unit is.
+
+    Bedrooms and bathrooms describe residential space, so they are only
+    meaningful for RESIDENTIAL units (enforced in the unit form and reflected in
+    the unit screens).
+    """
+
+    RESIDENTIAL = "RESIDENTIAL", "Residential"
+    COMMERCIAL = "COMMERCIAL", "Commercial"
+
+
+#: Upload limits for property banners.
+BANNER_ALLOWED_CONTENT_TYPES = frozenset({"image/jpeg", "image/png", "image/webp"})
+BANNER_MAX_DIMENSION = 6000

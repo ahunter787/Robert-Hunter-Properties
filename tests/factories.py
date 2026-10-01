@@ -7,6 +7,7 @@ dependency is not worth its weight here (see AGENTS.md).
 from decimal import Decimal
 
 from apps.accounts.models import Role, TenantProfile, User
+from apps.properties.constants import UnitType
 from apps.properties.models import Property, Unit
 
 DEFAULT_PASSWORD = "unit-test-password-41"
@@ -107,15 +108,22 @@ def make_unit(
     for_property: Property | None = None,
     *,
     identifier: str = "1",
+    unit_type: str = UnitType.RESIDENTIAL,
     bedrooms: int | None = 2,
     bathrooms: Decimal | None = Decimal("1.0"),
     **fields,
 ) -> Unit:
     if for_property is None:
         for_property = make_property()
+    if unit_type == UnitType.COMMERCIAL:
+        # A commercial unit cannot carry residential details; the form enforces
+        # it, and the factory should not build a state the app refuses.
+        bedrooms = None
+        bathrooms = None
     return Unit.objects.create(
         property=for_property,
         identifier=identifier,
+        unit_type=unit_type,
         bedrooms=bedrooms,
         bathrooms=bathrooms,
         **fields,

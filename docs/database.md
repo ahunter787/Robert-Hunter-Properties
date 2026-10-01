@@ -54,11 +54,16 @@ does not half-build it.
 
 | Table | Purpose | Notes |
 | --- | --- | --- |
-| `properties_property` | a building RHP manages | `UniqueConstraint(Lower("name"))` (case-insensitive), indexed `is_active`; the address itself is not unique |
-| `properties_unit` | a rentable unit inside a property | `UniqueConstraint(property, identifier)`; `property` is a FK with **`on_delete=PROTECT`**, so a property with units cannot be deleted |
+| `properties_property` | a building RHP manages | `UniqueConstraint(Lower("name"))` (case-insensitive), indexed `is_active`; the address itself is not unique. Also holds the map pin (`latitude`, `longitude` — `Decimal(9,6)`, nullable) and the banner image path |
+| `properties_unit` | a rentable unit inside a property | `UniqueConstraint(property, identifier)`; `property` is a FK with **`on_delete=PROTECT`**, so a property with units cannot be deleted; `unit_type` (Residential/Commercial) is indexed |
 
 The unit counts on the property list come from `Count()` annotations, not from a stored column, so they
 cannot drift away from the rows.
+
+**Uploads.** A banner lives in `MEDIA_ROOT` (the `media_data` volume) under a randomised filename in
+`property_banners/`, never the client's name. It is served by a permission-checked view, not by a public
+media path — `MEDIA_URL` is only wired up in development. An image upload requires Pillow, which is why
+it is a runtime dependency (ADR-006).
 
 ## Modelling conventions
 

@@ -4,6 +4,14 @@
 
 {% block content %}
   <div class="mx-auto w-full max-w-4xl space-y-6">
+    {% if property.has_banner %}
+      <div class="overflow-hidden rounded-card border border-surface-muted bg-white">
+        <img src="{% url 'portfolio:property-banner' property.pk %}"
+             alt="Banner photo of {{ property.name }}"
+             class="h-48 w-full object-cover sm:h-64">
+      </div>
+    {% endif %}
+
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="rhp-eyebrow">Portfolio</p>
@@ -56,6 +64,37 @@
 
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Location</h2>
+        {% if map_external_url %}
+          <a href="{{ map_external_url }}" target="_blank" rel="noopener"
+             class="rhp-btn rhp-btn-secondary">Open in Google Maps</a>
+        {% endif %}
+      </div>
+      {% if map_embed_url %}
+        <div class="mt-4 overflow-hidden rounded-card border border-surface-muted">
+          <iframe src="{{ map_embed_url }}"
+                  title="Map of {{ property.address_line }}"
+                  class="h-72 w-full border-0"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allowfullscreen></iframe>
+        </div>
+        <p class="rhp-help mt-2">
+          The pin is {{ property.latitude }}, {{ property.longitude }}. The map is loaded from Google by
+          your browser.
+        </p>
+      {% else %}
+        <p class="mt-2 text-sm text-ink-muted">
+          No map pin yet. Add one from
+          <a href="{% url 'portfolio:property-update' property.pk %}"
+             class="font-medium text-primary underline-offset-2 hover:underline">Edit</a>
+          by pasting a Google Maps link or coordinates.
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Units</h2>
         <a href="{% url 'portfolio:unit-create' %}?property={{ property.pk }}" class="rhp-btn rhp-btn-primary">Add unit</a>
       </div>
@@ -67,6 +106,7 @@
             <thead class="text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th scope="col" class="py-2 pr-4">Unit</th>
+                <th scope="col" class="py-2 pr-4">Type</th>
                 <th scope="col" class="py-2 pr-4">Bedrooms</th>
                 <th scope="col" class="py-2 pr-4">Bathrooms</th>
                 <th scope="col" class="py-2 pr-4">Status</th>
@@ -77,8 +117,9 @@
               {% for unit in units %}
                 <tr>
                   <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
-                  <td class="py-3 pr-4">{{ unit.bedrooms|default_if_none:"—" }}</td>
-                  <td class="py-3 pr-4">{{ unit.bathrooms|default_if_none:"—" }}</td>
+                  <td class="py-3 pr-4">{{ unit.get_unit_type_display }}</td>
+                  <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bedrooms|default_if_none:"—" }}{% endif %}</td>
+                  <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bathrooms|default_if_none:"—" }}{% endif %}</td>
                   <td class="py-3 pr-4">
                     {% if unit.is_active %}
                       <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>

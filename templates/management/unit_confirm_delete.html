@@ -1,14 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Delete unit {{ unit.identifier }} — RHP{% endblock %}
+{% block title %}Delete {{ unit.display_name }} — RHP{% endblock %}
 
 {% block content %}
   <div class="mx-auto w-full max-w-lg">
     <div class="rhp-card">
       <p class="rhp-eyebrow">Confirm deletion</p>
-      <h1 class="mt-1 text-xl font-semibold tracking-tight">Delete unit {{ unit.identifier }}?</h1>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight">Delete {{ unit.display_name }}?</h1>
+      <p class="mt-1 text-sm text-ink-muted">- {{ unit.property.name }}</p>
       <p class="mt-3 text-sm leading-relaxed text-ink-muted">
-        This permanently removes the unit at {{ unit.property.name }} from RHP and cannot be undone.
+        This permanently removes this unit from RHP and cannot be undone. Recording it as out of
+        service instead keeps its history.
       </p>
 
       <form method="post" class="mt-6 flex flex-wrap items-center gap-3">

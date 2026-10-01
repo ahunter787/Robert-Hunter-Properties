@@ -105,6 +105,19 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = env("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media"))
 
+# --- Portfolio media and maps ---------------------------------------------
+# Maximum banner photo size in megabytes; the property form enforces it.
+RHP_MAX_UPLOAD_MB = env.int("RHP_MAX_UPLOAD_MB", default=5)
+# Expand shortened Google Maps links (maps.app.goo.gl/...) with one outbound
+# request to Google when a pin is saved. Every other link shape is parsed offline.
+# Turn this off on a host without outbound network — staff can always paste the
+# coordinates or the full link instead.
+RHP_RESOLVE_MAP_SHORT_LINKS = env.bool("RHP_RESOLVE_MAP_SHORT_LINKS", default=True)
+# Optional. When set, the official Google Maps Embed API is used for the map on
+# a property page; otherwise the keyless embed is used. RHP never calls Google
+# from the server — the browser loads the map.
+GOOGLE_MAPS_EMBED_API_KEY = env("GOOGLE_MAPS_EMBED_API_KEY", default="")
+
 # --- Authentication -------------------------------------------------------
 LOGIN_URL = "/account/login/"
 # Name of the role-aware redirect view: staff land on the management area,

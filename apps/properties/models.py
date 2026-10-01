@@ -5,14 +5,30 @@ of a *lease*, so they arrive with Phase 3 - the screens say so explicitly rather
 than showing a zero that looks like real data.
 """
 
+from pathlib import Path
+from uuid import uuid4
+
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
 
 from apps.properties.constants import (  # noqa: F401 - USState re-exported
     ZIP_CODE_VALIDATOR,
+    UnitType,
     USState,
 )
+
+
+def property_banner_path(instance, filename: str) -> str:
+    """Randomised storage path for a banner.
+
+    Never the client's filename: uploads are stored under a generated name so a
+    crafted name cannot influence where a file lands (docs/security.md).
+    """
+    suffix = Path(filename).suffix.lower()
+    if len(suffix) > 10 or not suffix.isascii():
+        suffix = ""
+    return f"property_banners/{uuid4().hex}{suffix}"
 
 
 class PropertyQuerySet(models.QuerySet):
@@ -39,6 +55,10 @@ class Property(models.Model):
         help_text="Inactive properties stay in history but drop out of pickers.",
     )
     notes = models.TextField(blank=True)
+    # Stored measurement, not a float: six decimals is about 11 cm.
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    banner_image = models.ImageField(upload_to=property_banner_path, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,6 +80,14 @@ class Property(models.Model):
     def address_line(self) -> str:
         return f"{self.street}, {self.city}, {self.state} {self.postal_code}"
 
+    @property
+    def has_map_pin(self) -> bool:
+        return self.latitude is not None and self.longitude is not None
+
+    @property
+    def has_banner(self) -> bool:
+        return bool(self.banner_image)
+
 
 class UnitQuerySet(models.QuerySet):
     def active(self):
@@ -79,6 +107,13 @@ class Unit(models.Model):
     identifier = models.CharField(
         max_length=32,
         help_text="Label used inside the property, for example '1', 'A', or 'Rear'.",
+    )
+    unit_type = models.CharField(
+        max_length=12,
+        choices=UnitType.choices,
+        default=UnitType.RESIDENTIAL,
+        db_index=True,
+        help_text="Commercial units have no bedrooms or bathrooms.",
     )
     bedrooms = models.PositiveSmallIntegerField(null=True, blank=True)
     bathrooms = models.DecimalField(
@@ -113,5 +148,15 @@ class Unit(models.Model):
     # cached_property, not @property: the `property` field above shadows the
     # builtin decorator inside this class body.
     @cached_property
+    def display_name(self) -> str:
+        """The unit's own name. The property is shown separately, see ``label``."""
+        return self.identifier
+
+    @cached_property
     def label(self) -> str:
-        return f"{self.property.name} · {self.identifier}"
+        """Single-line label: the unit first, then its property."""
+        return f"{self.identifier} - {self.property.name}"
+
+    @cached_property
+    def is_commercial(self) -> bool:
+        return self.unit_type == UnitType.COMMERCIAL

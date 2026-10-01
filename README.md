@@ -9,10 +9,11 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 2 (portfolio).** RHP now models the properties and units it manages, alongside
-Phase 1's identity layer: staff and tenants sign in, tenants are created by staff and invited, roles
-gate every route server-side, and the portfolio can be created, edited, and taken out of service.
-Leases, the rent ledger, documents, and maintenance are still to come
+**Current status: Phase 2 (portfolio) — in review.** RHP models the properties and units it manages,
+alongside Phase 1's identity layer: staff and tenants sign in, tenants are created by staff and invited,
+roles gate every route server-side, and the portfolio can be created, edited, and taken out of service.
+Properties carry a map pin and a banner photo; units are residential or commercial. Leases, the rent
+ledger, documents, and maintenance are still to come
 ([`docs/roadmap.md`](docs/roadmap.md)).
 
 ## Accounts and access
@@ -37,6 +38,15 @@ Leases, the rent ledger, documents, and maintenance are still to come
 
 Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
 password resets are emailed; in development the console backend prints them to `make logs`.
+
+Units are **residential** or **commercial**: bedrooms and bathrooms describe residential space, so they
+are refused on a commercial unit and the unit page says "Not applicable" rather than "Not recorded". A
+unit is named by its identifier with its property on the line below (`Storefront` / `- 910 Stark`).
+
+A property can hold a **map pin** (paste a Google Maps link — full or shortened — or
+`45.5231, -122.6765` on the edit form) and a **banner photo** (JPEG/PNG/WebP, up to `RHP_MAX_UPLOAD_MB`).
+The map is a keyless Google embed unless `GOOGLE_MAPS_EMBED_API_KEY` is set; only a shortened link is
+sent to Google for expansion (`RHP_RESOLVE_MAP_SHORT_LINKS=0` disables that).
 
 ## Stack
 

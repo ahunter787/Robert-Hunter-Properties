@@ -16,6 +16,11 @@ urlpatterns = [
     path("properties/", views.PropertyListView.as_view(), name="property-list"),
     path("properties/new/", views.PropertyCreateView.as_view(), name="property-create"),
     path("properties/<int:pk>/", views.PropertyDetailView.as_view(), name="property-detail"),
+    path(
+        "properties/<int:pk>/banner/",
+        views.PropertyBannerView.as_view(),
+        name="property-banner",
+    ),
     path("properties/<int:pk>/edit/", views.PropertyUpdateView.as_view(), name="property-update"),
     path(
         "properties/<int:pk>/toggle-active/",

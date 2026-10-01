@@ -49,15 +49,46 @@ internal. Authorization is enforced regardless — unguessable ids are defence i
 
 ## Uploads
 
-Applies from Phase 6 (documents) and Phase 7 (maintenance photos):
+In force since Phase 2's banner photos; the general document work arrives in Phase 6 and maintenance
+photos in Phase 7:
 
-- Allow-list extensions and content types; reject everything else.
-- Enforce a maximum size at the form, the view, and the reverse proxy.
-- Store under a randomized filename; never reuse the client-supplied name on disk.
+- Allow-list extensions and content types; reject everything else. Banners accept JPEG, PNG, and WebP
+  only — SVG is refused because it can carry script.
+- Enforce a maximum size at the form (`RHP_MAX_UPLOAD_MB`, default 5), plus a maximum pixel dimension;
+  the reverse-proxy body limit is Phase 12.
+- Store under a randomized filename (`property_banners/<uuid>.<ext>`); never reuse the client-supplied
+  name on disk.
 - Never execute uploaded content; never serve it with a content type that browsers execute.
 - **Every download is permission-checked.** Uploaded files are never reachable through a static file
-  handler or the reverse proxy, and `MEDIA_URL` is only wired up in development.
+  handler or the reverse proxy, and `MEDIA_URL` is only wired up in development. Banners are served by
+  `PropertyBannerView`, which checks the role first (ADR-006).
 - Keep uploaded files outside the web root (`media_data` volume, mounted privately).
+- Replacing or removing an image deletes the stored file, and deleting a property deletes its banner,
+  so uploads do not accumulate as orphans.
+
+## Maps and third-party requests
+
+Property pages can embed a Google map. RHP itself never calls Google: the pin is stored data entered by
+staff, and the browser loads the map. That means a visitor's browser contacts Google when a map is
+displayed — disclosed on the page, and an explicit allow-list entry when Phase 12 adds a
+content-security policy. If `GOOGLE_MAPS_EMBED_API_KEY` is configured, the key is a browser-visible
+embed key, not a server secret; restrict it by referrer in the Google console.
+
+**Outbound requests.** RHP makes exactly one kind of outbound request, and only when a *shortened*
+Google Maps link (`maps.app.goo.gl`, `goo.gl`, `g.co`) is saved as a property pin: the link is expanded
+so its coordinates can be read. Every other link shape is parsed locally.
+
+That request is treated as hostile input, because the URL comes from a user:
+
+- redirects are followed by hand, at most five hops, and **only to Google's own hosts** (`*.google.*`);
+  a redirect anywhere else is refused without being requested, so a shared link cannot be turned into a
+  request to an internal address (link-local metadata endpoints included);
+- no credentials, cookies, or auth headers are ever sent;
+- the timeout is 5 seconds and the body is never read — only the final URL matters;
+- `RHP_RESOLVE_MAP_SHORT_LINKS=0` disables it entirely for a host with no outbound network.
+
+Tests feed the resolver a redirect to `169.254.169.254` and assert it refuses *and* never issues the
+request.
 
 ## Secrets
 

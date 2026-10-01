@@ -8,10 +8,12 @@ not a UI convention.
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Count, Q
 from django.db.models.deletion import ProtectedError
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
@@ -24,7 +26,9 @@ from django.views.generic import (
 )
 
 from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
+from apps.properties.constants import UnitType
 from apps.properties.forms import PropertyForm, UnitForm
+from apps.properties.locations import embed_url, external_url
 from apps.properties.models import Property, Unit
 
 logger = logging.getLogger("apps.properties")
@@ -95,7 +99,35 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         context["units"] = units
         context["unit_total"] = len(units)
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
+        if self.object.has_map_pin:
+            context["map_embed_url"] = embed_url(
+                self.object.latitude,
+                self.object.longitude,
+                settings.GOOGLE_MAPS_EMBED_API_KEY,
+            )
+            context["map_external_url"] = external_url(self.object.latitude, self.object.longitude)
         return context
+
+
+class PropertyBannerView(ManagerRequiredMixin, View):
+    """Serve a property banner through the application.
+
+    Deliberately not a media URL: uploads are served by a view that checks the
+    role first, and the reverse proxy never exposes /media (docs/security.md).
+    """
+
+    http_method_names = ["get"]
+
+    def get(self, request, pk):
+        property_ = get_object_or_404(Property, pk=pk)
+        if not property_.banner_image:
+            raise Http404("This property has no banner photo.")
+
+        banner = property_.banner_image
+        banner.open("rb")
+        response = FileResponse(banner)
+        response["Cache-Control"] = "private, max-age=300"
+        return response
 
 
 class PropertyUpdateView(ManagerRequiredMixin, UpdateView):
@@ -104,7 +136,22 @@ class PropertyUpdateView(ManagerRequiredMixin, UpdateView):
     template_name = "management/property_form.html"
 
     def form_valid(self, form):
+        # Read the stored name before the form binds a replacement: a ModelForm
+        # mutates its instance during validation.
+        previous_banner = (
+            Property.objects.filter(pk=self.object.pk)
+            .values_list("banner_image", flat=True)
+            .first()
+            or ""
+        )
+        storage = self.object.banner_image.storage
+
         response = super().form_valid(form)
+
+        current_banner = self.object.banner_image.name if self.object.banner_image else ""
+        if previous_banner and previous_banner != current_banner:
+            storage.delete(previous_banner)
+
         logger.info("property updated pk=%s by=%s", self.object.pk, self.request.user.pk)
         messages.success(self.request, f"{self.object.name} was updated.")
         return response
@@ -212,6 +259,9 @@ class UnitCreateView(ManagerRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
+        # A create view has no instance, so the model default is not in the form's
+        # initial data; make it explicit so the dropdown arrives preselected.
+        initial.setdefault("unit_type", UnitType.RESIDENTIAL)
         property_id = self.request.GET.get("property", "")
         if property_id.isdigit() and Property.objects.active().filter(pk=property_id).exists():
             initial["property"] = int(property_id)
@@ -222,7 +272,7 @@ class UnitCreateView(ManagerRequiredMixin, CreateView):
         logger.info("unit created pk=%s by=%s", self.object.pk, self.request.user.pk)
         messages.success(
             self.request,
-            f"Unit {self.object.identifier} was added to {self.object.property.name}.",
+            f"{self.object.display_name} was added to {self.object.property.name}.",
         )
         return response
 
@@ -246,7 +296,7 @@ class UnitUpdateView(ManagerRequiredMixin, UpdateView):
     def form_valid(self, form):
         response = super().form_valid(form)
         logger.info("unit updated pk=%s by=%s", self.object.pk, self.request.user.pk)
-        messages.success(self.request, f"Unit {self.object.identifier} was updated.")
+        messages.success(self.request, f"{self.object.display_name} was updated.")
         return response
 
     def get_success_url(self):
@@ -262,7 +312,7 @@ class UnitToggleActiveView(ManagerRequiredMixin, View):
         unit.save(update_fields=["is_active"])
         logger.info("unit active=%s pk=%s by=%s", unit.is_active, unit.pk, request.user.pk)
         state = "in service" if unit.is_active else "out of service"
-        messages.success(request, f"Unit {unit.identifier} at {unit.property.name} is {state}.")
+        messages.success(request, f"{unit.display_name} at {unit.property.name} is {state}.")
         return redirect("portfolio:unit-detail", pk=unit.pk)
 
 
@@ -288,5 +338,5 @@ class UnitDeleteView(AdminRequiredMixin, DeleteView):
             )
             return redirect("portfolio:unit-detail", pk=unit.pk)
         logger.info("unit deleted pk=%s by=%s", unit.pk, self.request.user.pk)
-        messages.success(self.request, f"Unit {label} was deleted.")
+        messages.success(self.request, f"{label} was deleted.")
         return response

@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}{% if object %}Edit unit {{ object.identifier }}{% else %}New unit{% endif %} — RHP{% endblock %}
+{% block title %}{% if object %}Edit {{ object.display_name }}{% else %}New unit{% endif %} — RHP{% endblock %}
 
 {% block content %}
   <div class="mx-auto w-full max-w-2xl space-y-6">
     <div>
       <p class="rhp-eyebrow">Portfolio</p>
       <h1 class="mt-1 text-2xl font-semibold tracking-tight">
-        {% if object %}Edit unit {{ object.identifier }}{% else %}New unit{% endif %}
+        {% if object %}Edit {{ object.display_name }}{% else %}New unit{% endif %}
       </h1>
       {% if object %}
         <p class="mt-2 text-sm text-ink-muted">
-          <a href="{% url 'portfolio:unit-detail' object.pk %}"
-             class="font-medium text-primary underline-offset-2 hover:underline">Back to {{ object.label }}</a>
+          - <a href="{% url 'portfolio:unit-detail' object.pk %}"
+               class="font-medium text-primary underline-offset-2 hover:underline">{{ object.property.name }}</a>
+        </p>
+      {% else %}
+        <p class="mt-2 text-sm text-ink-muted">
+          The unit's identifier becomes its name; the property is shown separately.
         </p>
       {% endif %}
     </div>

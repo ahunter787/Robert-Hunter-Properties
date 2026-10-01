@@ -65,10 +65,23 @@ def test_the_same_identifier_is_allowed_at_another_property():
     assert Unit.objects.filter(identifier="A").count() == 2
 
 
-def test_unit_label_names_the_property_and_the_unit():
-    assert make_unit(make_property(name="Maple Street Duplex"), identifier="4").label == (
-        "Maple Street Duplex · 4"
-    )
+def test_unit_label_puts_the_unit_first_and_the_property_second():
+    unit = make_unit(make_property(name="Maple Street Duplex"), identifier="4")
+
+    assert unit.label == "4 - Maple Street Duplex"
+    assert unit.display_name == "4"
+
+
+def test_units_are_residential_unless_told_otherwise():
+    property_ = make_property()
+
+    flat = make_unit(property_, identifier="Flat")
+    shop = make_unit(property_, identifier="Shop", unit_type="COMMERCIAL")
+
+    assert flat.unit_type == "RESIDENTIAL"
+    assert flat.is_commercial is False
+    assert shop.is_commercial is True
+    assert shop.bedrooms is None and shop.bathrooms is None
 
 
 def test_deleting_a_property_with_units_is_protected():
