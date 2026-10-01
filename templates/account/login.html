@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in — RHP{% endblock %}
+{% block description %}Sign in to the Robert Hunter Properties tenant and management portal.{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-md">
+    <div class="rhp-card">
+      <h1 class="text-xl font-semibold tracking-tight">Sign in</h1>
+      <p class="mt-1 text-sm text-ink-muted">Tenants and RHP staff use the same sign-in.</p>
+
+      <form method="post" class="mt-6" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+        <button type="submit" class="rhp-btn rhp-btn-primary mt-6 w-full">Sign in</button>
+      </form>
+
+      <p class="mt-4 text-sm">
+        <a href="{% url 'accounts:password-reset' %}" class="font-medium text-primary underline-offset-2 hover:underline">
+          Forgot your password?
+        </a>
+      </p>
+    </div>
+
+    <p class="mt-4 text-center text-xs text-ink-muted">
+      Accounts are created by Robert Hunter Properties — there is no public sign-up.
+    </p>
+  </div>
+{% endblock %}

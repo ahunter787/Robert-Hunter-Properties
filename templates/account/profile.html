@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Your account — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div class="rhp-card">
+      <p class="rhp-eyebrow">Account</p>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight">Your account</h1>
+
+      <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Name</dt>
+          <dd class="font-medium">{{ user.display_name }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Username</dt>
+          <dd class="font-medium">{{ user.username }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Email</dt>
+          <dd class="font-medium">{{ user.email|default:"Not set" }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Access</dt>
+          <dd class="font-medium">{{ user.get_role_display }}</dd>
+        </div>
+      </dl>
+
+      <a href="{% url 'accounts:password-change' %}" class="rhp-btn rhp-btn-secondary mt-6">Change password</a>
+    </div>
+
+    {% if form %}
+      <div class="rhp-card">
+        <h2 class="text-sm font-semibold">Contact details</h2>
+        <p class="mt-1 text-sm text-ink-muted">
+          RHP uses these details to reach you about your tenancy.
+        </p>
+        <form method="post" class="mt-6" novalidate>
+          {% csrf_token %}
+          {% include "components/form.html" with form=form %}
+          <button type="submit" class="rhp-btn rhp-btn-primary mt-6">Save details</button>
+        </form>
+      </div>
+    {% else %}
+      <div class="rhp-card">
+        <h2 class="text-sm font-semibold">Staff account</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          Contact details are held on tenant records. Ask a superadmin if your access needs
+          to change.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

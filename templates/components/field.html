@@ -1,0 +1,14 @@
+{% comment %}
+Renders one bound field with the RHP design-system styling and accessible errors.
+Call with: {% include "components/field.html" with field=form.email %}
+{% endcomment %}
+<div>
+  <label class="rhp-label" for="{{ field.id_for_label }}">
+    {{ field.label }}{% if field.field.required %}<span class="text-danger" aria-hidden="true"> *</span>{% endif %}
+  </label>
+  {{ field }}
+  {% if field.help_text %}<p class="rhp-help">{{ field.help_text }}</p>{% endif %}
+  {% for error in field.errors %}
+    <p class="rhp-help text-danger" role="alert">{{ error }}</p>
+  {% endfor %}
+</div>

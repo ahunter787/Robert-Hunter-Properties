@@ -1,0 +1,14 @@
+{% comment %}
+Renders a whole form: non-field errors first, then every field.
+Call with: {% include "components/form.html" with form=form %}
+{% endcomment %}
+{% if form.non_field_errors %}
+  <div class="rhp-alert mb-4 border-danger/30 bg-danger/5 text-danger" role="alert">
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}
+<div class="space-y-4">
+  {% for field in form %}
+    {% include "components/field.html" with field=field %}
+  {% endfor %}
+</div>
