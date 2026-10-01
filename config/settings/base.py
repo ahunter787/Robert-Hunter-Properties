@@ -104,10 +104,26 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = env("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media"))
 
-# --- Authentication flow (wired in Phase 1) -------------------------------
+# --- Authentication -------------------------------------------------------
 LOGIN_URL = "/account/login/"
-LOGIN_REDIRECT_URL = "/"
+# Name of the role-aware redirect view: staff land on the management area,
+# tenants on their account page.
+LOGIN_REDIRECT_URL = "accounts:home"
 LOGOUT_REDIRECT_URL = "/"
+
+# Invitation and password-reset links share this window: Django hardcodes
+# PASSWORD_RESET_TIMEOUT inside the token check, so a second, longer window for
+# invitations would mean duplicating security-sensitive verification logic.
+PASSWORD_RESET_TIMEOUT = env.int("RHP_LINK_TIMEOUT_DAYS", default=7) * 24 * 60 * 60
+
+# Login throttling (docs/security.md): this many failures inside the window
+# locks the account/address out for the lockout period.
+RHP_LOGIN_MAX_ATTEMPTS = env.int("RHP_LOGIN_MAX_ATTEMPTS", default=5)
+RHP_LOGIN_WINDOW_MINUTES = env.int("RHP_LOGIN_WINDOW_MINUTES", default=15)
+RHP_LOGIN_LOCKOUT_MINUTES = env.int("RHP_LOGIN_LOCKOUT_MINUTES", default=15)
+# Honour X-Forwarded-For when deciding a client address. Enable only when a
+# trusted proxy sets it (the production Compose stack does).
+RHP_TRUST_PROXY_HEADERS = env.bool("RHP_TRUST_PROXY_HEADERS", default=False)
 
 # --- Email ----------------------------------------------------------------
 # Django 6.1 configures outgoing mail through MAILERS. The older EMAIL_* settings

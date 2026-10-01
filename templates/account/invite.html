@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Finish setting up your account — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-md">
+    <div class="rhp-card">
+      <p class="rhp-eyebrow">Invitation</p>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight">
+        Welcome to RHP{% if invited_user.first_name %}, {{ invited_user.first_name }}{% endif %}
+      </h1>
+      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+        Choose a password for <strong>{{ invited_user.username }}</strong> to finish setting up
+        your account. You will be signed in straight away.
+      </p>
+
+      <form method="post" class="mt-6" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <button type="submit" class="rhp-btn rhp-btn-primary mt-6 w-full">Set password and sign in</button>
+      </form>
+    </div>
+  </div>
+{% endblock %}

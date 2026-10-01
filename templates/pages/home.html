@@ -20,7 +20,7 @@
       <code class="rounded bg-surface-muted px-1 py-0.5 text-xs">docs/roadmap.md</code>.
     </p>
     <div class="mt-6 flex flex-wrap gap-3">
-      <a href="/admin/" class="rhp-btn rhp-btn-primary">Staff sign-in</a>
+      <a href="{% url 'accounts:login' %}" class="rhp-btn rhp-btn-primary">Sign in</a>
       <a href="{% url 'healthz' %}" class="rhp-btn rhp-btn-secondary">Service status</a>
     </div>
   </section>
@@ -29,6 +29,7 @@
     <article class="rhp-card">
       <h2 class="text-sm font-semibold">What exists today</h2>
       <ul class="mt-3 space-y-2 text-sm text-ink-muted">
+        <li>Tenant and staff sign-in with role-based access, invitations, and password reset</li>
         <li>Django + PostgreSQL with split development/production settings</li>
         <li>Docker Compose topology for a local VM and a cloud VPS</li>
         <li>Health endpoint, structured logging, tests, and linting</li>
@@ -39,10 +40,10 @@
     <article class="rhp-card">
       <h2 class="text-sm font-semibold">Coming next</h2>
       <ul class="mt-3 space-y-2 text-sm text-ink-muted">
-        <li>Phase 1 — accounts, roles, and secure sign-in</li>
         <li>Phase 2 — properties, units, and tenants</li>
         <li>Phase 3 — leases</li>
         <li>Phase 4 — rent ledger and balances</li>
+        <li>Phase 5 — the tenant dashboard</li>
       </ul>
     </article>
   </section>

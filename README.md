@@ -9,9 +9,32 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 0 (foundation) only.** The application boots, connects to
-PostgreSQL, serves a landing page and a health probe, and ships with the container
-topology, test suite, linting, and design system in place. No tenant features exist yet.
+**Current status: Phase 1 (identity and access).** Staff and tenants can sign in, tenants are created
+by staff and invited to choose their own password, roles gate every route server-side, and password
+reset works. Property, lease, ledger, document, and maintenance features are still to come
+([`docs/roadmap.md`](docs/roadmap.md)).
+
+## Accounts and access
+
+| Role | Reaches |
+| --- | --- |
+| `SUPERADMIN` | everything, including role changes |
+| `ADMIN` | management area and tenant account administration |
+| `MANAGER` | management area |
+| `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
+| `TENANT` | their own account and contact details |
+
+| URL | What it is |
+| --- | --- |
+| `/account/login/` | sign-in for tenants and staff (rate limited) |
+| `/account/profile/` | the account page: details, contact information, password change |
+| `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
+| `/manage/` | staff landing page |
+| `/manage/accounts/` | tenant accounts: create, invite, deactivate, change role |
+| `/admin/` | Django back office for superusers |
+
+Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
+password resets are emailed; in development the console backend prints them to `make logs`.
 
 ## Stack
 
@@ -89,10 +112,10 @@ agents is in [`AGENTS.md`](AGENTS.md).
 
 ```
 config/          settings (base/development/production), urls, views, wsgi/asgi
-apps/accounts/   the only Phase 0 app: fixes AUTH_USER_MODEL (ADR-002)
-templates/       base layout, components, pages
+apps/accounts/   identity: user + roles, tenant profile, invitations, throttling
+templates/       account/, management/, components/, errors, base layout
 assets/css/      Tailwind entry point (built into static/css/rhp.css)
-tests/           pytest suite
+tests/           pytest suite (tests/accounts/ covers identity and authorization)
 docs/            architecture, database, deployment, security, roadmap, ADRs, harness spec
 docker/          entrypoint and container healthcheck
 ```

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ account.display_name }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">People</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ account.display_name }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        <a href="{% url 'manage:account-list' %}" class="font-medium text-primary underline-offset-2 hover:underline">
+          Back to tenant accounts
+        </a>
+      </p>
+    </div>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Account</h2>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Username</dt>
+          <dd class="font-medium">{{ account.username }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Email</dt>
+          <dd class="font-medium">{{ account.email|default:"Not set" }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Access</dt>
+          <dd class="font-medium">{{ account.get_role_display }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Status</dt>
+          <dd class="font-medium">
+            {% if not account.is_active %}Deactivated{% elif account.has_usable_password %}Active{% else %}Invitation pending{% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Last signed in</dt>
+          <dd class="font-medium">{{ account.last_login|default:"Never" }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Created</dt>
+          <dd class="font-medium">{{ account.date_joined }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Contact details</h2>
+      {% with profile=account.tenant_profile %}
+        <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt class="text-ink-muted">Phone</dt>
+            <dd class="font-medium">{{ profile.phone|default:"Not set" }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-muted">Preferred contact</dt>
+            <dd class="font-medium">{{ profile.get_preferred_contact_method_display }}</dd>
+          </div>
+        </dl>
+        {% if profile.notes %}
+          <div class="mt-4 rounded-card bg-surface-muted p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Internal notes (staff only)</p>
+            <p class="mt-1 whitespace-pre-line text-sm">{{ profile.notes }}</p>
+          </div>
+        {% endif %}
+      {% endwith %}
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Actions</h2>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        {% if not account.has_usable_password %}
+          <form method="post" action="{% url 'manage:account-resend-invite' account.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="rhp-btn rhp-btn-secondary">Resend invitation</button>
+          </form>
+        {% endif %}
+        <form method="post" action="{% url 'manage:account-toggle-active' account.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="rhp-btn {% if account.is_active %}rhp-btn-secondary{% else %}rhp-btn-primary{% endif %}">
+            {% if account.is_active %}Deactivate account{% else %}Reactivate account{% endif %}
+          </button>
+        </form>
+      </div>
+
+      {% if can_change_roles %}
+        <form method="post" action="{% url 'manage:account-role' account.pk %}" class="mt-6 flex flex-wrap items-end gap-3">
+          {% csrf_token %}
+          <div class="min-w-56">
+            <label class="rhp-label" for="{{ role_form.role.id_for_label }}">Role</label>
+            {{ role_form.role }}
+          </div>
+          <button type="submit" class="rhp-btn rhp-btn-secondary">Change role</button>
+        </form>
+        <p class="rhp-help mt-2">Only a superadmin can change roles.</p>
+      {% else %}
+        <p class="rhp-help mt-4">Only a superadmin can change roles.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

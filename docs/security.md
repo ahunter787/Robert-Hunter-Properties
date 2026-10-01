@@ -75,13 +75,59 @@ that the production settings reject at startup.
 
 ## Sessions and authentication
 
-- Django's session framework with database-backed sessions; no tokens in URLs.
-- Passwords hashed with Django's default hasher (never reversible storage).
-- Login: generic error messages (no user enumeration), rate limiting, and audit logging of failed
-  attempts land in Phase 1; password reset is implemented without revealing whether an account exists.
+- Django's session framework with database-backed sessions; no tokens in URLs. Sessions last 12 hours
+  in production, with `HttpOnly`, `SameSite=Lax`, and `Secure` cookies.
+- Passwords hashed with Django's default hasher (never reversible storage) and validated by Django's
+  four default validators (length, common passwords, numeric-only, similarity to the account).
+- Sign-in failures always return the same generic message, whether the account exists, is inactive,
+  or the password is wrong - no user enumeration. Successful and failed attempts are logged.
+- Password reset returns the same page and the same message for a known and an unknown address, and
+  the link is single-use and expires (see the rate-limiting section below and ADR-004).
+- Sign-out requires a POST, so a link or image cannot sign a user out.
 - Staff accounts get MFA in Phase 12, before real tenant data is loaded.
 - Admin-created tenant accounts and invitations are the only way tenants get access; there is no
-  public sign-up.
+  public sign-up. Staff never choose or see a tenant password: the invitation asks the tenant to set
+  one.
+
+## Rate limiting and lockouts
+
+The application-level floor is implemented in `apps/accounts/throttle.py` (ADR-004):
+
+| Control | Default | Setting |
+| --- | --- | --- |
+| Failures before a lockout | 5 | `RHP_LOGIN_MAX_ATTEMPTS` |
+| Rolling window that counts failures | 15 min | `RHP_LOGIN_WINDOW_MINUTES` |
+| Lockout duration after the last failure | 15 min | `RHP_LOGIN_LOCKOUT_MINUTES` |
+| Honours `X-Forwarded-For` for the client address | off | `RHP_TRUST_PROXY_HEADERS` |
+
+- Failures are counted **per account and per address**, so both password spraying across accounts and
+  hammering one account are slowed.
+- The check runs before authentication, so a locked-out client never reaches the password hasher, and
+  the refusal message is generic.
+- A successful sign-in clears that account's recorded failures; a retry while locked does not extend
+  the lockout.
+- The ledger is a database table (`LoginAttempt`), not a cache, because RHP runs several gunicorn
+  workers without Redis - an in-process cache would multiply the effective budget per worker.
+- `X-Forwarded-For` is trusted only when a proxy is actually in front of the app. The production
+  Compose stack enables it for Caddy and the production settings warn when a TLS proxy is configured
+  with the flag off, because every request would otherwise appear to come from the proxy and one
+  attacker could exhaust the shared budget.
+- **Support path**: `python manage.py reset_login_attempts <username>` (or `--ip <address>`) clears
+  the ledger for an account or address. Locked-out users are told to wait; staff can clear it.
+- Phase 12 adds proxy-level limiting, alerting on repeated lockouts, and MFA.
+
+## Invitations and account lifecycle
+
+- A tenant account is created by staff (`/manage/accounts/new/`, or `manage.py create_tenant`) with an
+  unusable password and an invitation link that the tenant uses to choose their own password.
+- Invitation tokens are single-use (Django's password-reset signature changes as soon as a password
+  is set or the invitee signs in), expire with `RHP_LINK_TIMEOUT_DAYS` (7 days), and are signed with
+  a distinct salt so an invitation link can never be replayed as a password-reset link.
+- Deactivating an account invalidates its outstanding invitation immediately, and a deactivated
+  account cannot sign in.
+- Accounts are deactivated, never deleted, so history and audit trails survive. Invitations and
+  resets are addressed by the account's email, which is why the create form requires a unique
+  address.
 
 ## Financial integrity
 

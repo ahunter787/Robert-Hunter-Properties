@@ -38,6 +38,18 @@ PostgreSQL data lives on the named volume `pgdata` in both stacks, so `docker co
 - `AUTH_USER_MODEL` is fixed in Phase 0 (`accounts.User`). Migrations for `accounts` run before any
   real data exists; see [`decisions/ADR-002-custom-user.md`](decisions/ADR-002-custom-user.md).
 
+## Identity tables (Phase 1)
+
+| Table | Purpose | Notes |
+| --- | --- | --- |
+| `accounts_user` | accounts, including the `role` column | indexed `role`; the `AUTH_USER_MODEL` |
+| `accounts_tenantprofile` | tenant contact details | one-to-one with the user; `notes` is staff-only and never rendered to a tenant |
+| `accounts_loginattempt` | login-throttle ledger | composite indexes on `(username, created_at)` and `(ip, created_at)`; rows older than 24 h are pruned as new ones are written |
+
+Role changes, account creation, deactivation, and invitations are written to the application log as
+structured events. The audit-event **table** arrives in Phase 2 with the portfolio models, so Phase 1
+does not half-build it.
+
 ## Modelling conventions
 
 These are binding for the phases that follow (Phases 2–11):

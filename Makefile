@@ -100,6 +100,7 @@ check-deploy: ## Run Django deployment checks against production settings
 	DJANGO_SECRET_KEY=deploy-check-only-not-a-real-secret-0f3c5e7a9d1b2f4c6e8a0d3f5b7c9e1a \
 	DJANGO_ALLOWED_HOSTS=localhost \
 	DJANGO_SECURE_PROXY_SSL_HEADER=1 \
+	RHP_TRUST_PROXY_HEADERS=1 \
 	DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend \
 	DJANGO_EMAIL_HOST=smtp.example.com \
 	DJANGO_EMAIL_HOST_USER=rhp@example.com \

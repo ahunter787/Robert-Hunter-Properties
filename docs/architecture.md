@@ -5,9 +5,9 @@ Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](deci
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a
 small property-management business, and it can move from a local VM to a cloud VPS unchanged.
 
-**Status: Phase 0.** Only the foundation exists — configuration, database, container topology,
-health endpoint, tests, and the design system. Domain apps arrive one phase at a time
-([`roadmap.md`](roadmap.md)).
+**Status: Phase 1.** The foundation (configuration, database, container topology, health endpoint,
+tests, design system) and the identity layer (sign-in, roles, invitations, password reset, account
+page) are in place. Domain apps arrive one phase at a time ([`roadmap.md`](roadmap.md)).
 
 ## System shape
 
@@ -102,6 +102,37 @@ accessible contrast, and mobile-first single-column layouts for tenants. Desktop
 may use a left navigation; the tenant portal keeps a short navigation
 (Dashboard, Lease, Payments, Maintenance, Documents, Announcements, Account).
 
+## Identity, roles, and URL map
+
+`accounts.User` carries one `role` field; Django's `is_staff`/`is_superuser` keep gating `/admin/`
+while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permission mixin from
+`apps/accounts/permissions.py`; nothing relies on hidden navigation.
+
+| Role | `/manage/` | `/manage/accounts/` | Role changes | Tenant data |
+| --- | --- | --- | --- | --- |
+| `SUPERADMIN` | yes | yes | yes | all |
+| `ADMIN` | yes | yes | no | all |
+| `MANAGER` | yes | no | no | all (Phase 2+) |
+| `MAINTENANCE` | yes | no | no | assigned work only (Phase 7) |
+| `TENANT` | no (403) | no (403) | no | own tenancy only |
+
+| URL | Surface |
+| --- | --- |
+| `/` | public landing page |
+| `/healthz` | readiness probe (unauthenticated) |
+| `/account/login/`, `/account/logout/` | sign-in (throttled) and sign-out (POST) |
+| `/account/password-reset/…` | password reset (four steps, single-use link) |
+| `/account/invite/<uidb64>/<token>/` | accept an invitation and set a password |
+| `/account/profile/`, `/account/password/` | account page, contact details, password change |
+| `/account/` | role-aware landing: staff → `/manage/`, tenant → `/account/profile/` |
+| `/manage/` | staff landing page |
+| `/manage/accounts/…` | tenant accounts: list, create, invite, deactivate, role |
+| `/admin/` | Django back office (`is_staff` gate) |
+
+Denials are deliberate: an authenticated user in the wrong *area* gets **403**, while an individual
+record outside the caller's tenancy is resolved with `tenant_scope(...)` and returns **404**, so ids
+cannot be probed.
+
 ## Conventions
 
 - **Server-rendered templates first.** Add HTMX for interaction; no SPA.
@@ -112,8 +143,8 @@ may use a left navigation; the tenant portal keeps a short navigation
   PII in log messages.
 - **Tests** exercise behaviour through the public HTTP surface and the ORM, against PostgreSQL.
 
-## Not in Phase 0
+## Not in Phase 1
 
-Authentication flows and roles (Phase 1), properties/units/tenants (2), leases (3), the rent ledger
-(4), tenant dashboard (5), documents (6), maintenance (7), communications (8), admin dashboard (9),
-reporting (10), payment integration (11), production hardening (12).
+Properties/units/tenants screens (Phase 2), leases (3), the rent ledger (4), tenant dashboard (5),
+documents (6), maintenance (7), communications (8), admin dashboard (9), reporting (10), payment
+integration (11), production hardening — MFA, monitoring, proxy-level rate limiting (12).

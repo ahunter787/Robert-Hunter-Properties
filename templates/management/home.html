@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Management — RHP{% endblock %}
+
+{% block content %}
+  <div class="space-y-6">
+    <section class="rhp-card">
+      <p class="rhp-eyebrow">Management</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Welcome, {{ user.display_name }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        Signed in as {{ user.get_role_display }}.
+      </p>
+    </section>
+
+    {% if is_admin %}
+      <section class="grid gap-4 sm:grid-cols-3">
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Tenants</p>
+          <p class="mt-2 text-3xl font-semibold">{{ tenant_active_count }}</p>
+          <p class="mt-1 text-sm text-ink-muted">active accounts</p>
+        </div>
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Invitations</p>
+          <p class="mt-2 text-3xl font-semibold">{{ tenant_invited_count }}</p>
+          <p class="mt-1 text-sm text-ink-muted">waiting to be accepted</p>
+        </div>
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Accounts</p>
+          <a href="{% url 'manage:account-list' %}" class="rhp-btn rhp-btn-primary mt-4">Manage accounts</a>
+        </div>
+      </section>
+    {% else %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Your access</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          Maintenance work assigned to you appears here once the maintenance workflow ships
+          (Phase 7). Portfolio and account screens are limited to managers and admins.
+        </p>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

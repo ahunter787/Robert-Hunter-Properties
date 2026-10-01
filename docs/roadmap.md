@@ -7,7 +7,7 @@ pass.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 | Foundation and architecture | **Complete** |
-| 1 | Authentication and authorization | Not started |
+| 1 | Authentication and authorization | **Complete** |
 | 2 | Property and tenant management | Not started |
 | 3 | Lease management | Not started |
 | 4 | Rent ledger | Not started |
@@ -54,13 +54,24 @@ Deliberately **not** in Phase 0: any tenant/staff feature, and any domain app ot
 `apps/accounts` (which exists only to fix `AUTH_USER_MODEL` — see
 [`decisions/ADR-002-custom-user.md`](decisions/ADR-002-custom-user.md)).
 
-## Phase 1 — Authentication and authorization (next)
+## Phase 1 — Authentication and authorization (complete)
 
-Login, logout, password reset, admin-created tenant accounts, invitation flow if practical,
-role-based permissions (`SUPERADMIN`/`ADMIN`/`MANAGER`/`MAINTENANCE`/`TENANT`), staff/tenant route
-separation, and an account page. Acceptance: a tenant cannot reach management routes; tenant A
-cannot read tenant B data; a maintenance user has restricted access; an admin can administer
-accounts.
+Delivered: sign-in (throttled), sign-out, password reset, admin-created tenant accounts with a
+single-use invitation link, role-based permissions, staff/tenant route separation (`/account/` vs
+`/manage/`), the account page, and tenant contact details. Decisions are recorded in
+[ADR-003](decisions/ADR-003-role-on-user-model.md) (role on the user model) and
+[ADR-004](decisions/ADR-004-invitations-and-throttle.md) (invitations and throttling); the
+rate-limiting strategy is documented in [`security.md`](security.md).
+
+Acceptance criteria from the specification, each proven by tests in `tests/accounts/`:
+
+- [x] A tenant cannot access management routes (403)
+- [x] Tenant A cannot access tenant B data (scoped queries; 404 for another tenancy's records)
+- [x] A maintenance user has restricted access (`/manage/` only, no account administration)
+- [x] An admin can administer accounts (list, create, invite, deactivate, re-invite)
+
+Also verified: role changes require a superadmin, invitations and resets are single-use, password
+reset never reveals whether an address exists, and a deactivated account cannot sign in.
 
 ## Phase 2 — Property and tenant management
 

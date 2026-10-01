@@ -1,0 +1,13 @@
+Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+Robert Hunter Properties has created an RHP account for you.
+
+Set your password here:
+{{ invitation_url }}
+
+This link can only be used once and expires in {{ timeout_days }} days. If it has already
+expired, use "Forgot your password?" on the sign-in page to get a new one.
+
+If you were not expecting this message, you can ignore it.
+
+- Robert Hunter Properties

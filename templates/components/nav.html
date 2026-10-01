@@ -1,5 +1,5 @@
 <header class="border-b border-surface-muted bg-white">
-  <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+  <div class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
     <a href="{% url 'home' %}" class="flex items-center gap-3 rounded-card focus-ring">
       <span class="grid h-9 w-9 place-items-center rounded-card bg-primary text-sm font-semibold tracking-wide text-white">
         RHP
@@ -11,13 +11,30 @@
     </a>
 
     <nav aria-label="Primary">
-      <ul class="flex items-center gap-1 text-sm">
-        <li>
-          <a href="{% url 'home' %}" class="rhp-nav-link">Home</a>
-        </li>
-        <li>
-          <a href="/admin/" class="rhp-nav-link">Staff sign-in</a>
-        </li>
+      <ul class="flex flex-wrap items-center gap-1 text-sm">
+        {% if user.is_authenticated %}
+          {% if user.is_rhp_staff %}
+            <li><a href="{% url 'manage:home' %}" class="rhp-nav-link">Management</a></li>
+          {% endif %}
+          {% if user.is_admin_or_above %}
+            <li><a href="{% url 'manage:account-list' %}" class="rhp-nav-link">Accounts</a></li>
+          {% endif %}
+          <li>
+            <a href="{% url 'accounts:profile' %}" class="rhp-nav-link">
+              {{ user.display_name }}
+              <span class="ml-1 rounded bg-surface-muted px-1.5 py-0.5 text-xs text-ink-muted">{{ user.get_role_display }}</span>
+            </a>
+          </li>
+          <li>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="rhp-nav-link">Sign out</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a href="{% url 'home' %}" class="rhp-nav-link">Home</a></li>
+          <li><a href="{% url 'accounts:login' %}" class="rhp-btn rhp-btn-primary">Sign in</a></li>
+        {% endif %}
       </ul>
     </nav>
   </div>

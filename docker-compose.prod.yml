@@ -11,6 +11,9 @@ services:
       DJANGO_SETTINGS_MODULE: config.settings.production
       DJANGO_SECURE_PROXY_SSL_HEADER: "1"
       DJANGO_SECURE_SSL_REDIRECT: "1"
+      # Caddy is the only thing in front of the app, so it is the trusted source
+      # of the client address used by the login throttle.
+      RHP_TRUST_PROXY_HEADERS: "1"
     command: ["web"]
     volumes:
       # Media stays on a private volume: it is served by permission-checked
