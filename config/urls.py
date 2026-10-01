@@ -1,19 +1,22 @@
 """RHP URL configuration.
 
-Phase 0 exposes three surfaces only: the landing page, the health probe, and
-the Django admin (used to create the first superuser).
+Three surfaces: the public landing page and health probe, the account area
+(sign-in and self-service), and the staff management area. The Django admin
+remains available for the back office.
 """
 
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
 from config import views
 
 urlpatterns = [
     path("", views.home, name="home"),
     path("healthz", views.healthz, name="healthz"),
+    path("account/", include("apps.accounts.urls")),
+    path("manage/", include("apps.accounts.urls_management")),
     path("admin/", admin.site.urls),
 ]
 
