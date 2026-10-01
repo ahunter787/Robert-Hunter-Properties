@@ -1,0 +1,48 @@
+# --- Secrets ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+env/
+.Python
+build/
+dist/
+*.egg-info/
+
+# --- Django ----------------------------------------------------------------
+*.log
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+/static/css/
+
+# --- Testing / tooling -----------------------------------------------------
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# --- Node (asset pipeline only) --------------------------------------------
+node_modules/
+
+# --- Local tool caches (used when $HOME is not writable) -------------------
+.uv-cache/
+.npm-cache/
+
+# --- Editors / OS ----------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+.DS_Store

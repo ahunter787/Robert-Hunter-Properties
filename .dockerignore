@@ -1,0 +1,23 @@
+# Never ship secrets or local state into an image.
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+node_modules
+staticfiles
+# Generated CSS: always rebuilt from source in the asset stage.
+static/css
+media
+*.log
+.idea
+.vscode
+.DS_Store
