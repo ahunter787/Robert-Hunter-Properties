@@ -140,9 +140,10 @@ docker/          entrypoint and container healthcheck
 
 | Document | Contents |
 | --- | --- |
+| [`docs/phase-guide.md`](docs/phase-guide.md) | **Start here**: every phase in plain language, and what later phases will change |
 | [`docs/architecture.md`](docs/architecture.md) | System shape, request flow, structure, conventions |
 | [`docs/database.md`](docs/database.md) | Database configuration, migration rules, modelling conventions |
 | [`docs/deployment.md`](docs/deployment.md) | Local VM and VPS topologies, TLS, backup/restore, upgrades |
 | [`docs/security.md`](docs/security.md) | Authorization rules, secrets handling, upload safety |
-| [`docs/roadmap.md`](docs/roadmap.md) | Phases 0–12, milestones, current status |
+| [`docs/roadmap.md`](docs/roadmap.md) | Phases 0–12 as a status checklist |
 | [`docs/harness/master-spec.md`](docs/harness/master-spec.md) | The governing product specification |

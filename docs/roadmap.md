@@ -4,6 +4,9 @@ Derived from the governing specification in [`harness/master-spec.md`](harness/m
 Work proceeds one phase at a time; a phase is complete only when its acceptance criteria and tests
 pass.
 
+For the readable version — what each phase is for, what exists, and which later phase will change it —
+see [`phase-guide.md`](phase-guide.md). This file is the terse checklist.
+
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 | Foundation and architecture | **Complete** |
