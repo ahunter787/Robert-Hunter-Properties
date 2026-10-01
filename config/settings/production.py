@@ -52,6 +52,18 @@ if SECURE_SSL_REDIRECT and SECURE_PROXY_SSL_HEADER is None:
 
 HTTPS_ONLY = SECURE_SSL_REDIRECT
 
+# The login throttle keys on the client address. Behind a proxy that address is
+# the proxy's unless the forwarded header is trusted, which would let one
+# attacker exhaust everyone's budget at once.
+if SECURE_PROXY_SSL_HEADER is not None and not RHP_TRUST_PROXY_HEADERS:  # noqa: F405
+    import logging
+
+    logging.getLogger("apps.startup").warning(
+        "A TLS-terminating proxy is configured but RHP_TRUST_PROXY_HEADERS is off: every "
+        "request will look like it comes from the proxy, weakening login throttling. Set "
+        "RHP_TRUST_PROXY_HEADERS=1 in the production stack."
+    )
+
 SESSION_COOKIE_SECURE = HTTPS_ONLY
 CSRF_COOKIE_SECURE = HTTPS_ONLY
 SESSION_COOKIE_HTTPONLY = True

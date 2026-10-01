@@ -68,5 +68,6 @@ jobs:
         env:
           DJANGO_SETTINGS_MODULE: config.settings.production
           DJANGO_SECURE_PROXY_SSL_HEADER: "1"
+          RHP_TRUST_PROXY_HEADERS: "1"
           DJANGO_EMAIL_BACKEND: django.core.mail.backends.smtp.EmailBackend
         run: uv run python manage.py check --deploy
