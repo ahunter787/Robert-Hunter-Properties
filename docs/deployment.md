@@ -74,6 +74,27 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 curl -fsS https://<hostname>/healthz
 ```
 
+### Accounts
+
+```bash
+# First superadmin (or any staff account, then set its role in /admin/)
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web \
+  python manage.py createsuperuser
+
+# Create a tenant account and email its invitation
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web \
+  python manage.py create_tenant jsmith --email jsmith@example.com \
+  --first-name Jane --last-name Smith --phone 555-0100
+
+# Support: clear a login lockout
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec web \
+  python manage.py reset_login_attempts jsmith
+```
+
+Staff can also create tenants, resend invitations, deactivate accounts, and (as superadmin) change
+roles from `/manage/accounts/`. Invitations and password resets need working SMTP; see the Email
+section of `.env.example`.
+
 ### Upgrades
 
 ```bash
@@ -125,6 +146,10 @@ retention, encryption, and a documented disaster-recovery procedure.
 | CSRF failure on sign-in | Hostname missing from `DJANGO_CSRF_TRUSTED_ORIGINS` (scheme included). |
 | Static files 404 | `collectstatic` did not run: check `make prod-logs`, then restart the stack. |
 | `exec: "/app/docker/entrypoint.sh": permission denied` | The development bind mount lost the executable bit (also happens on Windows/Samba shares that do not carry Unix modes): `chmod +x docker/entrypoint.sh`. |
+| `PermissionError: ... Permission denied: '/app/apps/...'` | Source files in the bind mount are not readable by the container user (uid 10001). Common with a strict umask or files copied from another filesystem: `chmod -R a+rX apps config templates tests docs`. |
 | `exec: "/app/docker/entrypoint.sh": no such file or directory` (or an empty `/app`) | The Docker daemon cannot see the bind-mount path. Run Compose from a checkout that exists on the host filesystem — not from inside a container or a shell with a private `/tmp` mount namespace. |
 | A second checkout steals the first one's stack | `docker-compose.yml` pins `name: rhp`, so every checkout on a host shares one Compose project and one set of volumes. Give the second checkout its own project: add `COMPOSE_PROJECT_NAME=rhpclone` to its `.env`, or prefix the command. |
+| Tenant never received the invitation | With the console email backend nothing is delivered: the link is in `make logs` (the app logs it explicitly). Configure SMTP, then use **Resend invitation** on the tenant's page. |
+| "Too many unsuccessful sign-in attempts" for a real user | The login throttle is doing its job. Clear it with `docker compose exec web python manage.py reset_login_attempts <username>` (or `--ip <address>`), or wait out the lockout (`RHP_LOGIN_LOCKOUT_MINUTES`, 15 by default). |
+| Everyone gets locked out at once behind a proxy | `RHP_TRUST_PROXY_HEADERS` is off, so every request appears to come from the proxy. The production stack sets it to 1; production settings warn at boot when it is missing. |
 | Port 5432 already in use | Another PostgreSQL is running on the host (or a leftover container): `docker ps`, then set `POSTGRES_PORT` in `.env` or remove the other container. |
