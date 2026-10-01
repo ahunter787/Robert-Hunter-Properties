@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Units — RHP{% endblock %}
+
+{% block content %}
+  <div class="space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">Portfolio</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Units</h1>
+      </div>
+      <a href="{% url 'portfolio:unit-create' %}" class="rhp-btn rhp-btn-primary">New unit</a>
+    </div>
+
+    <form method="get" class="rhp-card flex flex-wrap items-end gap-3">
+      <div class="min-w-56 grow">
+        <label class="rhp-label" for="q">Search</label>
+        <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
+               placeholder="Unit identifier or property">
+      </div>
+      <div>
+        <label class="rhp-label" for="property">Property</label>
+        <select name="property" id="property" class="rhp-field pr-8">
+          <option value="">All properties</option>
+          {% for option in properties %}
+            <option value="{{ option.pk }}" {% if selected_property == option.pk|stringformat:"s" %}selected{% endif %}>
+              {{ option.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="rhp-label" for="status">Status</label>
+        <select name="status" id="status" class="rhp-field pr-8">
+          <option value="" {% if not status %}selected{% endif %}>All</option>
+          <option value="active" {% if status == "active" %}selected{% endif %}>In service</option>
+          <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Out of service</option>
+        </select>
+      </div>
+      <button type="submit" class="rhp-btn rhp-btn-secondary">Filter</button>
+    </form>
+
+    <div class="rhp-card overflow-x-auto">
+      {% if units %}
+        <table class="w-full text-left text-sm">
+          <caption class="sr-only">Units across the portfolio</caption>
+          <thead class="text-xs uppercase tracking-wide text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4">Unit</th>
+              <th scope="col" class="py-2 pr-4">Property</th>
+              <th scope="col" class="py-2 pr-4">Bedrooms</th>
+              <th scope="col" class="py-2 pr-4">Bathrooms</th>
+              <th scope="col" class="py-2 pr-4">Status</th>
+              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-muted">
+            {% for unit in units %}
+              <tr>
+                <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
+                <td class="py-3 pr-4">{{ unit.property.name }}</td>
+                <td class="py-3 pr-4">{{ unit.bedrooms|default_if_none:"—" }}</td>
+                <td class="py-3 pr-4">{{ unit.bathrooms|default_if_none:"—" }}</td>
+                <td class="py-3 pr-4">
+                  {% if unit.is_active %}
+                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+                  {% else %}
+                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 text-right">
+                  <a href="{% url 'portfolio:unit-detail' unit.pk %}"
+                     class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-sm text-ink-muted">No units match that filter.</p>
+      {% endif %}
+    </div>
+
+    {% if is_paginated %}
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-ink-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+            <a class="rhp-btn rhp-btn-secondary"
+               href="?{% if search %}q={{ search|urlencode }}&amp;{% endif %}{% if selected_property %}property={{ selected_property }}&amp;{% endif %}{% if status %}status={{ status }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="rhp-btn rhp-btn-secondary"
+               href="?{% if search %}q={{ search|urlencode }}&amp;{% endif %}{% if selected_property %}property={{ selected_property }}&amp;{% endif %}{% if status %}status={{ status }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

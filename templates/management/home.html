@@ -12,22 +12,42 @@
       </p>
     </section>
 
-    {% if is_admin %}
-      <section class="grid gap-4 sm:grid-cols-3">
+    {% if is_manager %}
+      <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Properties</p>
+          <p class="mt-2 text-3xl font-semibold">{{ property_active_count }}</p>
+          <p class="mt-1 text-sm text-ink-muted">in service of {{ property_total_count }} total</p>
+          <a href="{% url 'portfolio:property-list' %}" class="rhp-btn rhp-btn-secondary mt-4">Properties</a>
+        </div>
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Units</p>
+          <p class="mt-2 text-3xl font-semibold">{{ unit_active_count }}</p>
+          <p class="mt-1 text-sm text-ink-muted">in service of {{ unit_total_count }} total</p>
+          <a href="{% url 'portfolio:unit-list' %}" class="rhp-btn rhp-btn-secondary mt-4">Units</a>
+        </div>
         <div class="rhp-card">
           <p class="rhp-eyebrow">Tenants</p>
           <p class="mt-2 text-3xl font-semibold">{{ tenant_active_count }}</p>
           <p class="mt-1 text-sm text-ink-muted">active accounts</p>
+          <a href="{% url 'manage:account-list' %}" class="rhp-btn rhp-btn-secondary mt-4">Tenants</a>
         </div>
-        <div class="rhp-card">
-          <p class="rhp-eyebrow">Invitations</p>
-          <p class="mt-2 text-3xl font-semibold">{{ tenant_invited_count }}</p>
-          <p class="mt-1 text-sm text-ink-muted">waiting to be accepted</p>
-        </div>
-        <div class="rhp-card">
-          <p class="rhp-eyebrow">Accounts</p>
-          <a href="{% url 'manage:account-list' %}" class="rhp-btn rhp-btn-primary mt-4">Manage accounts</a>
-        </div>
+        {% if is_admin %}
+          <div class="rhp-card">
+            <p class="rhp-eyebrow">Invitations</p>
+            <p class="mt-2 text-3xl font-semibold">{{ tenant_invited_count }}</p>
+            <p class="mt-1 text-sm text-ink-muted">waiting to be accepted</p>
+            <a href="{% url 'manage:account-create' %}" class="rhp-btn rhp-btn-secondary mt-4">Invite a tenant</a>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Not counted yet</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          Occupied and vacant units need leases (Phase 3); open maintenance requests need the
+          maintenance workflow (Phase 7). RHP does not show a number here until it is real.
+        </p>
       </section>
     {% else %}
       <section class="rhp-card">

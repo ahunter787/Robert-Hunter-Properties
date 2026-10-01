@@ -27,9 +27,14 @@ from apps.accounts.forms import (
     ThrottledLoginForm,
 )
 from apps.accounts.models import Role, TenantProfile, User
-from apps.accounts.permissions import AdminRequiredMixin, StaffRequiredMixin
+from apps.accounts.permissions import (
+    AdminRequiredMixin,
+    ManagerRequiredMixin,
+    StaffRequiredMixin,
+)
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
+from apps.properties.models import Property, Unit
 
 logger = logging.getLogger("apps.accounts")
 
@@ -148,21 +153,38 @@ def _invited_accounts():
 
 
 class ManageHomeView(StaffRequiredMixin, TemplateView):
-    """Staff landing page. Portfolio and maintenance panels arrive in Phase 2+."""
+    """Staff landing page, with the counters each role can actually use.
+
+    The portfolio counts come from `apps.properties`. This view aggregates
+    another app's public models because it *is* the cross-domain landing page;
+    Phase 9 moves dashboards into their own app.
+    """
 
     template_name = "management/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_admin"] = self.request.user.is_admin_or_above
-        if context["is_admin"]:
-            tenants = User.objects.filter(role=Role.TENANT)
-            context["tenant_active_count"] = tenants.filter(is_active=True).count()
+        user = self.request.user
+        context["is_admin"] = user.is_admin_or_above
+        context["is_manager"] = user.is_manager_or_above
+
+        if user.is_manager_or_above:
+            context["property_active_count"] = Property.objects.active().count()
+            context["property_total_count"] = Property.objects.count()
+            context["unit_active_count"] = Unit.objects.active().count()
+            context["unit_total_count"] = Unit.objects.count()
+            context["tenant_active_count"] = User.objects.filter(
+                role=Role.TENANT, is_active=True
+            ).count()
+
+        if user.is_admin_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()
         return context
 
 
-class TenantAccountListView(AdminRequiredMixin, ListView):
+class TenantAccountListView(ManagerRequiredMixin, ListView):
+    """Tenant list. Managers may read it; only admins may change anything."""
+
     template_name = "management/account_list.html"
     context_object_name = "accounts"
     paginate_by = 25
@@ -230,7 +252,7 @@ class TenantAccountCreateView(AdminRequiredMixin, FormView):
         return redirect("manage:account-detail", pk=user.pk)
 
 
-class TenantAccountDetailView(AdminRequiredMixin, DetailView):
+class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
     template_name = "management/account_detail.html"
     context_object_name = "account"
 

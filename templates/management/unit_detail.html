@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">Portfolio</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Unit {{ unit.identifier }}</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          <a href="{% url 'portfolio:property-detail' unit.property.pk %}"
+             class="font-medium text-primary underline-offset-2 hover:underline">{{ unit.property.name }}</a>
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <a href="{% url 'portfolio:unit-update' unit.pk %}" class="rhp-btn rhp-btn-secondary">Edit</a>
+        <form method="post" action="{% url 'portfolio:unit-toggle-active' unit.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="rhp-btn rhp-btn-secondary">
+            {% if unit.is_active %}Take out of service{% else %}Return to service{% endif %}
+          </button>
+        </form>
+        {% if user.is_admin_or_above %}
+          <a href="{% url 'portfolio:unit-delete' unit.pk %}" class="rhp-btn rhp-btn-secondary">Delete</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Details</h2>
+        {% if unit.is_active %}
+          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+        {% else %}
+          <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+        {% endif %}
+      </div>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Property</dt>
+          <dd class="font-medium">{{ unit.property.name }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Address</dt>
+          <dd class="font-medium">{{ unit.property.address_line }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Bedrooms</dt>
+          <dd class="font-medium">{{ unit.bedrooms|default_if_none:"Not recorded" }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Bathrooms</dt>
+          <dd class="font-medium">{{ unit.bathrooms|default_if_none:"Not recorded" }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Tenancy</h2>
+      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+        The current tenant, the active lease, and the rent amount arrive with Phase 3 — vacancy can
+        only be decided once leases exist. Recent maintenance arrives with Phase 7.
+      </p>
+    </section>
+  </div>
+{% endblock %}

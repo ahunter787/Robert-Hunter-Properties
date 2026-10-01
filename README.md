@@ -9,18 +9,19 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 1 (identity and access).** Staff and tenants can sign in, tenants are created
-by staff and invited to choose their own password, roles gate every route server-side, and password
-reset works. Property, lease, ledger, document, and maintenance features are still to come
+**Current status: Phase 2 (portfolio).** RHP now models the properties and units it manages, alongside
+Phase 1's identity layer: staff and tenants sign in, tenants are created by staff and invited, roles
+gate every route server-side, and the portfolio can be created, edited, and taken out of service.
+Leases, the rent ledger, documents, and maintenance are still to come
 ([`docs/roadmap.md`](docs/roadmap.md)).
 
 ## Accounts and access
 
 | Role | Reaches |
 | --- | --- |
-| `SUPERADMIN` | everything, including role changes |
-| `ADMIN` | management area and tenant account administration |
-| `MANAGER` | management area |
+| `SUPERADMIN` | everything, including role changes and deletion |
+| `ADMIN` | management area, tenant account administration, deletion |
+| `MANAGER` | management area, the portfolio (properties and units), and reading tenant records |
 | `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
 | `TENANT` | their own account and contact details |
 
@@ -29,8 +30,9 @@ reset works. Property, lease, ledger, document, and maintenance features are sti
 | `/account/login/` | sign-in for tenants and staff (rate limited) |
 | `/account/profile/` | the account page: details, contact information, password change |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
-| `/manage/` | staff landing page |
-| `/manage/accounts/` | tenant accounts: create, invite, deactivate, change role |
+| `/manage/` | staff landing page with portfolio counters |
+| `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
+| `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
 | `/admin/` | Django back office for superusers |
 
 Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
@@ -104,18 +106,22 @@ backups, and the upgrade path.
 ## Workflow
 
 `main` always holds a working release. Each phase is developed on its own branch — `rhp-1` for Phase 1,
-`rhp-2` for Phase 2, and so on — and merged back with `git merge --no-ff` once `make test`,
-`make lint`, `make check`, and `make check-deploy` pass. The full contract for contributors and
-agents is in [`AGENTS.md`](AGENTS.md).
+`rhp-2` for Phase 2, and so on — with one commit per unit of work, and **squashed into `main`** once
+`make test`, `make lint`, `make check`, and `make check-deploy` pass (`git merge --squash rhp-2`), so
+`main` carries one reviewable commit per phase. The branch is deleted after the merge; its granular
+history stays on GitHub until then. The full contract for contributors and agents is in
+[`AGENTS.md`](AGENTS.md).
 
 ## Layout
 
 ```
 config/          settings (base/development/production), urls, views, wsgi/asgi
 apps/accounts/   identity: user + roles, tenant profile, invitations, throttling
-templates/       account/, management/, components/, errors, base layout
+apps/properties/ portfolio: properties and units (Phase 2)
+apps/common/     shared building blocks (form styling)
+templates/       account/, management/, components/, error pages, base layout
 assets/css/      Tailwind entry point (built into static/css/rhp.css)
-tests/           pytest suite (tests/accounts/ covers identity and authorization)
+tests/           pytest suite (tests/accounts/, tests/properties/)
 docs/            architecture, database, deployment, security, roadmap, ADRs, harness spec
 docker/          entrypoint and container healthcheck
 ```

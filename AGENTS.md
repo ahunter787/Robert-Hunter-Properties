@@ -36,12 +36,21 @@ Never claim a test passed without having run it, and never leave a known failure
 `main` is always a working, released state. **Every phase gets its own branch**: `rhp-1` for Phase 1,
 `rhp-2` for Phase 2, and so on.
 
-1. Branch from an up-to-date `main`: `git checkout main && git pull && git checkout -b rhp-1`.
+1. Branch from an up-to-date `main`: `git checkout main && git pull && git checkout -b rhp-2`.
 2. Commit per unit of work on that branch — never mix two phases in one branch.
 3. Run the full gate (`make test`, `make lint`, `make check`, `make check-deploy`) and exercise the
    affected screens before merging.
-4. Merge back with `git checkout main && git merge --no-ff rhp-1` and push. A pull request is the
-   alternative when review is wanted before the merge.
+4. **Squash the branch into `main`** so each phase is one commit there, then delete the branch:
+   ```bash
+   git checkout main && git pull
+   git merge --squash rhp-2
+   git commit                      # "Phase 2 — ..." with the phase summary
+   git push origin main
+   git branch -d rhp-2 && git push origin --delete rhp-2
+   ```
+   The granular commits stay visible on the branch while it is open (and on GitHub until it is
+   deleted), which is where review happens. A pull request is the alternative when review is wanted
+   before the merge.
 5. Never rewrite `main`'s history (no force pushes), and do not commit or push unless asked.
 
 ## Non-negotiables

@@ -33,6 +33,13 @@ Rules:
    admin site, while RHP's own screens check the role model (Phase 1).
 6. **Deactivation beats deletion** for people and property; deletion is for mistakes, and destructive
    operations require explicit confirmation.
+7. **Destructive operations are admin-only and POST-only**, behind a confirmation page that names the
+   record (ADR-005). Managers can take a property or unit out of service but cannot delete it, and a
+   property with units cannot be deleted at all: `on_delete=PROTECT` makes that a database refusal
+   rather than a UI convention.
+8. **Reading is not the same as changing.** Managers may read tenant records to do their job; creating
+   accounts, inviting, deactivating, and changing roles remain with admins, and the views enforce that
+   independently of whether the buttons are rendered.
 
 ## Identifiers and enumeration
 

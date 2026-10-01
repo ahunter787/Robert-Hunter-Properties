@@ -1,74 +1,73 @@
 {% extends "base.html" %}
 
-{% block title %}Tenant accounts — RHP{% endblock %}
+{% block title %}Properties — RHP{% endblock %}
 
 {% block content %}
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">People</p>
-        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Tenant accounts</h1>
+        <p class="rhp-eyebrow">Portfolio</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Properties</h1>
       </div>
-      {% if user.is_admin_or_above %}
-        <a href="{% url 'manage:account-create' %}" class="rhp-btn rhp-btn-primary">New tenant</a>
-      {% endif %}
+      <a href="{% url 'portfolio:property-create' %}" class="rhp-btn rhp-btn-primary">New property</a>
     </div>
 
     <form method="get" class="rhp-card flex flex-wrap items-end gap-3">
       <div class="min-w-56 grow">
         <label class="rhp-label" for="q">Search</label>
         <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
-               placeholder="Name, username, or email">
+               placeholder="Name, street, city, or ZIP">
       </div>
       <div>
         <label class="rhp-label" for="status">Status</label>
         <select name="status" id="status" class="rhp-field pr-8">
           <option value="" {% if not status %}selected{% endif %}>All</option>
-          <option value="active" {% if status == "active" %}selected{% endif %}>Active</option>
-          <option value="invited" {% if status == "invited" %}selected{% endif %}>Invitation pending</option>
-          <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Deactivated</option>
+          <option value="active" {% if status == "active" %}selected{% endif %}>In service</option>
+          <option value="inactive" {% if status == "inactive" %}selected{% endif %}>Out of service</option>
         </select>
       </div>
       <button type="submit" class="rhp-btn rhp-btn-secondary">Filter</button>
     </form>
 
     <div class="rhp-card overflow-x-auto">
-      {% if accounts %}
+      {% if properties %}
         <table class="w-full text-left text-sm">
-          <caption class="sr-only">Tenant accounts</caption>
+          <caption class="sr-only">Properties in the portfolio</caption>
           <thead class="text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <th scope="col" class="py-2 pr-4">Tenant</th>
-              <th scope="col" class="py-2 pr-4">Username</th>
-              <th scope="col" class="py-2 pr-4">Email</th>
+              <th scope="col" class="py-2 pr-4">Property</th>
+              <th scope="col" class="py-2 pr-4">Address</th>
+              <th scope="col" class="py-2 pr-4">Units</th>
               <th scope="col" class="py-2 pr-4">Status</th>
               <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody class="divide-y divide-surface-muted">
-            {% for account in accounts %}
+            {% for property in properties %}
               <tr>
-                <td class="py-3 pr-4 font-medium">{{ account.display_name }}</td>
-                <td class="py-3 pr-4">{{ account.username }}</td>
-                <td class="py-3 pr-4">{{ account.email|default:"Not set" }}</td>
+                <td class="py-3 pr-4 font-medium">{{ property.name }}</td>
+                <td class="py-3 pr-4 text-ink-muted">{{ property.address_line }}</td>
+                <td class="py-3 pr-4">{{ property.unit_active }} in service / {{ property.unit_total }} total</td>
                 <td class="py-3 pr-4">
-                  {% if not account.is_active %}
-                    <span class="rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">Deactivated</span>
-                  {% elif account.has_usable_password %}
-                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Active</span>
+                  {% if property.is_active %}
+                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
                   {% else %}
-                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Invitation pending</span>
+                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
                   {% endif %}
                 </td>
                 <td class="py-3 text-right">
-                  <a href="{% url 'manage:account-detail' account.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
+                  <a href="{% url 'portfolio:property-detail' property.pk %}"
+                     class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
                 </td>
               </tr>
             {% endfor %}
           </tbody>
         </table>
       {% else %}
-        <p class="text-sm text-ink-muted">No tenant accounts match that filter.</p>
+        <p class="text-sm text-ink-muted">
+          No properties match that filter.
+          <a href="{% url 'portfolio:property-create' %}" class="font-medium text-primary underline-offset-2 hover:underline">Add the first one</a>.
+        </p>
       {% endif %}
     </div>
 

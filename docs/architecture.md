@@ -5,9 +5,10 @@ Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](deci
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a
 small property-management business, and it can move from a local VM to a cloud VPS unchanged.
 
-**Status: Phase 1.** The foundation (configuration, database, container topology, health endpoint,
-tests, design system) and the identity layer (sign-in, roles, invitations, password reset, account
-page) are in place. Domain apps arrive one phase at a time ([`roadmap.md`](roadmap.md)).
+**Status: Phase 2.** The foundation (configuration, database, container topology, health endpoint,
+tests, design system), the identity layer (sign-in, roles, invitations, password reset, account page),
+and the portfolio (properties and units) are in place. Domain apps arrive one phase at a time
+([`roadmap.md`](roadmap.md)).
 
 ## System shape
 
@@ -60,8 +61,10 @@ config/                 project configuration
   urls.py views.py        routing; landing page and /healthz
   wsgi.py asgi.py         server entry points
 apps/                   domain apps, one per phase
-  accounts/               Phase 0: custom user model only (ADR-002)
-templates/              base layout, components/, pages/
+  accounts/               identity: user + roles, tenant profile, invitations, throttling (Phases 0-1)
+  properties/             portfolio: properties and units (Phase 2)
+  common/                 shared, domain-neutral building blocks (form styling)
+templates/              base layout, components/, account/, management/
 assets/css/input.css    Tailwind v4 entry point and the RHP design tokens
 static/                 build output only (static/css/rhp.css); gitignored
 tests/                  pytest suite, runs against PostgreSQL
@@ -108,13 +111,13 @@ may use a left navigation; the tenant portal keeps a short navigation
 while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permission mixin from
 `apps/accounts/permissions.py`; nothing relies on hidden navigation.
 
-| Role | `/manage/` | `/manage/accounts/` | Role changes | Tenant data |
-| --- | --- | --- | --- | --- |
-| `SUPERADMIN` | yes | yes | yes | all |
-| `ADMIN` | yes | yes | no | all |
-| `MANAGER` | yes | no | no | all (Phase 2+) |
-| `MAINTENANCE` | yes | no | no | assigned work only (Phase 7) |
-| `TENANT` | no (403) | no (403) | no | own tenancy only |
+| Role | `/manage/` | Portfolio | `/manage/accounts/` | Delete | Role changes | Tenant data |
+| --- | --- | --- | --- | --- | --- | --- |
+| `SUPERADMIN` | yes | yes | yes | yes | yes | all |
+| `ADMIN` | yes | yes | yes | yes | no | all |
+| `MANAGER` | yes | yes | read only | no (403) | no | all |
+| `MAINTENANCE` | yes | no (403) | no (403) | no | no | assigned work only (Phase 7) |
+| `TENANT` | no (403) | no (403) | no (403) | no | no | own tenancy only |
 
 | URL | Surface |
 | --- | --- |
@@ -125,9 +128,15 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/account/invite/<uidb64>/<token>/` | accept an invitation and set a password |
 | `/account/profile/`, `/account/password/` | account page, contact details, password change |
 | `/account/` | role-aware landing: staff → `/manage/`, tenant → `/account/profile/` |
-| `/manage/` | staff landing page |
-| `/manage/accounts/…` | tenant accounts: list, create, invite, deactivate, role |
+| `/manage/` | staff landing page with the counters that role can use |
+| `/manage/properties/…` | portfolio: list, create, detail, edit, take out of service, delete (admin) |
+| `/manage/units/…` | units the same way, attached to a property |
+| `/manage/accounts/…` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
 | `/admin/` | Django back office (`is_staff` gate) |
+
+Two URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts,
+`portfolio` for the portfolio). One shared namespace would leave whichever module was included first
+unreachable through `reverse()`.
 
 Denials are deliberate: an authenticated user in the wrong *area* gets **403**, while an individual
 record outside the caller's tenancy is resolved with `tenant_scope(...)` and returns **404**, so ids
@@ -143,8 +152,9 @@ cannot be probed.
   PII in log messages.
 - **Tests** exercise behaviour through the public HTTP surface and the ORM, against PostgreSQL.
 
-## Not in Phase 1
+## Not in Phase 2
 
-Properties/units/tenants screens (Phase 2), leases (3), the rent ledger (4), tenant dashboard (5),
-documents (6), maintenance (7), communications (8), admin dashboard (9), reporting (10), payment
-integration (11), production hardening — MFA, monitoring, proxy-level rate limiting (12).
+Leases and occupancy (3), the rent ledger (4), the tenant dashboard (5), documents (6), maintenance
+(7), communications (8), the full admin dashboard (9), reporting (10), payment integration (11),
+production hardening — MFA, monitoring, proxy-level rate limiting (12). Occupancy and vacancy are
+deliberately absent until leases exist rather than shown as zeroes (ADR-005).

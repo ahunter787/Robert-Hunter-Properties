@@ -16,8 +16,10 @@
           {% if user.is_rhp_staff %}
             <li><a href="{% url 'manage:home' %}" class="rhp-nav-link">Management</a></li>
           {% endif %}
-          {% if user.is_admin_or_above %}
-            <li><a href="{% url 'manage:account-list' %}" class="rhp-nav-link">Accounts</a></li>
+          {% if user.is_manager_or_above %}
+            <li><a href="{% url 'portfolio:property-list' %}" class="rhp-nav-link">Properties</a></li>
+            <li><a href="{% url 'portfolio:unit-list' %}" class="rhp-nav-link">Units</a></li>
+            <li><a href="{% url 'manage:account-list' %}" class="rhp-nav-link">Tenants</a></li>
           {% endif %}
           <li>
             <a href="{% url 'accounts:profile' %}" class="rhp-nav-link">

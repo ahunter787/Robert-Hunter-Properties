@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ property.name }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">Portfolio</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ property.name }}</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          <a href="{% url 'portfolio:property-list' %}"
+             class="font-medium text-primary underline-offset-2 hover:underline">Back to properties</a>
+        </p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <a href="{% url 'portfolio:property-update' property.pk %}" class="rhp-btn rhp-btn-secondary">Edit</a>
+        <form method="post" action="{% url 'portfolio:property-toggle-active' property.pk %}">
+          {% csrf_token %}
+          <button type="submit" class="rhp-btn rhp-btn-secondary">
+            {% if property.is_active %}Take out of service{% else %}Return to service{% endif %}
+          </button>
+        </form>
+        {% if user.is_admin_or_above %}
+          <a href="{% url 'portfolio:property-delete' property.pk %}" class="rhp-btn rhp-btn-secondary">Delete</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Details</h2>
+        {% if property.is_active %}
+          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+        {% else %}
+          <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+        {% endif %}
+      </div>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Address</dt>
+          <dd class="font-medium">{{ property.address_line }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Units</dt>
+          <dd class="font-medium">{{ unit_active }} in service / {{ unit_total }} total</dd>
+        </div>
+      </dl>
+      {% if property.notes %}
+        <div class="mt-4 rounded-card bg-surface-muted p-3">
+          <p class="text-xs font-semibold uppercase tracking-wide text-ink-muted">Notes</p>
+          <p class="mt-1 whitespace-pre-line text-sm">{{ property.notes }}</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Units</h2>
+        <a href="{% url 'portfolio:unit-create' %}?property={{ property.pk }}" class="rhp-btn rhp-btn-primary">Add unit</a>
+      </div>
+
+      {% if units %}
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Units at {{ property.name }}</caption>
+            <thead class="text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th scope="col" class="py-2 pr-4">Unit</th>
+                <th scope="col" class="py-2 pr-4">Bedrooms</th>
+                <th scope="col" class="py-2 pr-4">Bathrooms</th>
+                <th scope="col" class="py-2 pr-4">Status</th>
+                <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-muted">
+              {% for unit in units %}
+                <tr>
+                  <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
+                  <td class="py-3 pr-4">{{ unit.bedrooms|default_if_none:"—" }}</td>
+                  <td class="py-3 pr-4">{{ unit.bathrooms|default_if_none:"—" }}</td>
+                  <td class="py-3 pr-4">
+                    {% if unit.is_active %}
+                      <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+                    {% else %}
+                      <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 text-right">
+                    <a href="{% url 'portfolio:unit-detail' unit.pk %}"
+                       class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="mt-4 text-sm text-ink-muted">
+          No units yet. Add the first unit so leases can be attached to it.
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Not tracked here yet</h2>
+      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+        Occupants and active leases arrive with Phase 3, documents with Phase 6, and maintenance with
+        Phase 7. Nothing is shown until it is real.
+      </p>
+    </section>
+  </div>
+{% endblock %}

@@ -27,8 +27,10 @@ class Role(models.TextChoices):
 
 #: Roles that may reach the management portal at all.
 STAFF_ROLES = frozenset({Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.MAINTENANCE})
-#: Roles that may administer accounts.
+#: Roles that may administer accounts and perform destructive operations.
 ADMIN_ROLES = frozenset({Role.SUPERADMIN, Role.ADMIN})
+#: Roles that run the portfolio (properties, units, and later leases and money).
+MANAGER_ROLES = frozenset({Role.SUPERADMIN, Role.ADMIN, Role.MANAGER})
 
 
 class UserManager(DjangoUserManager):
@@ -69,6 +71,11 @@ class User(AbstractUser):
     @property
     def is_admin_or_above(self) -> bool:
         return self.is_superuser or self.role in ADMIN_ROLES
+
+    @property
+    def is_manager_or_above(self) -> bool:
+        """True for the roles that run the portfolio day to day (ADR-005)."""
+        return self.is_admin_or_above or self.role == Role.MANAGER
 
     @property
     def is_superadmin(self) -> bool:

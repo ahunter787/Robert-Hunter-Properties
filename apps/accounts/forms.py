@@ -1,8 +1,8 @@
 """Forms for RHP identity screens.
 
-Every form inherits :class:`StyledForm` so templates can render ``{{ field }}``
-without repeating design-system classes, and so server-side validation messages
-stay in one place.
+Every form inherits :class:`~apps.common.forms.StyledForm` so templates can
+render ``{{ field }}`` without repeating design-system classes, and so
+server-side validation messages stay in one place.
 """
 
 from django import forms
@@ -11,28 +11,10 @@ from django.core.exceptions import ValidationError
 
 from apps.accounts.models import TenantProfile, User
 from apps.accounts.throttle import LoginThrottle, client_ip
-
-
-class StyledForm(forms.Form):
-    """Applies the RHP design-system classes to all widgets."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            widget = field.widget
-            if isinstance(widget, forms.CheckboxInput):
-                css = "h-4 w-4 rounded border-surface-muted text-primary"
-            elif isinstance(widget, (forms.Select, forms.SelectMultiple)):
-                css = "rhp-field pr-8"
-            elif isinstance(widget, forms.Textarea):
-                css = "rhp-field min-h-24"
-            else:
-                css = "rhp-field"
-            widget.attrs["class"] = f"{widget.attrs.get('class', '')} {css}".strip()
-
-
-class StyledModelForm(StyledForm, forms.ModelForm):
-    """ModelForm variant of :class:`StyledForm`."""
+from apps.common.forms import (  # noqa: F401 - re-exported for existing imports
+    StyledForm,
+    StyledModelForm,
+)
 
 
 class StyledAuthenticationForm(StyledForm, AuthenticationForm):

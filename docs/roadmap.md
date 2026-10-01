@@ -8,7 +8,7 @@ pass.
 | --- | --- | --- |
 | 0 | Foundation and architecture | **Complete** |
 | 1 | Authentication and authorization | **Complete** |
-| 2 | Property and tenant management | Not started |
+| 2 | Property and tenant management | **Complete** |
 | 3 | Lease management | Not started |
 | 4 | Rent ledger | Not started |
 | 5 | Tenant dashboard | Not started |
@@ -73,10 +73,31 @@ Acceptance criteria from the specification, each proven by tests in `tests/accou
 Also verified: role changes require a superadmin, invitations and resets are single-use, password
 reset never reveals whether an address exists, and a deactivated account cannot sign in.
 
-## Phase 2 — Property and tenant management
+## Phase 2 — Property and tenant management (complete)
 
-Management screens for properties, units, and tenants; admin dashboard counters (active properties,
-occupied units, active tenants, open maintenance requests); property and unit detail pages.
+Delivered: the portfolio — properties and their units — with staff screens for listing, creating,
+editing, and taking records out of service; admin-only deletion behind a confirmation page; a
+`PROTECT` relationship that makes "delete a building with units" impossible rather than merely
+discouraged; manager read access to tenant records (creating and changing accounts stays with admins);
+and a staff landing page whose counters are true for the role viewing them.
+
+Acceptance criteria from the specification:
+
+- [x] An admin can create, edit, and deactivate properties
+- [x] An admin can create and edit units (managers can too — the spec grants managers the portfolio)
+- [x] Tenants can be associated with leases later: `Unit` is a first-class record with a stable id, so
+      Phase 3 attaches `Lease.unit` without reshaping anything
+- [x] Destructive operations require confirmation, and deletion is admin-only
+
+Deferred on purpose, each labelled in the UI rather than faked (ADR-005):
+
+| Panel or counter the spec lists | Arrives with |
+| --- | --- |
+| Occupied / vacant units, current tenant, active lease, rent amount | Phase 3 (leases) |
+| Property maintenance summary, unit recent maintenance | Phase 7 (maintenance) |
+| Property documents | Phase 6 (documents) |
+| Open maintenance requests counter | Phase 7 |
+| Full admin dashboard | Phase 9 |
 
 ## Phase 3 — Lease management
 

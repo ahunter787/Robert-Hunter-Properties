@@ -1,10 +1,13 @@
-"""Small builders for identity tests.
+"""Small builders for RHP tests.
 
 Plain functions rather than a factory library: the shapes are simple, and a new
 dependency is not worth its weight here (see AGENTS.md).
 """
 
+from decimal import Decimal
+
 from apps.accounts.models import Role, TenantProfile, User
+from apps.properties.models import Property, Unit
 
 DEFAULT_PASSWORD = "unit-test-password-41"
 
@@ -76,3 +79,44 @@ def password_reset_path_from_email(body: str) -> str:
     match = re.search(r"https?://\S+/account/password-reset/\S+", body)
     assert match, f"no password-reset link in email body:\n{body}"
     return urlparse(match.group(0)).path
+
+
+# --- Portfolio ------------------------------------------------------------
+
+
+def make_property(
+    *,
+    name: str = "Maple Street Duplex",
+    street: str = "12 Maple St",
+    city: str = "Springfield",
+    state: str = "IL",
+    postal_code: str = "62704",
+    **fields,
+) -> Property:
+    return Property.objects.create(
+        name=name,
+        street=street,
+        city=city,
+        state=state,
+        postal_code=postal_code,
+        **fields,
+    )
+
+
+def make_unit(
+    for_property: Property | None = None,
+    *,
+    identifier: str = "1",
+    bedrooms: int | None = 2,
+    bathrooms: Decimal | None = Decimal("1.0"),
+    **fields,
+) -> Unit:
+    if for_property is None:
+        for_property = make_property()
+    return Unit.objects.create(
+        property=for_property,
+        identifier=identifier,
+        bedrooms=bedrooms,
+        bathrooms=bathrooms,
+        **fields,
+    )

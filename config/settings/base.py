@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     # RHP domain apps are added one per phase (see docs/roadmap.md).
     # `accounts` exists in Phase 0 only to fix AUTH_USER_MODEL early (ADR-002).
     "apps.accounts",
+    "apps.properties",
 ]
 
 MIDDLEWARE = [

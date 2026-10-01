@@ -50,6 +50,16 @@ Role changes, account creation, deactivation, and invitations are written to the
 structured events. The audit-event **table** arrives in Phase 2 with the portfolio models, so Phase 1
 does not half-build it.
 
+## Portfolio tables (Phase 2)
+
+| Table | Purpose | Notes |
+| --- | --- | --- |
+| `properties_property` | a building RHP manages | `UniqueConstraint(Lower("name"))` (case-insensitive), indexed `is_active`; the address itself is not unique |
+| `properties_unit` | a rentable unit inside a property | `UniqueConstraint(property, identifier)`; `property` is a FK with **`on_delete=PROTECT`**, so a property with units cannot be deleted |
+
+The unit counts on the property list come from `Count()` annotations, not from a stored column, so they
+cannot drift away from the rows.
+
 ## Modelling conventions
 
 These are binding for the phases that follow (Phases 2–11):

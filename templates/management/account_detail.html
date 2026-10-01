@@ -70,20 +70,26 @@
 
     <section class="rhp-card">
       <h2 class="text-sm font-semibold">Actions</h2>
-      <div class="mt-4 flex flex-wrap items-center gap-3">
-        {% if not account.has_usable_password %}
-          <form method="post" action="{% url 'manage:account-resend-invite' account.pk %}">
+      {% if user.is_admin_or_above %}
+        <div class="mt-4 flex flex-wrap items-center gap-3">
+          {% if not account.has_usable_password %}
+            <form method="post" action="{% url 'manage:account-resend-invite' account.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="rhp-btn rhp-btn-secondary">Resend invitation</button>
+            </form>
+          {% endif %}
+          <form method="post" action="{% url 'manage:account-toggle-active' account.pk %}">
             {% csrf_token %}
-            <button type="submit" class="rhp-btn rhp-btn-secondary">Resend invitation</button>
+            <button type="submit" class="rhp-btn {% if account.is_active %}rhp-btn-secondary{% else %}rhp-btn-primary{% endif %}">
+              {% if account.is_active %}Deactivate account{% else %}Reactivate account{% endif %}
+            </button>
           </form>
-        {% endif %}
-        <form method="post" action="{% url 'manage:account-toggle-active' account.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="rhp-btn {% if account.is_active %}rhp-btn-secondary{% else %}rhp-btn-primary{% endif %}">
-            {% if account.is_active %}Deactivate account{% else %}Reactivate account{% endif %}
-          </button>
-        </form>
-      </div>
+        </div>
+      {% else %}
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          Invitations, deactivation, and role changes are limited to administrators.
+        </p>
+      {% endif %}
 
       {% if can_change_roles %}
         <form method="post" action="{% url 'manage:account-role' account.pk %}" class="mt-6 flex flex-wrap items-end gap-3">

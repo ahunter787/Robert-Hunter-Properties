@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Delete {{ property.name }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-lg">
+    <div class="rhp-card">
+      <p class="rhp-eyebrow">Confirm deletion</p>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight">Delete {{ property.name }}?</h1>
+      <p class="mt-3 text-sm leading-relaxed text-ink-muted">
+        This permanently removes the property and its address from RHP. It cannot be undone.
+      </p>
+      {% if unit_total %}
+        <div class="rhp-alert mt-4 border-danger/30 bg-danger/5 text-danger" role="alert">
+          This property still has {{ unit_total }} unit{{ unit_total|pluralize }}. Delete or move those
+          units first, or take the property out of service instead.
+        </div>
+      {% endif %}
+
+      <form method="post" class="mt-6 flex flex-wrap items-center gap-3">
+        {% csrf_token %}
+        <button type="submit" class="rhp-btn rhp-btn-primary">Delete property</button>
+        <a href="{% url 'portfolio:property-detail' property.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

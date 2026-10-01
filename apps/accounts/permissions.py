@@ -18,7 +18,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
 
-from apps.accounts.models import ADMIN_ROLES, STAFF_ROLES, Role
+from apps.accounts.models import ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, Role
 
 DENIED_MESSAGE = "Your account does not have access to that area."
 
@@ -50,8 +50,14 @@ class StaffRequiredMixin(RoleRequiredMixin):
     allowed_roles = STAFF_ROLES
 
 
+class ManagerRequiredMixin(RoleRequiredMixin):
+    """Portfolio work: MANAGER, ADMIN, and SUPERADMIN (the spec's manager scope)."""
+
+    allowed_roles = MANAGER_ROLES
+
+
 class AdminRequiredMixin(RoleRequiredMixin):
-    """Account administration: ADMIN and SUPERADMIN only."""
+    """Account administration and destructive operations: ADMIN and above."""
 
     allowed_roles = ADMIN_ROLES
 
