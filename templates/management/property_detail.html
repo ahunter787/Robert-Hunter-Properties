@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load rhp_format %}
 
 {% block title %}{{ property.name }} — RHP{% endblock %}
 
@@ -144,10 +145,49 @@
     </section>
 
     <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Occupants and active leases</h2>
+      {% if occupancy %}
+        <div class="mt-4 overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Current leases at {{ property.name }}</caption>
+            <thead class="text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th scope="col" class="py-2 pr-4">Unit</th>
+                <th scope="col" class="py-2 pr-4">Tenants</th>
+                <th scope="col" class="py-2 pr-4">Term</th>
+                <th scope="col" class="py-2 pr-4">Rent</th>
+                <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-muted">
+              {% for row in occupancy %}
+                <tr>
+                  <td class="py-3 pr-4 font-medium">{{ row.unit.identifier }}</td>
+                  <td class="py-3 pr-4">{{ row.lease.tenant_names }}</td>
+                  <td class="py-3 pr-4 text-ink-muted">{{ row.lease.start_date }} → {{ row.lease.end_date }}</td>
+                  <td class="py-3 pr-4">{{ row.lease.monthly_rent|money }}</td>
+                  <td class="py-3 text-right">
+                    <a href="{% url 'leases:lease-detail' row.lease.pk %}"
+                       class="font-medium text-primary underline-offset-2 hover:underline">Open lease</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="mt-2 text-sm text-ink-muted">
+          No active leases at this property
+          {% if unit_active %}— {{ unit_active }} unit{{ unit_active|pluralize }} in service{% endif %}.
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="rhp-card">
       <h2 class="text-sm font-semibold">Not tracked here yet</h2>
       <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-        Occupants and active leases arrive with Phase 3, documents with Phase 6, and maintenance with
-        Phase 7. Nothing is shown until it is real.
+        Documents arrive with Phase 6 and maintenance history with Phase 7. Nothing is shown until it
+        is real.
       </p>
     </section>
   </div>

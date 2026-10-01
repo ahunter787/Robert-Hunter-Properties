@@ -18,6 +18,8 @@ urlpatterns = [
     path("account/", include("apps.accounts.urls")),
     path("manage/", include("apps.accounts.urls_management")),
     path("manage/", include("apps.properties.urls_management")),
+    path("manage/", include("apps.leases.urls_management")),
+    path("lease/", include("apps.leases.urls_tenant")),
     path("admin/", admin.site.urls),
 ]
 

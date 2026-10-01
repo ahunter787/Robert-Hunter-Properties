@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Your lease — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    {% if lease %}
+      <section class="rhp-card">
+        <p class="rhp-eyebrow">Your lease</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.display_name }}</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          - {{ lease.unit.property.name }} · {{ lease.unit.property.address_line }}
+        </p>
+
+        {% if not lease_is_current %}
+          <div class="rhp-alert mt-4 border-warning/30 bg-warning/5 text-warning" role="status">
+            This lease ended on {{ lease.end_date }}. If that is not right, contact Robert Hunter
+            Properties.
+          </div>
+        {% endif %}
+
+        <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt class="text-ink-muted">Lease term</dt>
+            <dd class="font-medium">{{ lease.start_date }} — {{ lease.end_date }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-muted">Monthly rent</dt>
+            <dd class="font-medium">{{ lease.monthly_rent|money }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-muted">Due</dt>
+            <dd class="font-medium">{{ lease.due_day_label }}</dd>
+          </div>
+          <div>
+            <dt class="text-ink-muted">Security deposit</dt>
+            <dd class="font-medium">{{ lease.deposit|money }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Tenants on this lease</h2>
+        <ul class="mt-3 space-y-2 text-sm">
+          {% for link in lease.lease_tenants.all %}
+            <li class="flex flex-wrap items-center gap-2">
+              <span class="font-medium">{{ link.tenant.display_name }}</span>
+              {% if link.is_primary %}
+                <span class="rounded bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Primary contact</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="rhp-card">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-sm font-semibold">Documents</h2>
+          {% if lease.lease_file %}
+            <a href="{% url 'tenancy:document' %}" target="_blank" rel="noopener"
+               class="rhp-btn rhp-btn-secondary">View your lease</a>
+          {% endif %}
+        </div>
+        {% if not lease.lease_file %}
+          <p class="mt-2 text-sm text-ink-muted">
+            No document has been shared with you yet.
+          </p>
+        {% endif %}
+      </section>
+
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Payments</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          Your balance and payment history arrive with Phase 4. Until then, RHP will contact you about
+          rent the way it always has.
+        </p>
+      </section>
+    {% else %}
+      <section class="rhp-card">
+        <p class="rhp-eyebrow">Your lease</p>
+        <h1 class="mt-1 text-xl font-semibold tracking-tight">No lease yet</h1>
+        <p class="mt-3 text-sm leading-relaxed text-ink-muted">
+          There is no lease attached to your account at the moment. When Robert Hunter Properties sets
+          one up, this page will show your unit, the term, the rent, and your lease document.
+        </p>
+        <p class="mt-3 text-sm leading-relaxed text-ink-muted">
+          Expecting to see something here? Please contact Robert Hunter Properties.
+        </p>
+        <a href="{% url 'accounts:profile' %}" class="rhp-btn rhp-btn-secondary mt-6">Your account</a>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

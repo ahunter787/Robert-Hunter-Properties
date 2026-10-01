@@ -160,3 +160,37 @@ class Unit(models.Model):
     @cached_property
     def is_commercial(self) -> bool:
         return self.unit_type == UnitType.COMMERCIAL
+
+    # --- Occupancy --------------------------------------------------------
+    # The definition lives in apps.leases (LeaseQuerySet.current): a unit is
+    # occupied while an active lease's term covers today. These helpers read that
+    # through the reverse relation, so there is one definition and no import
+    # cycle between the two apps.
+
+    @cached_property
+    def current_lease(self):
+        """The lease occupying this unit today, if any."""
+        return self.leases.current().first()
+
+    @cached_property
+    def occupants(self):
+        """The people on the current lease. Prefetch ``lease_tenants__tenant``."""
+        lease = self.current_lease
+        if lease is None:
+            return []
+        return [link.tenant for link in lease.lease_tenants.select_related("tenant")]
+
+    @cached_property
+    def is_vacant(self) -> bool:
+        """In service, with nobody currently on a lease."""
+        return self.is_active and self.current_lease is None
+
+    @cached_property
+    def is_occupied(self) -> bool:
+        """In service, with a current tenancy.
+
+        A unit that is out of service is a third state: its tenancy stays in the
+        records (see ``current_lease``), but it counts as neither occupied nor
+        vacant, because it cannot be let.
+        """
+        return self.is_active and self.current_lease is not None

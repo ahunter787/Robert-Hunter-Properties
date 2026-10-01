@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load rhp_format %}
 
 {% block title %}{{ unit.display_name }} - {{ unit.property.name }} — RHP{% endblock %}
 
@@ -73,10 +74,55 @@
     </section>
 
     <section class="rhp-card">
-      <h2 class="text-sm font-semibold">Tenancy</h2>
-      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-        The current tenant, the active lease, and the rent amount arrive with Phase 3 — vacancy can
-        only be decided once leases exist. Recent maintenance arrives with Phase 7.
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Tenancy</h2>
+        {% if not unit.is_active %}
+          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Out of service</span>
+        {% elif unit.is_vacant %}
+          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Vacant</span>
+        {% else %}
+          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Occupied</span>
+        {% endif %}
+      </div>
+
+      {% with lease=unit.current_lease %}
+        {% if lease %}
+          <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+            <div>
+              <dt class="text-ink-muted">Current tenant{{ unit.occupants|length|pluralize }}</dt>
+              <dd class="font-medium">
+                {% for tenant in unit.occupants %}{{ tenant.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-ink-muted">Lease term</dt>
+              <dd class="font-medium">{{ lease.start_date }} → {{ lease.end_date }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-muted">Rent</dt>
+              <dd class="font-medium">{{ lease.monthly_rent|money }}/month, due {{ lease.due_day_label }}</dd>
+            </div>
+            <div>
+              <dt class="text-ink-muted">Deposit</dt>
+              <dd class="font-medium">{{ lease.deposit|money }}</dd>
+            </div>
+          </dl>
+          <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">Open the lease</a>
+        {% else %}
+          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+            Nobody is on a lease here right now.
+            {% if unit.is_active %}
+              <a href="{% url 'leases:lease-create' %}?unit={{ unit.pk }}"
+                 class="font-medium text-primary underline-offset-2 hover:underline">Start a lease</a>.
+            {% else %}
+              This unit is out of service.
+            {% endif %}
+          </p>
+        {% endif %}
+      {% endwith %}
+
+      <p class="rhp-help mt-4">
+        Rent charges and balances arrive with Phase 4; recent maintenance with Phase 7.
       </p>
     </section>
   </div>

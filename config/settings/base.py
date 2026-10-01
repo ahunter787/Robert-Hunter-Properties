@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     # `accounts` exists in Phase 0 only to fix AUTH_USER_MODEL early (ADR-002).
     "apps.accounts",
     "apps.properties",
+    "apps.leases",
 ]
 
 MIDDLEWARE = [
@@ -59,6 +60,11 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
             ],
+            "libraries": {
+                # apps/common is a plain package rather than an installed app, so
+                # its shared template filters are registered by path.
+                "rhp_format": "apps.common.templatetags.rhp_format",
+            },
         },
     },
 ]

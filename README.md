@@ -9,10 +9,11 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 2 (portfolio) — in review.** RHP models the properties and units it manages,
-alongside Phase 1's identity layer: staff and tenants sign in, tenants are created by staff and invited,
-roles gate every route server-side, and the portfolio can be created, edited, and taken out of service.
-Properties carry a map pin and a banner photo; units are residential or commercial. Leases, the rent
+**Current status: Phase 3 (leases) — in review.** RHP models the properties and units it manages and now
+the tenancies inside them: staff and tenants sign in, tenants are created by staff and invited, roles gate
+every route server-side, the portfolio can be created, edited, and taken out of service, and a lease ties
+a unit to its tenants with a term, rent, deposit and due day. Properties carry a map pin and a banner
+photo; units are residential or commercial; tenants can read their own lease and its document. The rent
 ledger, documents, and maintenance are still to come
 ([`docs/roadmap.md`](docs/roadmap.md)).
 
@@ -22,18 +23,20 @@ ledger, documents, and maintenance are still to come
 | --- | --- |
 | `SUPERADMIN` | everything, including role changes and deletion |
 | `ADMIN` | management area, tenant account administration, deletion |
-| `MANAGER` | management area, the portfolio (properties and units), and reading tenant records |
+| `MANAGER` | management area, the portfolio (properties and units), the lease desk, and reading tenant records |
 | `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
-| `TENANT` | their own account and contact details |
+| `TENANT` | their own account, contact details, and their own lease |
 
 | URL | What it is |
 | --- | --- |
 | `/account/login/` | sign-in for tenants and staff (rate limited) |
 | `/account/profile/` | the account page: details, contact information, password change |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
-| `/manage/` | staff landing page with portfolio counters |
+| `/manage/` | staff landing page with portfolio and occupancy counters |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
+| `/manage/leases/` | the lease desk: create, edit, activate, end, and attach the signed lease; deleting a draft is admin-only |
 | `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
+| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants and their document |
 | `/admin/` | Django back office for superusers |
 
 Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
@@ -47,6 +50,13 @@ A property can hold a **map pin** (paste a Google Maps link — full or shortene
 `45.5231, -122.6765` on the edit form) and a **banner photo** (JPEG/PNG/WebP, up to `RHP_MAX_UPLOAD_MB`).
 The map is a keyless Google embed unless `GOOGLE_MAPS_EMBED_API_KEY` is set; only a shortened link is
 sent to Google for expansion (`RHP_RESOLVE_MAP_SHORT_LINKS=0` disables that).
+
+A **lease** ties a unit to the people renting it: its term, monthly rent, deposit, rent due day, one
+primary contact among its tenants, and the signed lease as a PDF or a scan. A unit can have only **one
+active lease** — a database constraint, not a form rule — and a lease moves *draft* → *active* → *ended*
+by explicit action, never because a date passed. Ended leases are read-only history; only a draft can be
+deleted, and only by an admin. Tenants read their own lease at `/lease/`, whose document URL carries no
+id and is served through a permission-checked view.
 
 ## Stack
 
@@ -128,10 +138,11 @@ history stays on GitHub until then. The full contract for contributors and agent
 config/          settings (base/development/production), urls, views, wsgi/asgi
 apps/accounts/   identity: user + roles, tenant profile, invitations, throttling
 apps/properties/ portfolio: properties and units (Phase 2)
-apps/common/     shared building blocks (form styling)
-templates/       account/, management/, components/, error pages, base layout
+apps/leases/     lease desk and the tenant's own lease (Phase 3)
+apps/common/     shared building blocks (form styling, date formatting, filters)
+templates/       account/, management/, tenancy/, components/, error pages, base layout
 assets/css/      Tailwind entry point (built into static/css/rhp.css)
-tests/           pytest suite (tests/accounts/, tests/properties/)
+tests/           pytest suite (tests/accounts/, tests/properties/, tests/leases/)
 docs/            architecture, database, deployment, security, roadmap, ADRs, harness spec
 docker/          entrypoint and container healthcheck
 ```

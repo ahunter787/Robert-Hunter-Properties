@@ -76,11 +76,10 @@ Acceptance criteria from the specification, each proven by tests in `tests/accou
 Also verified: role changes require a superadmin, invitations and resets are single-use, password
 reset never reveals whether an address exists, and a deactivated account cannot sign in.
 
-## Phase 2 — Property and tenant management (in review: owner testing)
+## Phase 2 — Property and tenant management (complete)
 
-**Status note:** the implementation is complete and tested, but the phase is not signed off. It returns
-to "complete" once the owner has exercised it. Work continues on the `rhp-2` branch until then; `main`
-keeps the squashed Phase 2 commit and is not updated again until the review finishes.
+Folded into `main` as a single commit after owner testing, and the `rhp-2` branch was deleted. The
+build on the branch remains visible in the repository history.
 
 Delivered: the portfolio — properties and their units — with staff screens for listing, creating,
 editing, and taking records out of service; admin-only deletion behind a confirmation page; a
@@ -111,16 +110,35 @@ Deferred on purpose, each labelled in the UI rather than faked (ADR-005):
 
 | Panel or counter the spec lists | Arrives with |
 | --- | --- |
-| Occupied / vacant units, current tenant, active lease, rent amount | Phase 3 (leases) |
 | Property maintenance summary, unit recent maintenance | Phase 7 (maintenance) |
 | Property documents | Phase 6 (documents) |
 | Open maintenance requests counter | Phase 7 |
 | Full admin dashboard | Phase 9 |
 
-## Phase 3 — Lease management
+## Phase 3 — Lease management (in review: owner testing)
 
-Lease creation and editing with draft/active/ended states, multiple tenants per lease, rent amount,
-deposit, rent due day, dates, and lease document attachment. No electronic signatures yet.
+**Status note:** implemented and tested on the `rhp-3` branch, not yet signed off. `main` is not updated
+until the owner has exercised it; the branch is squashed into one commit on `main` afterwards.
+
+Delivered: the lease desk — leases created and edited by managers and admins, moving *draft* → *active* →
+*ended* under explicit actions; one or more tenants per lease with exactly one primary contact; monthly
+rent, deposit and rent due day; the lease term; a signed-lease document; and the tenant-facing `/lease/`
+page showing their unit, term, rent, deposit, co-tenants and document. The Phase 2 property and unit
+panels and the occupied/vacant counters are now filled from leases rather than labelled as missing.
+
+Acceptance criteria from the specification:
+
+- [x] A unit cannot be let twice: `one_active_lease_per_unit` is a database constraint, not a form rule
+- [x] A lease is ended by a person, never by the calendar; ended leases are read-only history
+- [x] Co-tenants are supported with exactly one primary contact (`UniqueConstraint` per lease)
+- [x] A tenant sees their own lease and document, and nothing else: the tenant document URL carries no id
+- [x] Documents are never served by the proxy; both document views check permissions first
+
+Decisions are recorded in [ADR-007](decisions/ADR-007-lease-modelling.md) (lease modelling: one active
+lease per unit, explicit status, frozen unit, co-tenants, one document, one occupancy definition).
+
+Deliberately not built here: balances, charges and payments (Phase 4), the full tenant dashboard
+(Phase 5), the documents area (Phase 6), electronic signatures (not in the specification).
 
 ## Phase 4 — Rent ledger
 

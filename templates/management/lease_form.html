@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{% if object %}Edit lease — {{ object.unit.label }}{% else %}New lease{% endif %} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">Leasing</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">
+        {% if object %}Edit lease{% else %}New lease{% endif %}
+      </h1>
+      {% if object %}
+        <p class="mt-2 text-sm text-ink-muted">
+          - <a href="{% url 'portfolio:unit-detail' object.unit.pk %}"
+               class="font-medium text-primary underline-offset-2 hover:underline">{{ object.unit.label }}</a>
+        </p>
+      {% else %}
+        <p class="mt-2 text-sm text-ink-muted">
+          A lease starts as a draft. Activate it once the paperwork is signed.
+        </p>
+      {% endif %}
+    </div>
+
+    <div class="rhp-card">
+      {# multipart: the lease document is uploaded here #}
+      <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+
+        <fieldset class="mt-8 border-t border-surface-muted pt-6">
+          <legend class="rhp-label">Tenants on this lease</legend>
+          <p class="rhp-help mb-4">
+            One tenant is usually the primary contact. A lease needs at least one tenant before it
+            can be activated.
+          </p>
+          {{ formset.management_form }}
+
+          {% if formset.non_form_errors %}
+            <div class="rhp-alert mb-4 border-danger/30 bg-danger/5 text-danger" role="alert">
+              {% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="space-y-4">
+            {% for tenant_form in formset %}
+              <div class="rounded-card border border-surface-muted bg-surface p-4">
+                {% include "components/form.html" with form=tenant_form %}
+              </div>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">
+            {% if object %}Save changes{% else %}Create draft lease{% endif %}
+          </button>
+          <a href="{% if object %}{% url 'leases:lease-detail' object.pk %}{% else %}{% url 'leases:lease-list' %}{% endif %}"
+             class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

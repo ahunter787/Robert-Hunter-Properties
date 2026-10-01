@@ -62,6 +62,12 @@ class AdminRequiredMixin(RoleRequiredMixin):
     allowed_roles = ADMIN_ROLES
 
 
+class TenantRequiredMixin(RoleRequiredMixin):
+    """The tenant area: tenants only. Staff use the management screens instead."""
+
+    allowed_roles = frozenset({Role.TENANT})
+
+
 class SuperadminRequiredMixin(RoleRequiredMixin):
     """Role changes and other privileged operations."""
 

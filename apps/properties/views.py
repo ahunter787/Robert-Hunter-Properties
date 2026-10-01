@@ -99,6 +99,13 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         context["units"] = units
         context["unit_total"] = len(units)
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
+        # Units that are currently under an active lease. Reading this per unit
+        # costs one query each; the occupancy rule itself lives in apps.leases.
+        context["occupancy"] = [
+            {"unit": unit, "lease": unit.current_lease}
+            for unit in units
+            if unit.current_lease is not None
+        ]
         if self.object.has_map_pin:
             context["map_embed_url"] = embed_url(
                 self.object.latitude,

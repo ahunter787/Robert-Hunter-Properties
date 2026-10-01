@@ -34,6 +34,7 @@ from apps.accounts.permissions import (
 )
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
+from apps.leases.models import Lease, LeaseStatus
 from apps.properties.models import Property, Unit
 
 logger = logging.getLogger("apps.accounts")
@@ -176,6 +177,16 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
             context["tenant_active_count"] = User.objects.filter(
                 role=Role.TENANT, is_active=True
             ).count()
+
+            # Occupancy comes from the lease definition, never from a stored flag:
+            # a unit is occupied while an active lease's term covers today.
+            occupied_unit_ids = Lease.objects.current().values("unit_id")
+            in_service = Unit.objects.active()
+            context["unit_occupied_count"] = in_service.filter(pk__in=occupied_unit_ids).count()
+            context["unit_vacant_count"] = in_service.exclude(pk__in=occupied_unit_ids).count()
+            context["lease_active_count"] = Lease.objects.active().count()
+            context["lease_draft_count"] = Lease.objects.filter(status=LeaseStatus.DRAFT).count()
+            context["lease_expiring_count"] = Lease.objects.expiring_within(30).count()
 
         if user.is_admin_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()

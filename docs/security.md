@@ -47,24 +47,32 @@ Externally exposed resources that a tenant could enumerate (documents, maintenan
 attachments, lease files) use `UUIDField` primary keys or a random slug. Sequential integer ids stay
 internal. Authorization is enforced regardless — unguessable ids are defence in depth, not the control.
 
+The tenant lease document is the strongest form of this: its URL is `/lease/document/` with **no id at
+all**, so there is nothing to enumerate and the view can only ever return the document of the one lease
+the caller is on.
+
 ## Uploads
 
-In force since Phase 2's banner photos; the general document work arrives in Phase 6 and maintenance
-photos in Phase 7:
+In force since Phase 2's banner photos, extended in Phase 3 by lease documents; the general document
+work arrives in Phase 6 and maintenance photos in Phase 7:
 
 - Allow-list extensions and content types; reject everything else. Banners accept JPEG, PNG, and WebP
-  only — SVG is refused because it can carry script.
+  only — SVG is refused because it can carry script. Lease documents accept PDF, JPEG, and PNG.
 - Enforce a maximum size at the form (`RHP_MAX_UPLOAD_MB`, default 5), plus a maximum pixel dimension;
   the reverse-proxy body limit is Phase 12.
-- Store under a randomized filename (`property_banners/<uuid>.<ext>`); never reuse the client-supplied
-  name on disk.
+- Store under a randomized filename (`property_banners/<uuid>.<ext>`, `lease_documents/<uuid><ext>`);
+  never reuse the client-supplied name on disk.
 - Never execute uploaded content; never serve it with a content type that browsers execute.
 - **Every download is permission-checked.** Uploaded files are never reachable through a static file
   handler or the reverse proxy, and `MEDIA_URL` is only wired up in development. Banners are served by
-  `PropertyBannerView`, which checks the role first (ADR-006).
+  `PropertyBannerView`, lease documents by `LeaseDocumentView` (staff) and `TenantLeaseDocumentView`
+  (the tenant on that lease); each checks its permission first (ADR-006, ADR-007).
+- Downloads carry `Cache-Control: private` and `X-Content-Type-Options: nosniff`, so a shared cache
+  never holds a tenant document and a browser never sniffs one into a different type.
 - Keep uploaded files outside the web root (`media_data` volume, mounted privately).
-- Replacing or removing an image deletes the stored file, and deleting a property deletes its banner,
-  so uploads do not accumulate as orphans.
+- Replacing or removing an image deletes the stored file, and deleting a property deletes its banner;
+  replacing a lease document, or deleting its lease, deletes the old file, so uploads do not accumulate
+  as orphans.
 
 ## Maps and third-party requests
 
@@ -187,6 +195,12 @@ running container. `python manage.py check --deploy` runs in CI.
 - Internal notes are never visible to tenants.
 - Balance calculations, partial payments, reversals, and overdue determination (Phase 4).
 - Uploads reject disallowed types and oversize files (Phase 6/7).
+
+Phases 1–3 satisfy the first four: the tests live in `tests/accounts/`, `tests/properties/` and
+`tests/leases/`. The lease suite asserts the role matrix route by route (403 for the wrong area, 302 to
+sign-in when anonymous), that a tenant who is not on a lease gets 404 from the tenant area, that the
+tenant document URL carries no id, and that an ended lease refuses a direct POST as well as hiding the
+form.
 
 ## Reporting a problem
 

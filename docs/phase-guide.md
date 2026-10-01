@@ -31,8 +31,8 @@ Two companion documents:
 | 0 | Foundation | Complete | Run RHP anywhere, deploy it, check its health |
 | 1 | Identity and access | Complete | Staff and tenants sign in; tenants are invited; roles decide what each person sees |
 | 2 | Portfolio | Complete | Record properties and units, photograph them, pin them on a map |
-| 3 | Lease management | **Next** | — |
-| 4 | Rent ledger | Not started | — |
+| 3 | Lease management | **In review** | Put a tenant on a lease, activate it, and read it as that tenant |
+| 4 | Rent ledger | Next | — |
 | 5 | Tenant dashboard | Not started | — |
 | 6 | Document management | Not started | — |
 | 7 | Maintenance | Not started | — |
@@ -132,8 +132,8 @@ its history; see how many properties, units and tenants there are.
 (Phase 6); maintenance history (Phase 7). The property page says so on screen, in a "Not tracked here
 yet" panel.
 
-**What later phases will change here:** **Phase 3** fills the two panels Phase 2 left labelled —
-"occupants and active leases" on a property and the "Tenancy" panel on a unit — and turns the occupancy
+**What later phases will change here:** **Phase 3** has now filled the two panels Phase 2 left labelled —
+"occupants and active leases" on a property and the "Tenancy" panel on a unit — and switched the occupancy
 counters on. **Phase 6** takes over document handling and will also give banners thumbnails and
 resizing, and will move the single lease file into the documents table. **Phase 9** replaces the
 counters with the real dashboard. **Phase 10** reports on the portfolio (rent roll, occupancy).
@@ -145,37 +145,59 @@ and look at the map and banner; try to delete a building that has units and read
 
 ---
 
-## Phase 3 — Lease management (next)
+## Phase 3 — Lease management (in review: your testing)
 
 **In one sentence:** the lease is the record that connects a unit to the people renting it — and it is
 where the tenant portal begins.
 
-**What it will deliver:** leases created and edited by staff, moving through *draft* → *active* →
-*ended*; one or more tenants on a lease with one flagged as the primary contact; monthly rent, deposit,
-and rent due day; the lease term; one lease document; a tenant-facing lease page showing their unit,
-term, rent, deposit, co-tenants and document; and the Phase 2 panels and counters filled in.
+**What exists now:** a lease desk at `/manage/leases/` where a manager or admin creates a lease against a
+unit, adds one or more tenants and marks one as the primary contact, records the term, monthly rent,
+deposit and rent due day, attaches the signed lease as a PDF or a scan, and moves the lease through
+*draft* → *active* → *ended*; a property page that shows which units are let and to whom; a unit page
+whose "Tenancy" panel is real; occupied/vacant counters on the staff landing page; and a tenant page at
+`/lease/` showing that tenant's unit, term, rent, deposit, co-tenants and their copy of the document.
 
-**Design decisions already taken** (all cheap to change if you disagree):
+**What you can do today:** write a lease and keep it as a draft while the details are settled; activate
+it when the tenant takes the keys; correct the rent or dates while it is a draft, and the rent on an
+active lease; end a lease when the tenancy finishes; see at a glance which units are occupied, which are
+vacant, and which leases run out within the next 30 days; sign in as a tenant and read your own lease.
 
-- A unit can only have **one active lease at a time** — the database enforces it, so a unit cannot
-  accidentally be let twice. Drafts are unlimited.
-- A lease is *ended* by staff, explicitly, rather than by a date passing. Ended leases stay available
-  forever and are read-only: history is not quietly rewritten.
-- Once a lease is active, its unit is fixed. Moving a live tenancy to another unit is not a typo.
-- One lease file for now. Phase 6 replaces it with the full documents area (categories, visibility,
-  multiple files), and will migrate what exists.
-- No electronic signatures.
+**Deliberate decisions worth knowing:**
 
-**What it will change from earlier phases:** fills the Phase 2 property and unit panels and the
-occupancy counters; adds the first tenant-facing destination (the tenant navigation gains *Lease*);
-reuses the Phase 1 roles, invitations and scoping rules unchanged.
+- **A unit can only have one active lease.** The database enforces it, so a unit cannot be let twice even
+  if two people click *Activate* at the same moment. Drafts are unlimited — several half-written leases
+  on one unit are normal.
+- **A lease is ended by a person, never by a date passing.** A lease whose end date has gone by shows as
+  "ending soon" and waits. That is deliberate: Phase 4 has to be able to bill a holdover month, and a
+  status that rewrites itself at midnight cannot be audited with a name against it.
+- **Ended leases are history.** They stay readable forever and cannot be edited — including by a direct
+  POST, not just by hiding the form. A correction is a new lease.
+- **Only a draft can be deleted, and only by an admin.** An active or ended lease is *ended* instead, so
+  the record of what was agreed survives.
+- **Once a lease is active its unit is fixed.** Moving a live tenancy to another unit is not a typo; end
+  the lease and start a new one. If someone edits the page to try it anyway, the desk says so.
+- **One primary contact per lease** — the person the office rings. It is not a statement about who owes
+  the rent; that is a money question and belongs with Phase 4.
+- **One document per lease for now.** Phase 6 replaces it with a proper documents area.
+- **A unit taken out of service is neither occupied nor vacant.** Its tenancy stays in the records, but
+  it is not counted as available to let.
 
-**What it deliberately will not do:** balances, payments, or a rent ledger (Phase 4); the full tenant
-dashboard (Phase 5); document management beyond the single lease file (Phase 6).
+**What it deliberately does not do:** no balances, charges or payments (Phase 4); no tenant dashboard
+(Phase 5); no documents area beyond the single lease file (Phase 6); no electronic signatures, and no
+automatic renewal, proration or late fees.
 
-**How you will check it:** create a lease for one of your units, attach a tenant, activate it; then sign
-in as that tenant and read the lease. Try to create a second active lease on the same unit and watch the
-database refuse it.
+**What later phases will change here:** **Phase 4** turns the stored rent and due day into a real ledger
+and implements the month-end rule for a due day of the 31st; lease status changes start being written to
+the audit table. **Phase 5** grows `/lease/` into the tenant dashboard with balances. **Phase 6** moves
+the single lease file into the documents table (categories, visibility, several files) and generalises
+the access rule. **Phase 9** and **Phase 10** report on occupancy and the rent roll. **Phase 12** puts
+the document access rule through the security test pass.
+
+**How to check it:** as a manager, go to `/manage/leases/` and create a lease for one of your units with
+a tenant and a term; save it as a draft, then activate it. Then try to create a second active lease on
+the same unit — the unit no longer appears in the picker, and the database would refuse it anyway. End
+the lease and notice that the edit page turns into a read-only record. Finally, sign in as that tenant
+and open `/lease/`.
 
 ---
 
@@ -349,6 +371,12 @@ Collected on purpose, so nothing is forgotten and nothing is decided by accident
   returned, deducted from) is a Phase 4 decision about the ledger.
 - **Correcting an ended lease** — ended leases are read-only today; a correction is made by an
   administrator. If that becomes frequent, a proper amendment flow belongs in the ledger phase.
+- **Renewing a lease** — Phase 3 has no "copy this lease forward" action, so a renewal is typed again
+  from scratch. Once real tenancies start rolling over, that will be the most common repetitive job on
+  the desk and worth its own small piece of work.
+- **Who is liable for the rent** — a lease records a primary *contact*, not a payer. If RHP needs
+  joint-and-several liability, split responsibility, or a guarantor, that is a decision for Phase 4 that
+  reaches back into the lease's tenant rows.
 - **Direct messaging** — announcements cover the real need; a chat system is a much bigger commitment
   and is explicitly deferred.
 - **Payment provider** — Phase 11 waits for your decision.

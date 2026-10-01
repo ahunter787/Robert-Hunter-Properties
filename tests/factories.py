@@ -4,13 +4,21 @@ Plain functions rather than a factory library: the shapes are simple, and a new
 dependency is not worth its weight here (see AGENTS.md).
 """
 
+import datetime as dt
+import itertools
 from decimal import Decimal
 
+from django.utils import timezone
+
 from apps.accounts.models import Role, TenantProfile, User
+from apps.leases.models import Lease, LeaseStatus, LeaseTenant
 from apps.properties.constants import UnitType
 from apps.properties.models import Property, Unit
 
 DEFAULT_PASSWORD = "unit-test-password-41"
+
+#: Keeps implicit property names distinct across a test.
+_PROPERTY_SEQUENCE = itertools.count(1)
 
 
 def make_user(
@@ -114,7 +122,9 @@ def make_unit(
     **fields,
 ) -> Unit:
     if for_property is None:
-        for_property = make_property()
+        # Property names are unique, so an implicit property needs a distinct one
+        # whenever a test builds several units.
+        for_property = make_property(name=f"Test Property {next(_PROPERTY_SEQUENCE)}")
     if unit_type == UnitType.COMMERCIAL:
         # A commercial unit cannot carry residential details; the form enforces
         # it, and the factory should not build a state the app refuses.
@@ -128,3 +138,38 @@ def make_unit(
         bathrooms=bathrooms,
         **fields,
     )
+
+
+# --- Leasing --------------------------------------------------------------
+
+
+def make_lease(
+    unit: Unit | None = None,
+    *,
+    tenants=(),
+    status: str = LeaseStatus.ACTIVE,
+    start_date=None,
+    end_date=None,
+    monthly_rent: Decimal = Decimal("1850.00"),
+    deposit: Decimal = Decimal("1850.00"),
+    rent_due_day: int = 1,
+    **fields,
+) -> Lease:
+    """A lease with sensible defaults. Pass ``tenants`` to attach them in order."""
+    if unit is None:
+        unit = make_unit()
+    start = start_date or timezone.localdate()
+    end = end_date or (start + dt.timedelta(days=365))
+    lease = Lease.objects.create(
+        unit=unit,
+        start_date=start,
+        end_date=end,
+        monthly_rent=monthly_rent,
+        deposit=deposit,
+        rent_due_day=rent_due_day,
+        status=status,
+        **fields,
+    )
+    for index, tenant in enumerate(tenants):
+        LeaseTenant.objects.create(lease=lease, tenant=tenant, is_primary=index == 0)
+    return lease

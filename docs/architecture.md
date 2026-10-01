@@ -111,13 +111,13 @@ may use a left navigation; the tenant portal keeps a short navigation
 while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permission mixin from
 `apps/accounts/permissions.py`; nothing relies on hidden navigation.
 
-| Role | `/manage/` | Portfolio | `/manage/accounts/` | Delete | Role changes | Tenant data |
-| --- | --- | --- | --- | --- | --- | --- |
-| `SUPERADMIN` | yes | yes | yes | yes | yes | all |
-| `ADMIN` | yes | yes | yes | yes | no | all |
-| `MANAGER` | yes | yes | read only | no (403) | no | all |
-| `MAINTENANCE` | yes | no (403) | no (403) | no | no | assigned work only (Phase 7) |
-| `TENANT` | no (403) | no (403) | no (403) | no | no | own tenancy only |
+| Role | `/manage/` | Portfolio | Leases | `/manage/accounts/` | Delete | Role changes | Tenant data |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `SUPERADMIN` | yes | yes | yes | yes | yes | yes | all |
+| `ADMIN` | yes | yes | yes | yes | yes | no | all |
+| `MANAGER` | yes | yes | yes | read only | no (403) | no | all |
+| `MAINTENANCE` | yes | no (403) | no (403) | no (403) | no | no | assigned work only (Phase 7) |
+| `TENANT` | no (403) | no (403) | own tenancy (`/lease/`) | no (403) | no | no | own tenancy only |
 
 | URL | Surface |
 | --- | --- |
@@ -132,12 +132,15 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/manage/properties/…` | portfolio: list, create, detail, edit, take out of service, delete (admin) |
 | `/manage/properties/<pk>/banner/` | the banner photo, served by a permission-checked view (never a public media path) |
 | `/manage/units/…` | units the same way, attached to a property |
+| `/manage/leases/…` | lease desk: list, create, detail, edit, activate/end (POST), delete a draft (admin) |
+| `/manage/leases/<pk>/document/` | the signed lease, served by a permission-checked view |
 | `/manage/accounts/…` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
+| `/lease/`, `/lease/document/` | the tenant's own lease and its document — tenant-only, scoped, and the document URL carries **no id** |
 | `/admin/` | Django back office (`is_staff` gate) |
 
-Two URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts,
-`portfolio` for the portfolio). One shared namespace would leave whichever module was included first
-unreachable through `reverse()`.
+Three URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts, `portfolio`
+for the portfolio, `leases` for the lease desk), and the tenant area has its own (`tenancy`). One shared
+namespace would leave whichever module was included first unreachable through `reverse()`.
 
 Denials are deliberate: an authenticated user in the wrong *area* gets **403**, while an individual
 record outside the caller's tenancy is resolved with `tenant_scope(...)` and returns **404**, so ids
@@ -151,11 +154,23 @@ cannot be probed.
 - **Timestamps are timezone-aware UTC**; rent due dates are plain dates.
 - **Logging** goes to stdout (console handler), level from `DJANGO_LOG_LEVEL`; no secrets or tenant
   PII in log messages.
+- **Derived facts are computed in one place.** Occupancy is defined once, by `LeaseQuerySet.current()`,
+  and every screen reads it; there is no stored occupancy column (ADR-007).
 - **Tests** exercise behaviour through the public HTTP surface and the ORM, against PostgreSQL.
 
-## Not in Phase 2
+## Not in Phase 3
 
-Leases and occupancy (3), the rent ledger (4), the tenant dashboard (5), documents (6), maintenance
-(7), communications (8), the full admin dashboard (9), reporting (10), payment integration (11),
-production hardening — MFA, monitoring, proxy-level rate limiting (12). Occupancy and vacancy are
-deliberately absent until leases exist rather than shown as zeroes (ADR-005).
+The rent ledger and balances (4), the tenant dashboard (5), documents (6), maintenance (7),
+communications (8), the full admin dashboard (9), reporting (10), payment integration (11), production
+hardening — MFA, monitoring, proxy-level rate limiting (12). Leases carry no electronic signature, and
+the single lease file is not yet a documents area.
+
+## What Phase 3 changed in earlier work
+
+Phase 2 left two panels labelled ("occupants and active leases" on a property, "Tenancy" on a unit) and
+one counter pair (occupied/vacant) deliberately switched off, rather than showing a zero that would have
+been a lie. Phase 3 filled them from the lease definition, and the property and unit screens now read
+`Unit.current_lease`, `occupants`, `is_vacant` and `is_occupied` (ADR-007). Nothing in Phase 1 or 2 was
+reshaped: roles, permissions, scoping and the portfolio model are used unchanged. Phase 3 added no new
+dependency — lease documents reuse the upload validation and permission-checked serving that Phase 2's
+banners established.

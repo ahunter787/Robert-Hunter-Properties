@@ -65,6 +65,23 @@ cannot drift away from the rows.
 media path — `MEDIA_URL` is only wired up in development. An image upload requires Pillow, which is why
 it is a runtime dependency (ADR-006).
 
+## Lease tables (Phase 3)
+
+| Table | Purpose | Notes |
+| --- | --- | --- |
+| `leases_lease` | one tenancy of one unit | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)` — `lease_ends_on_or_after_it_starts`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. `monthly_rent` and `deposit` are `Decimal(12,2)`; `rent_due_day` is 1–31; `lease_file` holds `lease_documents/<uuid><ext>` |
+| `leases_leasetenant` | the people on a lease | `UniqueConstraint(lease, tenant)` and `UniqueConstraint(lease, condition=is_primary=True)` — one primary contact per lease; `lease` is **`CASCADE`**, `tenant` is **`PROTECT`**, so a person with tenancy history cannot be deleted |
+
+**Occupancy is derived, never stored.** There is no `is_occupied` column: a unit is occupied while an
+active lease's term covers today, computed by `LeaseQuerySet.current()`. `Unit.current_lease`,
+`Unit.occupants`, `Unit.is_vacant` and `Unit.is_occupied` all read that one definition (ADR-007).
+A unit that is out of service is a third state — neither occupied nor vacant.
+
+**Uploads.** A lease document lives in `MEDIA_ROOT` (the `media_data` volume) under a randomised
+filename in `lease_documents/`, is validated for size and type, and is served only by a
+permission-checked view (`LeaseDocumentView` for staff, `TenantLeaseDocumentView` for the tenant on that
+lease). Replacing it, or deleting the lease, deletes the stored file.
+
 ## Modelling conventions
 
 These are binding for the phases that follow (Phases 2–11):
