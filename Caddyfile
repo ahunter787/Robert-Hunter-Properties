@@ -1,0 +1,27 @@
+# RHP reverse proxy (production stack only).
+#
+# Caddy terminates TLS and serves collected static files straight from the
+# shared `static_data` volume. Everything else goes to gunicorn.
+#
+# /media is intentionally NOT served here. Tenant documents must pass Django
+# permission checks (Phase 6) instead of being reachable by guessing a URL.
+{
+	email {$CADDY_EMAIL:admin@localhost}
+}
+
+# RHP_HOSTNAME (from .env) is the public hostname. The default keeps local
+# testing on plain HTTP; a real hostname gets automatic TLS.
+{$RHP_HOSTNAME:localhost} {
+	encode zstd gzip
+
+	@static path /static/*
+	handle @static {
+		root * /srv
+		file_server
+		header Cache-Control "public, max-age=86400"
+	}
+
+	handle {
+		reverse_proxy web:8000
+	}
+}

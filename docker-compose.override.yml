@@ -1,0 +1,19 @@
+# Development overrides. Docker Compose loads this automatically for
+# `docker compose up`, and ignores it whenever files are listed explicitly with
+# -f (which is how production runs).
+services:
+  db:
+    # Published so host-side tooling (pytest, psql) can reach the database.
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  web:
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+    # Live source edits, no rebuild.
+    volumes:
+      - .:/app
+      - media_data:/app/media
+    command: ["dev"]
+    ports:
+      - "8000:8000"

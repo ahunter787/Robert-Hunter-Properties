@@ -1,0 +1,41 @@
+# Production stack: same application image, hardened settings, Caddy in front.
+#
+#   make up-prod
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Secrets come from .env (never baked into the image). TLS terminates in Caddy,
+# which is why the forwarded-proto header is enabled for Django here.
+services:
+  web:
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECURE_PROXY_SSL_HEADER: "1"
+      DJANGO_SECURE_SSL_REDIRECT: "1"
+    command: ["web"]
+    volumes:
+      # Media stays on a private volume: it is served by permission-checked
+      # Django views (Phase 6), never by Caddy.
+      - media_data:/app/media
+      # Collected static files, read by Caddy.
+      - static_data:/app/staticfiles
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - static_data:/srv/static:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    depends_on:
+      web:
+        condition: service_started
+
+volumes:
+  caddy_data:
+  caddy_config:

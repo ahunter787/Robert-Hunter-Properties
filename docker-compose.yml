@@ -1,0 +1,49 @@
+# RHP base stack — the same services everywhere.
+#
+#   development : docker compose up            (adds docker-compose.override.yml)
+#   production  : docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Host port publishing, source bind mounts, and the debug settings live in the
+# override file; production hardening and Caddy live in docker-compose.prod.yml.
+# Keeping expose/ports out of this file is what lets production run without
+# publishing the app or the database directly.
+name: rhp
+
+x-database-environment: &database-environment
+  POSTGRES_DB: ${POSTGRES_DB:-rhp}
+  POSTGRES_USER: ${POSTGRES_USER:-rhp}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is not set - run "make env" first}
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment: *database-environment
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+    image: rhp-web:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  media_data:
+  static_data:
