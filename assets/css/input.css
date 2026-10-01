@@ -1,0 +1,121 @@
+/* RHP design system — Tailwind CSS v4 entry point.
+ *
+ * Built by `make assets` (or `npm run build:css`) into static/css/rhp.css,
+ * which is generated output and therefore gitignored. The Docker build runs
+ * this step in a Node stage so the runtime image stays Python-only.
+ *
+ * Design language (docs/architecture.md): professional property-management
+ * portal, not a SaaS marketing site. Warm neutral surfaces, charcoal text,
+ * restrained forest-green primary, muted gray structure, semantic status colors.
+ */
+
+@import "tailwindcss";
+
+/* Scan Django templates and Python for utility classes. */
+@source "../../templates";
+@source "../../apps";
+@source "../../config";
+
+@theme {
+  /* Surfaces and text */
+  --color-surface: #faf9f7; /* warm white page background */
+  --color-surface-muted: #ecebe6; /* muted gray surfaces and borders */
+  --color-ink: #23282c; /* charcoal text */
+  --color-ink-muted: #5d666e; /* secondary text */
+
+  /* Brand */
+  --color-primary: #1f3d33; /* restrained forest green */
+  --color-primary-hover: #2a5346;
+  --color-accent: #1e3a5f; /* deep navy, used sparingly */
+
+  /* Semantic status */
+  --color-success: #1c6b45;
+  --color-warning: #9a6607;
+  --color-danger: #9c231c;
+
+  /* Structure */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --radius-card: 0.75rem;
+}
+
+@layer base {
+  /* Comfortable defaults; the palette targets accessible contrast (WCAG AA). */
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    text-rendering: optimizeLegibility;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* --- Structure ------------------------------------------------------- */
+  .rhp-card {
+    @apply rounded-card border border-surface-muted bg-white p-5 shadow-sm sm:p-6;
+  }
+
+  .rhp-eyebrow {
+    @apply text-xs font-semibold uppercase tracking-widest text-ink-muted;
+  }
+
+  /* --- Navigation ------------------------------------------------------ */
+  .rhp-nav-link {
+    @apply inline-flex items-center rounded-card px-3 py-2 font-medium text-ink-muted hover:bg-surface-muted hover:text-ink;
+  }
+
+  .focus-ring {
+    @apply rounded-card;
+  }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* --- Buttons --------------------------------------------------------- */
+  .rhp-btn {
+    @apply inline-flex items-center justify-center rounded-card px-4 py-2 text-sm font-semibold transition-colors;
+  }
+
+  .rhp-btn-primary {
+    @apply bg-primary text-white hover:bg-primary-hover;
+  }
+
+  .rhp-btn-secondary {
+    @apply border border-surface-muted bg-white text-ink hover:bg-surface-muted;
+  }
+
+  /* --- Forms ----------------------------------------------------------- */
+  .rhp-field {
+    @apply block w-full rounded-card border border-surface-muted bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-muted/70;
+  }
+
+  .rhp-label {
+    @apply mb-1 block text-sm font-medium text-ink;
+  }
+
+  .rhp-help {
+    @apply mt-1 block text-xs text-ink-muted;
+  }
+
+  /* --- Messages -------------------------------------------------------- */
+  .rhp-alert {
+    @apply rounded-card border px-4 py-3 text-sm;
+  }
+
+  /* --- Accessibility --------------------------------------------------- */
+  .rhp-skip-link {
+    @apply absolute left-4 top-4 -translate-y-24 rounded-card bg-primary px-4 py-2 text-sm font-semibold text-white transition-transform;
+  }
+
+  .rhp-skip-link:focus {
+    @apply translate-y-0;
+  }
+}

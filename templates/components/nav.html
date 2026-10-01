@@ -1,0 +1,24 @@
+<header class="border-b border-surface-muted bg-white">
+  <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+    <a href="{% url 'home' %}" class="flex items-center gap-3 rounded-card focus-ring">
+      <span class="grid h-9 w-9 place-items-center rounded-card bg-primary text-sm font-semibold tracking-wide text-white">
+        RHP
+      </span>
+      <span class="leading-tight">
+        <span class="block text-sm font-semibold">Robert Hunter Properties</span>
+        <span class="block text-xs text-ink-muted">Tenant &amp; management portal</span>
+      </span>
+    </a>
+
+    <nav aria-label="Primary">
+      <ul class="flex items-center gap-1 text-sm">
+        <li>
+          <a href="{% url 'home' %}" class="rhp-nav-link">Home</a>
+        </li>
+        <li>
+          <a href="/admin/" class="rhp-nav-link">Staff sign-in</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

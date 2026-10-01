@@ -1,0 +1,9 @@
+<footer class="border-t border-surface-muted bg-white">
+  <div class="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-6 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+    <p>&copy; {% now "Y" %} Robert Hunter Properties. Self-hosted RHP portal.</p>
+    <p>
+      Service status:
+      <a href="{% url 'healthz' %}" class="font-medium text-primary underline-offset-2 hover:underline">/healthz</a>
+    </p>
+  </div>
+</footer>

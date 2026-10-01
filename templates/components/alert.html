@@ -1,0 +1,13 @@
+{% comment %}
+Reusable status message. Call with: {% include "components/alert.html" with level="error" body="..." %}
+Recognised levels map to the RHP semantic palette; anything unknown falls back to info.
+{% endcomment %}
+{% if level == "error" %}
+  <div class="rhp-alert border-danger/30 bg-danger/5 text-danger" role="alert">{{ body }}</div>
+{% elif level == "warning" %}
+  <div class="rhp-alert border-warning/30 bg-warning/5 text-warning" role="status">{{ body }}</div>
+{% elif level == "success" %}
+  <div class="rhp-alert border-success/30 bg-success/5 text-success" role="status">{{ body }}</div>
+{% else %}
+  <div class="rhp-alert border-accent/20 bg-accent/5 text-accent" role="status">{{ body }}</div>
+{% endif %}

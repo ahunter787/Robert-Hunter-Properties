@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}RHP — Robert Hunter Properties{% endblock %}
+
+{% block content %}
+  <section class="rhp-card">
+    <p class="rhp-eyebrow">Phase 0 · Foundation</p>
+    <h1 class="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+      The RHP portal is being built.
+    </h1>
+    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-ink-muted">
+      Robert Hunter Properties is moving its tenant and property management onto a
+      self-hosted portal: leases and documents, rent charges and balances, maintenance
+      requests, and announcements — for tenants and for the RHP team.
+    </p>
+    <p class="mt-3 max-w-2xl text-sm leading-relaxed text-ink-muted">
+      This deployment currently contains the foundation only: configuration, database,
+      container topology, health checks, and the design system. Tenant sign-in,
+      leases, and rent balances arrive in the phases listed in
+      <code class="rounded bg-surface-muted px-1 py-0.5 text-xs">docs/roadmap.md</code>.
+    </p>
+    <div class="mt-6 flex flex-wrap gap-3">
+      <a href="/admin/" class="rhp-btn rhp-btn-primary">Staff sign-in</a>
+      <a href="{% url 'healthz' %}" class="rhp-btn rhp-btn-secondary">Service status</a>
+    </div>
+  </section>
+
+  <section class="mt-6 grid gap-4 sm:grid-cols-2">
+    <article class="rhp-card">
+      <h2 class="text-sm font-semibold">What exists today</h2>
+      <ul class="mt-3 space-y-2 text-sm text-ink-muted">
+        <li>Django + PostgreSQL with split development/production settings</li>
+        <li>Docker Compose topology for a local VM and a cloud VPS</li>
+        <li>Health endpoint, structured logging, tests, and linting</li>
+        <li>RHP design system and responsive base layout</li>
+      </ul>
+    </article>
+
+    <article class="rhp-card">
+      <h2 class="text-sm font-semibold">Coming next</h2>
+      <ul class="mt-3 space-y-2 text-sm text-ink-muted">
+        <li>Phase 1 — accounts, roles, and secure sign-in</li>
+        <li>Phase 2 — properties, units, and tenants</li>
+        <li>Phase 3 — leases</li>
+        <li>Phase 4 — rent ledger and balances</li>
+      </ul>
+    </article>
+  </section>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% load static %}<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}RHP — Robert Hunter Properties{% endblock %}</title>
+    <meta name="description" content="{% block description %}Robert Hunter Properties tenant and management portal.{% endblock %}">
+    <link rel="stylesheet" href="{% static 'css/rhp.css' %}">
+  </head>
+  <body class="flex min-h-full flex-col bg-surface font-sans text-ink antialiased">
+    <a href="#main" class="rhp-skip-link">Skip to content</a>
+
+    {% include "components/nav.html" %}
+
+    <main id="main" class="mx-auto w-full max-w-5xl grow px-4 py-8 sm:px-6 lg:py-12">
+      {% if messages %}
+        <div class="mb-6 space-y-3">
+          {% for message in messages %}
+            {% include "components/alert.html" with level=message.tags body=message %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    {% include "components/footer.html" %}
+  </body>
+</html>

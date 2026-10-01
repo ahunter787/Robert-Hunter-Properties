@@ -1,0 +1,13 @@
+{
+  "name": "rhp-assets",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Build-time CSS pipeline for RHP. There is no JavaScript application; Tailwind runs only when producing static assets.",
+  "scripts": {
+    "build:css": "tailwindcss -i ./assets/css/input.css -o ./static/css/rhp.css --minify",
+    "watch:css": "tailwindcss -i ./assets/css/input.css -o ./static/css/rhp.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.3"
+  }
+}
