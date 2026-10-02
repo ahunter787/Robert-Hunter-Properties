@@ -82,4 +82,6 @@ def test_the_board_says_what_is_not_counted_yet(client):
     body = board(client, make_manager(username="honest-manager")).content.decode()
 
     assert "Not counted yet" in body
-    assert "Phase 4" in body
+    # Money is real from Phase 4 on; maintenance counters are still to come.
+    assert "Phase 7" in body
+    assert "Phase 4" not in body

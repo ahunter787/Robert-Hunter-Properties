@@ -1,4 +1,4 @@
-"""Portfolio model behaviour: constraints, protection, and the small helpers."""
+"""Portfolio model behavior: constraints, protection, and the small helpers."""
 
 from decimal import Decimal
 
@@ -72,16 +72,21 @@ def test_unit_label_puts_the_unit_first_and_the_property_second():
     assert unit.display_name == "4"
 
 
-def test_units_are_residential_unless_told_otherwise():
-    property_ = make_property()
+def under_a_commercial_property(unit) -> bool:
+    return unit.property.is_commercial and unit.bedrooms is None and unit.bathrooms is None
 
-    flat = make_unit(property_, identifier="Flat")
-    shop = make_unit(property_, identifier="Shop", unit_type="COMMERCIAL")
 
-    assert flat.unit_type == "RESIDENTIAL"
+def test_a_property_is_residential_unless_told_otherwise():
+    residential = make_property(name="Flats")
+    commercial = make_property(name="Shops", property_type="COMMERCIAL")
+
+    flat = make_unit(residential, identifier="Flat")
+    shop = make_unit(commercial, identifier="Shop")
+
+    assert residential.property_type == "RESIDENTIAL"
+    assert residential.is_residential is True and residential.is_commercial is False
     assert flat.is_commercial is False
-    assert shop.is_commercial is True
-    assert shop.bedrooms is None and shop.bathrooms is None
+    assert under_a_commercial_property(shop) is True
 
 
 def test_deleting_a_property_with_units_is_protected():

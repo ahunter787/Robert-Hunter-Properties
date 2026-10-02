@@ -104,7 +104,7 @@ class Lease(models.Model):
     class Meta:
         ordering = ("-start_date", "unit__property__name", "unit__identifier")
         constraints = [
-            # The rule that stops a unit being let twice.
+            # The rule that stops a unit being rented twice.
             models.UniqueConstraint(
                 fields=["unit"],
                 condition=models.Q(status=LeaseStatus.ACTIVE),

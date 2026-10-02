@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Ledger — {{ lease.unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">
+          <a href="{% url 'ledger:overview' %}" class="underline-offset-2 hover:underline">Accounting</a>
+          · <a href="{% url 'leases:lease-detail' lease.pk %}" class="underline-offset-2 hover:underline">Lease</a>
+        </p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.identifier }}</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          {{ lease.tenant_names }} · {{ lease.start_date }} → {{ lease.end_date }} ·
+          rent {{ lease.monthly_rent|money }}, due {{ lease.due_day_label }}
+        </p>
+      </div>
+      <div class="text-right">
+        {% if ledger.balance_due > 0 %}
+          <p class="rhp-eyebrow">Balance due</p>
+          <p class="mt-1 text-3xl font-semibold">{{ ledger.balance_due|money }}</p>
+          {% if ledger.is_overdue %}
+            <p class="mt-1 text-sm font-medium text-danger">{{ ledger.overdue_amount|money }} overdue</p>
+          {% endif %}
+        {% elif ledger.credit > 0 %}
+          <p class="rhp-eyebrow">In credit</p>
+          <p class="mt-1 text-3xl font-semibold text-success">{{ ledger.credit|money }}</p>
+        {% else %}
+          <p class="rhp-eyebrow">Balance</p>
+          <p class="mt-1 text-3xl font-semibold text-ink-muted">Settled</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if lease.status == "DRAFT" %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">No ledger yet</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          This lease is a draft, and a draft's terms can still change — so nothing is charged on it.
+          Activate the lease and its rent charges can be created.
+        </p>
+        <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">Back to the lease</a>
+      </section>
+    {% else %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Actions</h2>
+        <div class="mt-4 flex flex-wrap items-end gap-4">
+          <form method="post" action="{% url 'ledger:rent-charges' lease.pk %}"
+                class="flex flex-wrap items-center gap-3">
+            {% csrf_token %}
+            <button type="submit" class="rhp-btn rhp-btn-primary">Create rent charges</button>
+            <span class="text-sm text-ink-muted">
+              Fills in every missing month through {{ horizon }}. A month already charged is left alone.
+            </span>
+          </form>
+        </div>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <a href="{% url 'ledger:charge-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">Add a charge</a>
+          <a href="{% url 'ledger:payment-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">Record a payment</a>
+        </div>
+      </section>
+
+      <section class="rhp-card overflow-x-auto">
+        <h2 class="text-sm font-semibold">Charges</h2>
+        {% if ledger.charges %}
+          <table class="mt-4 w-full text-left text-sm">
+            <caption class="sr-only">Charges on this lease</caption>
+            <thead class="text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th scope="col" class="py-2 pr-4">Due</th>
+                <th scope="col" class="py-2 pr-4">Description</th>
+                <th scope="col" class="py-2 pr-4">Amount</th>
+                <th scope="col" class="py-2 pr-4">Settled</th>
+                <th scope="col" class="py-2 pr-4">Status</th>
+                <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-muted">
+              {% for line in ledger.charges %}
+                <tr>
+                  <td class="py-3 pr-4 text-ink-muted">{{ line.charge.due_date }}</td>
+                  <td class="py-3 pr-4">
+                    {{ line.charge.description }}
+                    {% if line.charge.reason %}
+                      <span class="block text-xs text-ink-muted">{{ line.charge.reason }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 pr-4 font-medium">
+                    {% if line.charge.is_reduction %}−{% endif %}{{ line.charge.amount|money }}
+                  </td>
+                  <td class="py-3 pr-4 text-ink-muted">{{ line.settled|money }}</td>
+                  <td class="py-3 pr-4">
+                    {% if line.state == "ADJUSTMENT" %}
+                      <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Adjustment</span>
+                    {% elif line.state == "PAID" %}
+                      <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Paid</span>
+                    {% elif line.state == "PENDING" %}
+                      <span class="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Payment pending</span>
+                    {% elif line.state == "OVERDUE" %}
+                      <span class="rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">Overdue</span>
+                    {% elif line.state == "PARTIAL" %}
+                      <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Partly paid</span>
+                    {% else %}
+                      <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Unpaid</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 text-right">
+                    {% if is_admin %}
+                      <a href="{% url 'ledger:charge-adjust' line.charge.pk %}"
+                         class="font-medium text-primary underline-offset-2 hover:underline">Adjust</a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="mt-2 text-sm text-ink-muted">Nothing has been charged on this lease yet.</p>
+        {% endif %}
+      </section>
+
+      <section class="rhp-card overflow-x-auto">
+        <h2 class="text-sm font-semibold">Payments</h2>
+        {% if ledger.payments %}
+          <table class="mt-4 w-full text-left text-sm">
+            <caption class="sr-only">Payments on this lease</caption>
+            <thead class="text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th scope="col" class="py-2 pr-4">Date</th>
+                <th scope="col" class="py-2 pr-4">Amount</th>
+                <th scope="col" class="py-2 pr-4">Method</th>
+                <th scope="col" class="py-2 pr-4">Reference</th>
+                <th scope="col" class="py-2 pr-4">Status</th>
+                <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-surface-muted">
+              {% for payment in ledger.payments %}
+                <tr>
+                  <td class="py-3 pr-4 text-ink-muted">{{ payment.payment_date }}</td>
+                  <td class="py-3 pr-4 font-medium">
+                    {% if payment.is_reversal %}−{% endif %}{{ payment.amount|money }}
+                  </td>
+                  <td class="py-3 pr-4">{{ payment.get_method_display }}</td>
+                  <td class="py-3 pr-4 text-ink-muted">{{ payment.external_reference|default:"—" }}</td>
+                  <td class="py-3 pr-4">
+                    {% if payment.pk in ledger.reversed_payment_ids %}
+                      <span class="rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">Reversed</span>
+                    {% elif payment.status == "VOID" %}
+                      <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Void</span>
+                    {% elif payment.status == "PENDING" %}
+                      <span class="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Pending</span>
+                    {% else %}
+                      <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Cleared</span>
+                    {% endif %}
+                  </td>
+                  <td class="py-3 text-right">
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                      {% if payment.status == "PENDING" and payment.kind == "RECEIVED" %}
+                        <form method="post" action="{% url 'ledger:payment-clear' payment.pk %}">
+                          {% csrf_token %}
+                          <button type="submit" class="font-medium text-primary underline-offset-2 hover:underline">
+                            Mark cleared
+                          </button>
+                        </form>
+                        <form method="post" action="{% url 'ledger:payment-void' payment.pk %}">
+                          {% csrf_token %}
+                          <button type="submit" class="font-medium text-ink-muted underline-offset-2 hover:underline">
+                            Void
+                          </button>
+                        </form>
+                      {% elif payment.kind == "RECEIVED" and payment.status == "CLEARED" and payment.pk not in ledger.reversed_payment_ids %}
+                        {% if is_admin %}
+                          <a href="{% url 'ledger:payment-reverse' payment.pk %}"
+                             class="font-medium text-primary underline-offset-2 hover:underline">Reverse</a>
+                        {% endif %}
+                      {% endif %}
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="mt-2 text-sm text-ink-muted">No payments have been recorded on this lease yet.</p>
+        {% endif %}
+      </section>
+
+      <div class="grid gap-6 lg:grid-cols-2">
+        <section class="rhp-card">
+          <h2 class="text-sm font-semibold">Recent activity</h2>
+          {% if ledger.activity %}
+            <ul class="mt-4 divide-y divide-surface-muted text-sm">
+              {% for row in ledger.activity|slice:":10" %}
+                <li class="flex items-center justify-between gap-4 py-2">
+                  <span>
+                    <span class="text-ink-muted">{{ row.date }}</span>
+                    <span class="ml-2">{{ row.label }}</span>
+                  </span>
+                  <span class="{% if row.amount > 0 %}text-ink{% else %}text-success{% endif %} font-medium">
+                    {% if row.amount > 0 %}+{% else %}−{% endif %}{{ row.amount|absolute|money }}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-2 text-sm text-ink-muted">Nothing has moved on this lease yet.</p>
+          {% endif %}
+        </section>
+
+        <section class="rhp-card">
+          <h2 class="text-sm font-semibold">History</h2>
+          <p class="mt-1 text-xs text-ink-muted">
+            Every change to this tenancy or its money, with who made it.
+          </p>
+          {% if history %}
+            <ul class="mt-4 space-y-3 text-sm">
+              {% for event in history %}
+                <li>
+                  <p>{{ event.summary }}</p>
+                  <p class="text-xs text-ink-muted">
+                    {{ event.created_at }} ·
+                    {% if event.actor %}{{ event.actor.display_name }}{% else %}the system{% endif %}
+                  </p>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-2 text-sm text-ink-muted">No recorded events yet.</p>
+          {% endif %}
+        </section>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

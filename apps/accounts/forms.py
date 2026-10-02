@@ -6,6 +6,7 @@ server-side validation messages stay in one place.
 """
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm
 from django.core.exceptions import ValidationError
 
@@ -15,6 +16,7 @@ from apps.common.forms import (  # noqa: F401 - re-exported for existing imports
     StyledForm,
     StyledModelForm,
 )
+from apps.common.images import validate_image_upload
 
 
 class StyledAuthenticationForm(StyledForm, AuthenticationForm):
@@ -79,6 +81,56 @@ class ProfileForm(StyledModelForm):
             "phone": "Phone number",
             "preferred_contact_method": "Preferred contact method",
         }
+
+
+class TenantProfileForm(StyledModelForm):
+    """The staff-side edit of a tenant's photo.
+
+    Contact details are the tenant's own to change on their account page; this
+    form exists so staff can put a face to a name, and deliberately edits nothing
+    else.
+    """
+
+    remove_photo = forms.BooleanField(
+        required=False,
+        label="Remove the current photo",
+        help_text="Uploading a new photo replaces the current one.",
+    )
+
+    class Meta:
+        model = TenantProfile
+        fields = ["photo"]
+        labels = {"photo": "Photo"}
+        help_texts = {"photo": "JPEG, PNG, or WebP."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not (self.instance.pk and self.instance.photo):
+            self.fields.pop("remove_photo")
+
+    def clean_photo(self):
+        return validate_image_upload(
+            self.cleaned_data.get("photo"),
+            max_bytes=settings.RHP_MAX_UPLOAD_MB * 1024 * 1024,
+        )
+
+    def clean(self):
+        cleaned = super().clean()
+        # Only a *fresh* upload conflicts with removal: on an edit form the field
+        # still holds the file already on disk, which is truthy.
+        if cleaned.get("remove_photo") and self.files.get("photo"):
+            self.add_error(
+                "remove_photo", "Keep the new photo, or tick this to remove the current one."
+            )
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data.get("remove_photo"):
+            instance.photo = None
+        if commit:
+            instance.save()
+        return instance
 
 
 class TenantCreateForm(StyledForm):

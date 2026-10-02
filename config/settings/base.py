@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.properties",
     "apps.leases",
+    "apps.ledger",
+    "apps.audit",
 ]
 
 MIDDLEWARE = [
@@ -124,6 +126,13 @@ RHP_RESOLVE_MAP_SHORT_LINKS = env.bool("RHP_RESOLVE_MAP_SHORT_LINKS", default=Tr
 # from the server — the browser loads the map.
 GOOGLE_MAPS_EMBED_API_KEY = env("GOOGLE_MAPS_EMBED_API_KEY", default="")
 
+# --- The rent ledger ------------------------------------------------------
+# How far beyond the current month "create rent charges" reaches, and how much
+# activity the lease pages show. Charging ahead is bounded by the lease's own end
+# date, and the same month is never charged twice.
+RHP_RENT_CHARGE_HORIZON_MONTHS = env.int("RHP_RENT_CHARGE_HORIZON_MONTHS", default=1)
+RHP_LEDGER_ACTIVITY_LIMIT = env.int("RHP_LEDGER_ACTIVITY_LIMIT", default=5)
+
 # --- Authentication -------------------------------------------------------
 LOGIN_URL = "/account/login/"
 # Name of the role-aware redirect view: staff land on the management area,
@@ -141,7 +150,7 @@ PASSWORD_RESET_TIMEOUT = env.int("RHP_LINK_TIMEOUT_DAYS", default=7) * 24 * 60 *
 RHP_LOGIN_MAX_ATTEMPTS = env.int("RHP_LOGIN_MAX_ATTEMPTS", default=5)
 RHP_LOGIN_WINDOW_MINUTES = env.int("RHP_LOGIN_WINDOW_MINUTES", default=15)
 RHP_LOGIN_LOCKOUT_MINUTES = env.int("RHP_LOGIN_LOCKOUT_MINUTES", default=15)
-# Honour X-Forwarded-For when deciding a client address. Enable only when a
+# Honor X-Forwarded-For when deciding a client address. Enable only when a
 # trusted proxy sets it (the production Compose stack does).
 RHP_TRUST_PROXY_HEADERS = env.bool("RHP_TRUST_PROXY_HEADERS", default=False)
 

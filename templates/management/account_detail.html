@@ -4,14 +4,20 @@
 
 {% block content %}
   <div class="mx-auto w-full max-w-3xl space-y-6">
-    <div>
-      <p class="rhp-eyebrow">People</p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ account.display_name }}</h1>
-      <p class="mt-2 text-sm text-ink-muted">
-        <a href="{% url 'manage:account-list' %}" class="font-medium text-primary underline-offset-2 hover:underline">
-          Back to tenant accounts
-        </a>
-      </p>
+    <div class="flex flex-wrap items-center gap-4">
+      {% if profile.photo %}
+        {% url 'manage:account-photo' account.pk as photo_url %}
+      {% endif %}
+      {% include "components/avatar.html" with photo_url=photo_url size="lg" %}
+      <div>
+        <p class="rhp-eyebrow">People</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ account.display_name }}</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          <a href="{% url 'manage:account-list' %}" class="font-medium text-primary underline-offset-2 hover:underline">
+            Back to tenant accounts
+          </a>
+        </p>
+      </div>
     </div>
 
     <section class="rhp-card">
@@ -67,6 +73,31 @@
         {% endif %}
       {% endwith %}
     </section>
+
+    {% if photo_form %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Photo</h2>
+        {% if user.is_admin_or_above %}
+          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+            A photo of the tenant, shown beside their name on this page and in the tenant list.
+          </p>
+          <form method="post" action="{% url 'manage:account-photo-update' account.pk %}"
+                enctype="multipart/form-data" class="mt-4 space-y-4" novalidate>
+            {% csrf_token %}
+            {% include "components/form.html" with form=photo_form %}
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="submit" class="rhp-btn rhp-btn-primary">
+                {% if account.tenant_profile.photo %}Replace photo{% else %}Add photo{% endif %}
+              </button>
+            </div>
+          </form>
+        {% else %}
+          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+            Only administrators can add or change a tenant's photo.
+          </p>
+        {% endif %}
+      </section>
+    {% endif %}
 
     <section class="rhp-card">
       <h2 class="text-sm font-semibold">Actions</h2>

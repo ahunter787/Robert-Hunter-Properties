@@ -45,7 +45,12 @@
           <tbody class="divide-y divide-surface-muted">
             {% for property in properties %}
               <tr>
-                <td class="py-3 pr-4 font-medium">{{ property.name }}</td>
+                <td class="py-3 pr-4">
+                  <span class="font-medium">{{ property.name }}</span>
+                  <span class="ml-2 rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
+                    {{ property.get_property_type_display }}
+                  </span>
+                </td>
                 <td class="py-3 pr-4 text-ink-muted">{{ property.address_line }}</td>
                 <td class="py-3 pr-4">{{ property.unit_active }} in service / {{ property.unit_total }} total</td>
                 <td class="py-3 pr-4">

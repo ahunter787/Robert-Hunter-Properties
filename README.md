@@ -9,42 +9,48 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 3 (leases) — in review.** RHP models the properties and units it manages and now
-the tenancies inside them: staff and tenants sign in, tenants are created by staff and invited, roles gate
-every route server-side, the portfolio can be created, edited, and taken out of service, and a lease ties
-a unit to its tenants with a term, rent, deposit and due day. Properties carry a map pin and a banner
-photo; units are residential or commercial; tenants can read their own lease and its document. The rent
-ledger, documents, and maintenance are still to come
-([`docs/roadmap.md`](docs/roadmap.md)).
+**Current status: Phase 4 (the rent ledger) — in review, with a portfolio review round on the same
+branch.** RHP models the properties and units it manages,
+the tenancies inside them, and the money: staff and tenants sign in, tenants are created by staff and
+invited, roles gate every route server-side, the portfolio can be created, edited, and taken out of
+service, and a lease ties a unit to its tenants with a term, rent, deposit and due day. On top of that
+sits the ledger — rent charges, one-off charges, recorded payments, reversals and adjustments, and a
+balance derived from the entries rather than stored — with the tenant's own balance on `/lease/`.
+Properties carry a map pin and a banner photo; units are residential or commercial. Documents and
+maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 
 ## Accounts and access
 
 | Role | Reaches |
 | --- | --- |
 | `SUPERADMIN` | everything, including role changes and deletion |
-| `ADMIN` | management area, tenant account administration, deletion |
-| `MANAGER` | management area, the portfolio (properties and units), the lease desk, and reading tenant records |
+| `ADMIN` | management area, tenant account administration, deletion, reversals and adjustments |
+| `MANAGER` | management area, the portfolio (properties and units), the lease desk, the ledger, and reading tenant records |
 | `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
-| `TENANT` | their own account, contact details, and their own lease |
+| `TENANT` | their own account, contact details, their own lease, and their own balance |
 
 | URL | What it is |
 | --- | --- |
 | `/account/login/` | sign-in for tenants and staff (rate limited) |
 | `/account/profile/` | the account page: details, contact information, password change |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
-| `/manage/` | staff landing page with portfolio and occupancy counters |
+| `/manage/` | staff landing page with portfolio, occupancy and money counters |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
 | `/manage/leases/` | the lease desk: create, edit, activate, end, and attach the signed lease; deleting a draft is admin-only |
-| `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role for admins |
-| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants and their document |
+| `/manage/ledger/` | accounting: balances across every live lease, with an overdue filter; each lease has its own ledger |
+| `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role/photo for admins |
+| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their document, and their balance |
 | `/admin/` | Django back office for superusers |
 
 Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
 password resets are emailed; in development the console backend prints them to `make logs`.
 
-Units are **residential** or **commercial**: bedrooms and bathrooms describe residential space, so they
-are refused on a commercial unit and the unit page says "Not applicable" rather than "Not recorded". A
-unit is named by its identifier with its property on the line below (`Storefront` / `- 910 Stark`).
+A **property** is residential or commercial, and its units inherit that: bedrooms and bathrooms
+describe residential space, so they are refused for a unit in a commercial property and the unit page
+says "Not applicable" rather than "Not recorded". A property with such detail cannot be switched to
+commercial until it is cleared. A unit is named by its identifier with its property on the line below
+(`Storefront` / `- 910 Stark`), may record its **square footage** and any **amenities** (from a list
+staff maintain in the back office), and the unit list at `/manage/units/` is grouped by property.
 
 A property can hold a **map pin** (paste a Google Maps link — full or shortened — or
 `45.5231, -122.6765` on the edit form) and a **banner photo** (JPEG/PNG/WebP, up to `RHP_MAX_UPLOAD_MB`).
@@ -57,6 +63,14 @@ active lease** — a database constraint, not a form rule — and a lease moves 
 by explicit action, never because a date passed. Ended leases are read-only history; only a draft can be
 deleted, and only by an admin. Tenants read their own lease at `/lease/`, whose document URL carries no
 id and is served through a permission-checked view.
+
+The **ledger** records what happened to the money: rent charges generated one month at a time (never
+twice for the same month, never beyond the tenancy's term), one-off charges, payments recorded as
+cleared or pending, and corrections as reversals and adjustments. Nothing is edited or deleted — a
+mistake is a new entry that names the one it corrects — and the balance is derived from the entries
+every time it is shown, so the ledger and the balance cannot disagree. Managers record money;
+reversals and adjustments are admin-only. Every change is written to an audit trail in the same
+transaction, visible as the History panel on a lease's ledger (ADR-008).
 
 ## Stack
 
@@ -139,10 +153,12 @@ config/          settings (base/development/production), urls, views, wsgi/asgi
 apps/accounts/   identity: user + roles, tenant profile, invitations, throttling
 apps/properties/ portfolio: properties and units (Phase 2)
 apps/leases/     lease desk and the tenant's own lease (Phase 3)
-apps/common/     shared building blocks (form styling, date formatting, filters)
+apps/ledger/     accounting: charges, payments, balances (Phase 4)
+apps/audit/      the audit trail: who changed what (Phase 4)
+apps/common/     shared building blocks (form styling, dates, filters)
 templates/       account/, management/, tenancy/, components/, error pages, base layout
 assets/css/      Tailwind entry point (built into static/css/rhp.css)
-tests/           pytest suite (tests/accounts/, tests/properties/, tests/leases/)
+tests/           pytest suite (tests/accounts/, tests/properties/, tests/leases/, tests/ledger/, tests/audit/)
 docs/            architecture, database, deployment, security, roadmap, ADRs, harness spec
 docker/          entrypoint and container healthcheck
 ```
@@ -153,7 +169,7 @@ docker/          entrypoint and container healthcheck
 | --- | --- |
 | [`docs/phase-guide.md`](docs/phase-guide.md) | **Start here**: every phase in plain language, and what later phases will change |
 | [`docs/architecture.md`](docs/architecture.md) | System shape, request flow, structure, conventions |
-| [`docs/database.md`](docs/database.md) | Database configuration, migration rules, modelling conventions |
+| [`docs/database.md`](docs/database.md) | Database configuration, migration rules, modeling conventions |
 | [`docs/deployment.md`](docs/deployment.md) | Local VM and VPS topologies, TLS, backup/restore, upgrades |
 | [`docs/security.md`](docs/security.md) | Authorization rules, secrets handling, upload safety |
 | [`docs/roadmap.md`](docs/roadmap.md) | Phases 0–12 as a status checklist |

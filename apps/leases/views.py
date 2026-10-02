@@ -7,6 +7,7 @@ the session so there is no id in a tenant-facing URL to enumerate.
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.db import IntegrityError, transaction
 from django.db.models import Q
@@ -31,6 +32,7 @@ from apps.accounts.permissions import (
 )
 from apps.leases.forms import LeaseForm, LeaseTenantFormSet
 from apps.leases.models import Lease, LeaseStatus
+from apps.ledger import services as ledger_services
 from apps.properties.models import Unit
 
 logger = logging.getLogger("apps.leases")
@@ -129,6 +131,13 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
         return Lease.objects.select_related("unit__property").prefetch_related(
             "lease_tenants__tenant"
         )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # The ledger is a summary here; the full screen lives in apps.ledger.
+        context["ledger"] = ledger_services.build_ledger(self.object)
+        context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
+        return context
 
 
 class LeaseUpdateView(ManagerRequiredMixin, UpdateView):
@@ -286,9 +295,15 @@ class LeaseDocumentView(ManagerRequiredMixin, View):
 
 
 def visible_lease_for(user):
-    """The lease a tenant should see: the current one, otherwise the latest."""
+    """The lease a tenant should see: the current one, otherwise the latest.
+
+    A draft is the office's working copy — its rent and term can still change —
+    so a tenant never sees one. They see nothing until the tenancy is activated,
+    and the page says so rather than showing terms that may not be agreed.
+    """
     leases = (
         Lease.objects.for_tenant(user)
+        .exclude(status=LeaseStatus.DRAFT)
         .select_related("unit__property")
         .prefetch_related("lease_tenants__tenant")
     )
@@ -309,6 +324,10 @@ class TenantLeaseView(TenantRequiredMixin, TemplateView):
         context["lease"] = lease
         context["lease_is_current"] = bool(lease and lease.is_current)
         context["today"] = timezone.localdate()
+        # The tenant reads the same numbers as the staff ledger: one definition,
+        # so the two can never disagree (ADR-008).
+        context["ledger"] = ledger_services.build_ledger(lease) if lease else None
+        context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
         return context
 
 

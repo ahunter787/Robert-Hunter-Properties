@@ -27,6 +27,16 @@ urlpatterns = [
         name="account-resend-invite",
     ),
     path(
+        "accounts/<int:pk>/photo/",
+        views.TenantPhotoView.as_view(),
+        name="account-photo",
+    ),
+    path(
+        "accounts/<int:pk>/photo/set/",
+        views.TenantAccountPhotoUpdateView.as_view(),
+        name="account-photo-update",
+    ),
+    path(
         "accounts/<int:pk>/role/",
         views.TenantRoleChangeView.as_view(),
         name="account-role",

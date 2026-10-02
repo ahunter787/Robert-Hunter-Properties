@@ -6,7 +6,13 @@
   <div class="mx-auto w-full max-w-2xl space-y-6">
     <div class="rhp-card">
       <p class="rhp-eyebrow">Account</p>
-      <h1 class="mt-1 text-xl font-semibold tracking-tight">Your account</h1>
+      <div class="mt-1 flex items-center gap-4">
+        {% if profile.photo %}
+          {% url 'accounts:photo' as photo_url %}
+        {% endif %}
+        {% include "components/avatar.html" with photo_url=photo_url size="md" %}
+        <h1 class="text-xl font-semibold tracking-tight">Your account</h1>
+      </div>
 
       <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
         <div>

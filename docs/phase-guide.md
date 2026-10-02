@@ -32,8 +32,8 @@ Two companion documents:
 | 1 | Identity and access | Complete | Staff and tenants sign in; tenants are invited; roles decide what each person sees |
 | 2 | Portfolio | Complete | Record properties and units, photograph them, pin them on a map |
 | 3 | Lease management | **In review** | Put a tenant on a lease, activate it, and read it as that tenant |
-| 4 | Rent ledger | Next | — |
-| 5 | Tenant dashboard | Not started | — |
+| 4 | Rent ledger | **In review** | See what every tenancy owes, charge rent, record payments, and correct mistakes without erasing them |
+| 5 | Tenant dashboard | Next | — |
 | 6 | Document management | Not started | — |
 | 7 | Maintenance | Not started | — |
 | 8 | Communications | Not started | — |
@@ -108,10 +108,11 @@ password five times and watch the lockout.
 
 **In one sentence:** the list of buildings RHP manages, and the rentable units inside them.
 
-**What exists now:** properties with an address, notes, an "in service" flag, a map pin and a banner
-photo; units inside a property with an identifier, a type (Residential or Commercial), bedrooms and
-bathrooms for residential units, and an "in service" flag; staff screens to list, search, create, edit
-and retire both; and counters on the staff landing page.
+**What exists now:** properties with an address, notes, a type (Residential or Commercial), an "in
+service" flag, a map pin and a banner photo; units inside a property with an identifier, an optional
+square footage, amenities, bedrooms and bathrooms for units in a residential property, and an "in
+service" flag; staff screens to list, search, create, edit and retire both, with the unit list grouped
+under the property it belongs to; and counters on the staff landing page.
 
 **What you can do today:** build the portfolio; upload a photo per property; paste a Google Maps link
 (full or shortened) or coordinates to pin a property on a map; retire a unit or building without losing
@@ -121,8 +122,15 @@ its history; see how many properties, units and tenants there are.
 
 - A unit is named by its own identifier, with the property underneath it ("Storefront" / "- 910 Stark"),
   because that is how staff talk about units.
-- Bedrooms and bathrooms describe *residential* space, so a commercial unit cannot carry them and the
-  screen says "Not applicable" rather than "Not recorded" (which would imply missing data).
+- **The Residential/Commercial designation belongs to the building, not the unit** — that is how staff
+  talk about these properties ("the Stark Street shops"), and a mixed-use building cannot be expressed
+  now that it does. `docs/decisions/ADR-006-…md` records the trade-off.
+- Units carry their own **square footage** and **amenities**; nothing is required, and a blank size says
+  "not recorded" rather than showing a zero.
+- Bedrooms and bathrooms describe *residential* space, so a unit in a commercial **property** cannot
+  carry them and the screen says "Not applicable" rather than "Not recorded" (which would imply missing
+  data). A property with such detail cannot be switched to commercial until it is cleared — the refusal
+  names the units rather than silently wiping them.
 - A building with units **cannot** be deleted — the database refuses. Retiring is the everyday action;
   deleting is for mistakes and is admin-only, behind a confirmation page.
 - Occupancy is not guessed. Until leases exist there is no such thing as an occupied unit, so the pages
@@ -132,7 +140,7 @@ its history; see how many properties, units and tenants there are.
 (Phase 6); maintenance history (Phase 7). The property page says so on screen, in a "Not tracked here
 yet" panel.
 
-**What later phases will change here:** **Phase 3** has now filled the two panels Phase 2 left labelled —
+**What later phases will change here:** **Phase 3** has now filled the two panels Phase 2 left labeled —
 "occupants and active leases" on a property and the "Tenancy" panel on a unit — and switched the occupancy
 counters on. **Phase 6** takes over document handling and will also give banners thumbnails and
 resizing, and will move the single lease file into the documents table. **Phase 9** replaces the
@@ -153,7 +161,7 @@ where the tenant portal begins.
 **What exists now:** a lease desk at `/manage/leases/` where a manager or admin creates a lease against a
 unit, adds one or more tenants and marks one as the primary contact, records the term, monthly rent,
 deposit and rent due day, attaches the signed lease as a PDF or a scan, and moves the lease through
-*draft* → *active* → *ended*; a property page that shows which units are let and to whom; a unit page
+*draft* → *active* → *ended*; a property page that shows which units are rented and to whom; a unit page
 whose "Tenancy" panel is real; occupied/vacant counters on the staff landing page; and a tenant page at
 `/lease/` showing that tenant's unit, term, rent, deposit, co-tenants and their copy of the document.
 
@@ -164,7 +172,7 @@ vacant, and which leases run out within the next 30 days; sign in as a tenant an
 
 **Deliberate decisions worth knowing:**
 
-- **A unit can only have one active lease.** The database enforces it, so a unit cannot be let twice even
+- **A unit can only have one active lease.** The database enforces it, so a unit cannot be rented twice even
   if two people click *Activate* at the same moment. Drafts are unlimited — several half-written leases
   on one unit are normal.
 - **A lease is ended by a person, never by a date passing.** A lease whose end date has gone by shows as
@@ -180,18 +188,18 @@ vacant, and which leases run out within the next 30 days; sign in as a tenant an
   the rent; that is a money question and belongs with Phase 4.
 - **One document per lease for now.** Phase 6 replaces it with a proper documents area.
 - **A unit taken out of service is neither occupied nor vacant.** Its tenancy stays in the records, but
-  it is not counted as available to let.
+  it is not counted as available to rent.
 
 **What it deliberately does not do:** no balances, charges or payments (Phase 4); no tenant dashboard
 (Phase 5); no documents area beyond the single lease file (Phase 6); no electronic signatures, and no
 automatic renewal, proration or late fees.
 
-**What later phases will change here:** **Phase 4** turns the stored rent and due day into a real ledger
-and implements the month-end rule for a due day of the 31st; lease status changes start being written to
-the audit table. **Phase 5** grows `/lease/` into the tenant dashboard with balances. **Phase 6** moves
-the single lease file into the documents table (categories, visibility, several files) and generalises
-the access rule. **Phase 9** and **Phase 10** report on occupancy and the rent roll. **Phase 12** puts
-the document access rule through the security test pass.
+**What later phases will change here:** **Phase 4** has now turned the stored rent and due day into a
+real ledger, implemented the month-end rule for a due day of the 31st, and started writing lease status
+changes to the audit table. **Phase 5** grows `/lease/` into the tenant dashboard with balances.
+**Phase 6** moves the single lease file into the documents table (categories, visibility, several files)
+and generalises the access rule. **Phase 9** and **Phase 10** report on occupancy and the rent roll.
+**Phase 12** puts the document access rule through the security test pass.
 
 **How to check it:** as a manager, go to `/manage/leases/` and create a lease for one of your units with
 a tenant and a term; save it as a draft, then activate it. Then try to create a second active lease on
@@ -201,25 +209,76 @@ and open `/lease/`.
 
 ---
 
-## Phase 4 — Rent ledger
+## Phase 4 — Rent ledger (in review: your testing)
 
 **In one sentence:** a truthful running account of what each tenancy was charged and what was paid, so a
 balance is something derived rather than typed in.
 
-**What it will deliver:** recurring monthly rent charges generated from a lease, manually added charges,
-recorded payments, reversals and adjustments, and a per-lease ledger with unpaid / partly paid / paid /
-overdue / pending states. Balances are always calculated from entries.
+**What exists now:** an accounting area at `/manage/ledger/` listing every live tenancy with what it owes,
+what is late and when the next amount is due, with totals across the portfolio and a filter for overdue
+accounts; a ledger for each lease showing every charge (with its state: unpaid, partly paid, payment
+pending, paid, overdue) and every payment, merged into one activity list, plus a History panel recording
+who did what; buttons to create the missing monthly rent charges, add a one-off charge, and record a
+payment as cleared or pending; and a balance panel on the tenant's own page.
 
-**What it will change from earlier work:** this is where the **audit table** arrives — lease status
-changes and money movements start being recorded as events rather than only log lines. The rent due day
-stored in Phase 3 gets its rule implemented (a due day of the 31st in February falls on the last day of
-the month). The tenant lease page gains a balance summary, which Phase 5 turns into the dashboard.
+**What you can do today:** see at a glance who owes what and who is late; generate a month's rent for a
+tenancy (running it twice does nothing the second time); charge a one-off amount, such as a recharge or a
+part month; record money received, or money you are expecting, and mark the expected money as cleared
+when it arrives; reverse a payment that should never have been recorded; correct a charge without
+altering it, by adding an adjustment that says what was wrong and why; and let a tenant see their own
+balance and history.
 
-**Hard rules, decided now:** nothing is ever edited in place — a mistake is corrected by adding a
-reversal, and the original stays visible. Money is stored exactly, never as a floating-point number.
-RHP will not store card numbers or bank credentials at any point.
+**Deliberate decisions worth knowing:**
 
-**Needs nothing from you yet.** Phase 11 (actual payments) is where a provider decision is required.
+- **No balance is stored, and no charge's status is stored.** Both are worked out from the entries every
+  time they are shown, so the ledger and the balance cannot disagree, and there is no nightly
+  recalculation to go wrong.
+- **Nothing is edited and nothing is deleted.** A mistake is corrected by adding a reversal (for a
+  payment) or an adjustment (for a charge), which leaves the original visible with both entries on the
+  record. The database refuses to delete a lease or unit that has money history.
+- **Payments settle the oldest charge first**, and a credit settles the charge it corrects — which is
+  what makes "partly paid" mean the charge at the front of the line.
+- **Expected money is not money.** A pending payment does not reduce a balance; it marks the charge it
+  would settle as "payment pending" so nobody chases it by mistake. Voiding is for money that never
+  arrived; reversing is for money that did.
+- **Rent is charged on demand, one month at a time, never twice for the same month, and never beyond the
+  tenancy's own end date.** A due day of the 31st means the last day of a short month (28 February, 30
+  April).
+- **A tenancy starting mid-month is not prorated.** The desk adds a one-off charge for the part month.
+  Proration is not in the specification, and guessing at it would make every later report argue about
+  which months count.
+- **Managers record money; administrators correct it.** Reversals and adjustments are admin-only, on the
+  same principle that deleted records are: the everyday act is the manager's, the act that changes what
+  the history means is not.
+- **The deposit stays off the ledger.** It is held money, not rent paid ahead: counting it would show a
+  tenant "in credit" for a deposit they will get back.
+- **Every change is recorded with a name against it** — in an audit table, in the same database
+  transaction as the change itself, so a balance and the story of how it got there can never disagree.
+- **Correcting a charge is one submit.** The adjustment screen arrives with the amount filled in at
+  what is still owed, so a charge raised in error can be zeroed without arithmetic; a second button
+  credits the charge's full amount for the case where part of it was already paid.
+
+**What it deliberately does not do:** no late fees, interest or proration; no invoices or receipts; no
+deposit returns or deductions; no automatic payment collection, and no card or bank details are stored
+now or later (Phase 11 hands that to a payment provider). The tenant page shows a balance, not the full
+dashboard — that is Phase 5.
+
+**What later phases will change here:** **Phase 5** turns `/lease/` into the tenant dashboard, with the
+balance as one card among several. **Phase 8** sends the reminders and receipts this ledger implies.
+**Phase 9** replaces the staff counters with the real dashboard and adds the audit browser; the audit
+table already holds what those screens will read. **Phase 10** reports on money (collected, outstanding,
+rent roll). **Phase 11** integrates a payment provider — the pending/cleared states and the provider
+reference already exist for it — and will decide whether payments need to be applied to named charges
+rather than oldest-first. **Phase 12** puts money through the security test pass and decides whether the
+append-only rules need database-level enforcement.
+
+**How to check it:** open `/manage/ledger/` as a manager; activate a lease, open its ledger and press
+*Create rent charges*; add a charge and record a payment, then a partial payment on another lease and
+watch the state change to "partly paid"; record a payment as pending and see that the balance does not
+move; as an admin, open a charge and press *Adjust* — the amount arrives already holding what is still owed,
+so adding a reason and submitting zeroes the charge; reverse a payment and confirm the original is still
+on the ledger with a reversal beside it; finally, sign in as the tenant and read the balance panel on
+`/lease/`.
 
 ---
 
@@ -233,7 +292,6 @@ request being handled, has management sent me anything — on a phone, in that o
 **What it will change from earlier work:** grows the Phase 3 tenant lease page into the real landing
 page and links it to the Phase 4 balances. The tenant navigation (Dashboard, Lease, Payments, …) becomes
 real rather than a single item.
-
 ---
 
 ## Phase 6 — Document management
@@ -276,7 +334,7 @@ inspections, holidays — without building a chat system.
 intended tenants, with publication and expiry dates and an option to highlight something important.
 
 **What it will change from earlier work:** adds an announcements panel to the tenant dashboard (Phase 5)
-and to the property page. Direct messaging is evaluated afterwards rather than assumed.
+and to the property page. Direct messaging is evaluated afterward rather than assumed.
 
 ---
 
@@ -345,19 +403,24 @@ coming.
 | --- | --- | --- | --- |
 | Single lease file | Phase 3 | Phase 6 | Becomes documents in the documents table (categories, visibility, multiple files) |
 | Lease document access rule | Phase 3 | Phase 6, 12 | Generalised to all documents; included in the security test pass |
-| Tenant `/lease/` page | Phase 3 | Phase 5 | Grows into the tenant dashboard with balances and announcements |
+| Tenant `/lease/` page | Phase 3 | Phase 4, 5 | Phase 4 added the balance and activity; Phase 5 turns the page into the dashboard |
 | Occupancy / vacancy definition | Phase 3 | Phase 9, 10 | Reported on in the dashboard and the occupancy report |
-| Staff landing counters | Phases 2, 3, 7 | Phase 9 | Replaced by the real admin dashboard |
-| Rent due day (stored) | Phase 3 | Phase 4 | The month-end clamping rule is implemented in the ledger |
-| Lease status changes | Phase 3 | Phase 4 | Start being written to the audit table instead of only logs |
-| Structured security logs | Phases 1, 2 | Phase 4, 12 | Phase 4 adds the audit table; Phase 12 decides retention |
+| Staff landing counters | Phases 2, 3, 4, 7 | Phase 9 | Replaced by the real admin dashboard |
+| Rent due day (stored) | Phase 3 | Phase 4 | Done: the month-end clamping rule lives in `apps.common.dates.due_date_in` |
+| Lease status changes | Phase 3 | Phase 4 | Done: they are written to the audit table, not only the log |
+| Structured security logs | Phases 1, 2 | Phase 4, 12 | Phase 4 added the audit table; Phase 12 decides retention and whether the append-only rules need database enforcement |
 | Banner photo | Phase 2 | Phase 6, 12 | Thumbnails and resizing; content-security policy for the map |
 | Map pin | Phase 2 | Phase 12 | The Google embed becomes an explicit security-policy entry |
 | Bedrooms / bathrooms | Phase 2 | Phase 10 | Used for sizing and rent-roll reporting |
 | Tenant contact notes | Phase 1 | Phase 5+ | Surface on the tenancy screens once tenants have a dashboard |
 | Invitations and passwords | Phase 1 | Phase 12 | Two-factor authentication for staff; session hardening |
 | Property / unit retirement | Phase 2 | Phase 10 | Retired records stay in reports as history |
-| Money fields | Phase 3 | Phase 4, 11 | The ledger reads them; payments reconcile against ledger entries |
+| Residential/commercial designation | Phase 2 | Phase 4 review | Moved from the unit to the property; the unit list is grouped by building (ADR-006 revision) |
+| Unit size and amenities | Phase 2 | Phase 4 review, 10 | Square feet feeds sizing reports; the amenity list is maintained in the back office |
+| Tenant photo | Phase 1 | Phase 4 review, 12 | Admin-set for now; Phase 12 puts personal data through the security pass (ADR-009) |
+| Money fields | Phase 3 | Phase 4, 11 | Phase 4 reads them in the ledger; Phase 11 reconciles provider payments against entries |
+| Balance and charge states | Phase 4 | Phase 9, 10, 11 | Reported on in the dashboard and the money reports; a provider may need payments applied to named charges rather than oldest-first |
+| Audit trail | Phase 4 | Phase 9, 12 | Phase 9 adds the audit browser; Phase 12 decides retention |
 
 ## Open questions worth deciding later
 
@@ -365,20 +428,33 @@ Collected on purpose, so nothing is forgotten and nothing is decided by accident
 
 - **Month-to-month leases** — the lease term currently needs both a start and an end date. If RHP takes
   on month-to-month tenancies, the end date becomes optional and the screens need a "no fixed end" state.
-- **Proration, late fees, rent escalation** — none of these are in the specification. They are common in
-  practice, and they would be their own small phase rather than bolted onto the ledger.
-- **Deposits** — Phase 3 records the deposit amount. Whether deposits are tracked as balances (held,
-  returned, deducted from) is a Phase 4 decision about the ledger.
-- **Correcting an ended lease** — ended leases are read-only today; a correction is made by an
-  administrator. If that becomes frequent, a proper amendment flow belongs in the ledger phase.
-- **Renewing a lease** — Phase 3 has no "copy this lease forward" action, so a renewal is typed again
+- **Proration, late fees, rent escalation** — none of these are in the specification. Phase 4 decided the
+  interim: a tenancy starting mid-month is not prorated, and the desk records a one-off charge for the
+  part month. If RHP starts charging late fees or raising rent on a schedule, that is its own small phase
+  rather than a rule bolted onto the ledger.
+- **Deposits** — decided in Phase 4: the deposit stays a field on the lease and is deliberately **not**
+  on the ledger, because held money is not rent paid ahead. When deposit returns and deductions are
+  needed, they get their own treatment (what was withheld, and why) rather than being folded into the
+  rent balance.
+- **Correcting an ended lease** — the lease terms are read-only once ended; the *money* on an ended lease
+  is still correctable in Phase 4 (adjustments and reversals work on it), which covers most of the need.
+  A formal amendment flow for the lease terms themselves remains open.
+- **Renewing a lease** — there is still no "copy this lease forward" action, so a renewal is typed again
   from scratch. Once real tenancies start rolling over, that will be the most common repetitive job on
   the desk and worth its own small piece of work.
-- **Who is liable for the rent** — a lease records a primary *contact*, not a payer. If RHP needs
-  joint-and-several liability, split responsibility, or a guarantor, that is a decision for Phase 4 that
-  reaches back into the lease's tenant rows.
+- **Who is liable for the rent** — a lease records a primary *contact*, not a payer, and Phase 4 put the
+  balance on the **lease**, shared by everyone on it. If RHP needs joint-and-several liability, split
+  responsibility, or a guarantor, that reaches back into the lease's tenant rows and into how a payment
+  is attributed.
+- **Applying a payment to a named charge** — Phase 4 applies money oldest-first, which is what a rent
+  ledger does. If a payment ever needs to say which charge it settles, that is an allocation table, and
+  Phase 11 (a provider sending remittance detail) is where it will earn its keep.
+- **Invoices, statements and receipts** — nothing in the ledger produces a document yet. Phase 6 adds
+  document handling, so a statement or a receipt becomes possible there; whether RHP wants them is a
+  question for you.
 - **Direct messaging** — announcements cover the real need; a chat system is a much bigger commitment
   and is explicitly deferred.
 - **Payment provider** — Phase 11 waits for your decision.
-- **How much tenants should see** — for example whether a tenant ever sees an audit trail of changes to
-  their own lease. Easy to add later, and better decided with real usage in front of us.
+- **How much tenants should see** — Phase 4 shows a tenant their balance, next amount and activity, but
+  not the audit trail behind it. Whether a tenant ever sees the history of changes to their own lease is
+  easy to add later, and better decided with real usage in front of us.

@@ -43,7 +43,7 @@ smallest thing that fixes the model identity. Phase 1 fills it in.
 
 - The "no app before its phase" rule gains one documented exception. It is recorded here so a future
   reader does not treat it as an accident.
-- Phase 0 ships a model with no behaviour of its own; its only job is to exist and be migrated.
+- Phase 0 ships a model with no behavior of its own; its only job is to exist and be migrated.
 
 **Operational requirement**
 

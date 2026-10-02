@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Reverse a payment — {{ lease.unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="underline-offset-2 hover:underline">Ledger</a>
+        · {{ lease.unit.identifier }}
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Reverse this payment</h1>
+    </div>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">The payment</h2>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Amount</dt>
+          <dd class="font-medium">{{ payment.amount|money }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Date received</dt>
+          <dd class="font-medium">{{ payment.payment_date }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Method</dt>
+          <dd class="font-medium">{{ payment.get_method_display }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Reference</dt>
+          <dd class="font-medium">{{ payment.external_reference|default:"—" }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">Reverse the payment</button>
+          <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+      <p class="rhp-help mt-4">
+        The original payment stays on the ledger and a reversal entry is added, so the correction is
+        part of the record rather than a number quietly changing.
+      </p>
+    </div>
+  </div>
+{% endblock %}

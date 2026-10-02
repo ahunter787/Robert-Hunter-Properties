@@ -314,7 +314,9 @@ def test_the_detail_page_lists_the_tenants(signed_in):
     assert "Primary contact" in body
     assert "$1,850.00" in body
     assert "1st of every month" in body
-    assert "Phase 4" in body  # the ledger is labelled, not faked
+    # The ledger panel is real from Phase 4 on: this lease has nothing charged yet.
+    assert "Ledger" in body
+    assert "Nothing has been charged on this lease yet" in body
 
 
 def test_lease_tenants_are_protected_from_deletion():

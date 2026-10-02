@@ -8,6 +8,9 @@
       <div>
         <p class="rhp-eyebrow">Portfolio</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">Units</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          Grouped by property, because that is how the portfolio is read.
+        </p>
       </div>
       <a href="{% url 'portfolio:unit-create' %}" class="rhp-btn rhp-btn-primary">New unit</a>
     </div>
@@ -16,13 +19,13 @@
       <div class="min-w-56 grow">
         <label class="rhp-label" for="q">Search</label>
         <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
-               placeholder="Unit identifier or property">
+               placeholder="Unit identifier, property, or city">
       </div>
       <div>
         <label class="rhp-label" for="property">Property</label>
         <select name="property" id="property" class="rhp-field pr-8">
           <option value="">All properties</option>
-          {% for option in properties %}
+          {% for option in all_properties %}
             <option value="{{ option.pk }}" {% if selected_property == option.pk|stringformat:"s" %}selected{% endif %}>
               {{ option.name }}
             </option>
@@ -40,48 +43,95 @@
       <button type="submit" class="rhp-btn rhp-btn-secondary">Filter</button>
     </form>
 
-    <div class="rhp-card overflow-x-auto">
-      {% if units %}
-        <table class="w-full text-left text-sm">
-          <caption class="sr-only">Units across the portfolio</caption>
-          <thead class="text-xs uppercase tracking-wide text-ink-muted">
-            <tr>
-              <th scope="col" class="py-2 pr-4">Unit</th>
-              <th scope="col" class="py-2 pr-4">Property</th>
-              <th scope="col" class="py-2 pr-4">Type</th>
-              <th scope="col" class="py-2 pr-4">Bedrooms</th>
-              <th scope="col" class="py-2 pr-4">Bathrooms</th>
-              <th scope="col" class="py-2 pr-4">Status</th>
-              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-surface-muted">
-            {% for unit in units %}
-              <tr>
-                <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
-                <td class="py-3 pr-4">{{ unit.property.name }}</td>
-                <td class="py-3 pr-4">{{ unit.get_unit_type_display }}</td>
-                <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bedrooms|default_if_none:"—" }}{% endif %}</td>
-                <td class="py-3 pr-4">{% if unit.is_commercial %}—{% else %}{{ unit.bathrooms|default_if_none:"—" }}{% endif %}</td>
-                <td class="py-3 pr-4">
-                  {% if unit.is_active %}
-                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
-                  {% else %}
-                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
-                  {% endif %}
-                </td>
-                <td class="py-3 text-right">
-                  <a href="{% url 'portfolio:unit-detail' unit.pk %}"
-                     class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      {% else %}
-        <p class="text-sm text-ink-muted">No units match that filter.</p>
-      {% endif %}
-    </div>
+    {% if properties %}
+      <p class="text-sm text-ink-muted">
+        {{ units|length }} unit{{ units|length|pluralize }} in
+        {{ properties|length }} propert{{ properties|length|pluralize:"y,ies" }} on this page.
+      </p>
+
+      <div class="space-y-6">
+        {% for property in properties %}
+          <section class="rhp-card overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-surface-muted pb-4">
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <a href="{% url 'portfolio:property-detail' property.pk %}"
+                     class="text-lg font-semibold tracking-tight text-primary underline-offset-2 hover:underline">
+                    {{ property.name }}
+                  </a>
+                  <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
+                    {{ property.get_property_type_display }}
+                  </span>
+                </div>
+                <p class="mt-1 text-sm text-ink-muted">{{ property.address_line }}</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-sm text-ink-muted">
+                  {{ property.listed_units|length }} unit{{ property.listed_units|length|pluralize }}
+                </span>
+                <a href="{% url 'portfolio:unit-create' %}?property={{ property.pk }}"
+                   class="rhp-btn rhp-btn-secondary">Add unit</a>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">Units at {{ property.name }}</caption>
+                <thead class="text-xs uppercase tracking-wide text-ink-muted">
+                  <tr>
+                    <th scope="col" class="py-2 pr-4">Unit</th>
+                    <th scope="col" class="py-2 pr-4">Square footage</th>
+                    <th scope="col" class="py-2 pr-4">Bedrooms</th>
+                    <th scope="col" class="py-2 pr-4">Bathrooms</th>
+                    <th scope="col" class="py-2 pr-4">Status</th>
+                    <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-surface-muted">
+                  {% for unit in property.listed_units %}
+                    <tr>
+                      <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
+                      <td class="py-3 pr-4">
+                        {% if unit.square_feet %}{{ unit.square_feet }} sq ft{% else %}—{% endif %}
+                      </td>
+                      <td class="py-3 pr-4">
+                        {% if unit.is_commercial %}—{% else %}{{ unit.bedrooms|default_if_none:"—" }}{% endif %}
+                      </td>
+                      <td class="py-3 pr-4">
+                        {% if unit.is_commercial %}—{% else %}{{ unit.bathrooms|default_if_none:"—" }}{% endif %}
+                      </td>
+                      <td class="py-3 pr-4">
+                        {% if unit.is_active %}
+                          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
+                        {% else %}
+                          <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
+                        {% endif %}
+                      </td>
+                      <td class="py-3 text-right">
+                        <a href="{% url 'portfolio:unit-detail' unit.pk %}"
+                           class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="rhp-card">
+        <p class="text-sm text-ink-muted">
+          {% if search or selected_property or status %}
+            No units match that filter.
+          {% else %}
+            No units yet.
+            <a href="{% url 'portfolio:unit-create' %}"
+               class="font-medium text-primary underline-offset-2 hover:underline">Add the first one</a>.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
 
     {% if is_paginated %}
       <div class="flex items-center justify-between text-sm">

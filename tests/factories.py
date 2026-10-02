@@ -12,8 +12,16 @@ from django.utils import timezone
 
 from apps.accounts.models import Role, TenantProfile, User
 from apps.leases.models import Lease, LeaseStatus, LeaseTenant
-from apps.properties.constants import UnitType
-from apps.properties.models import Property, Unit
+from apps.ledger.models import (
+    Charge,
+    ChargeKind,
+    Direction,
+    Payment,
+    PaymentMethod,
+    PaymentStatus,
+)
+from apps.properties.constants import PropertyType
+from apps.properties.models import Amenity, Property, Unit
 
 DEFAULT_PASSWORD = "unit-test-password-41"
 
@@ -96,6 +104,7 @@ def password_reset_path_from_email(body: str) -> str:
 def make_property(
     *,
     name: str = "Maple Street Duplex",
+    property_type: str = PropertyType.RESIDENTIAL,
     street: str = "12 Maple St",
     city: str = "Springfield",
     state: str = "IL",
@@ -104,6 +113,7 @@ def make_property(
 ) -> Property:
     return Property.objects.create(
         name=name,
+        property_type=property_type,
         street=street,
         city=city,
         state=state,
@@ -116,7 +126,8 @@ def make_unit(
     for_property: Property | None = None,
     *,
     identifier: str = "1",
-    unit_type: str = UnitType.RESIDENTIAL,
+    square_feet: int | None = None,
+    amenities=(),
     bedrooms: int | None = 2,
     bathrooms: Decimal | None = Decimal("1.0"),
     **fields,
@@ -125,19 +136,29 @@ def make_unit(
         # Property names are unique, so an implicit property needs a distinct one
         # whenever a test builds several units.
         for_property = make_property(name=f"Test Property {next(_PROPERTY_SEQUENCE)}")
-    if unit_type == UnitType.COMMERCIAL:
-        # A commercial unit cannot carry residential details; the form enforces
-        # it, and the factory should not build a state the app refuses.
+    if for_property.is_commercial:
+        # A commercial property cannot carry residential details; the form
+        # enforces it, and the factory should not build a state the app refuses.
         bedrooms = None
         bathrooms = None
-    return Unit.objects.create(
+    unit = Unit.objects.create(
         property=for_property,
         identifier=identifier,
-        unit_type=unit_type,
+        square_feet=square_feet,
         bedrooms=bedrooms,
         bathrooms=bathrooms,
         **fields,
     )
+    if amenities:
+        unit.amenities.set(amenities)
+    return unit
+
+
+def make_amenity(name: str = "Parking", *, is_active: bool = True) -> Amenity:
+    """An amenity by name. The default list is seeded by a migration, so this
+    adopts an existing row rather than colliding with it."""
+    amenity, _ = Amenity.objects.get_or_create(name=name, defaults={"is_active": is_active})
+    return amenity
 
 
 # --- Leasing --------------------------------------------------------------
@@ -173,3 +194,52 @@ def make_lease(
     for index, tenant in enumerate(tenants):
         LeaseTenant.objects.create(lease=lease, tenant=tenant, is_primary=index == 0)
     return lease
+
+
+# --- Accounting -----------------------------------------------------------
+
+
+def make_charge(
+    lease: Lease | None = None,
+    *,
+    amount: Decimal = Decimal("1850.00"),
+    due_date=None,
+    kind: str = ChargeKind.RENT,
+    direction: str = Direction.INCREASE,
+    description: str = "Rent",
+    **fields,
+) -> Charge:
+    """A ledger charge. A lease is created when none is given."""
+    if lease is None:
+        lease = make_lease()
+    return Charge.objects.create(
+        lease=lease,
+        kind=kind,
+        direction=direction,
+        description=description,
+        amount=amount,
+        due_date=due_date or timezone.localdate(),
+        **fields,
+    )
+
+
+def make_payment(
+    lease: Lease | None = None,
+    *,
+    amount: Decimal = Decimal("1850.00"),
+    payment_date=None,
+    method: str = PaymentMethod.ACH,
+    status: str = PaymentStatus.CLEARED,
+    **fields,
+) -> Payment:
+    """A recorded payment. Cleared by default, because that is the common case."""
+    if lease is None:
+        lease = make_lease()
+    return Payment.objects.create(
+        lease=lease,
+        amount=amount,
+        payment_date=payment_date or timezone.localdate(),
+        method=method,
+        status=status,
+        **fields,
+    )

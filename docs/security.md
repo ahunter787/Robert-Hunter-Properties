@@ -45,7 +45,7 @@ Rules:
 
 Externally exposed resources that a tenant could enumerate (documents, maintenance requests,
 attachments, lease files) use `UUIDField` primary keys or a random slug. Sequential integer ids stay
-internal. Authorization is enforced regardless — unguessable ids are defence in depth, not the control.
+internal. Authorization is enforced regardless — unguessable ids are defense in depth, not the control.
 
 The tenant lease document is the strongest form of this: its URL is `/lease/document/` with **no id at
 all**, so there is nothing to enumerate and the view can only ever return the document of the one lease
@@ -56,19 +56,23 @@ the caller is on.
 In force since Phase 2's banner photos, extended in Phase 3 by lease documents; the general document
 work arrives in Phase 6 and maintenance photos in Phase 7:
 
-- Allow-list extensions and content types; reject everything else. Banners accept JPEG, PNG, and WebP
-  only — SVG is refused because it can carry script. Lease documents accept PDF, JPEG, and PNG.
+- Allow-list extensions and content types; reject everything else. Banners and tenant photos accept
+  JPEG, PNG, and WebP only — SVG is refused because it can carry script. Lease documents accept PDF,
+  JPEG, and PNG. The image rules are implemented once, in `apps/common/images.py`.
 - Enforce a maximum size at the form (`RHP_MAX_UPLOAD_MB`, default 5), plus a maximum pixel dimension;
   the reverse-proxy body limit is Phase 12.
-- Store under a randomized filename (`property_banners/<uuid>.<ext>`, `lease_documents/<uuid><ext>`);
-  never reuse the client-supplied name on disk.
+- Store under a randomized filename (`property_banners/<uuid>.<ext>`, `lease_documents/<uuid><ext>`,
+  `tenant_photos/<uuid><ext>`); never reuse the client-supplied name on disk.
 - Never execute uploaded content; never serve it with a content type that browsers execute.
 - **Every download is permission-checked.** Uploaded files are never reachable through a static file
   handler or the reverse proxy, and `MEDIA_URL` is only wired up in development. Banners are served by
   `PropertyBannerView`, lease documents by `LeaseDocumentView` (staff) and `TenantLeaseDocumentView`
   (the tenant on that lease); each checks its permission first (ADR-006, ADR-007).
 - Downloads carry `Cache-Control: private` and `X-Content-Type-Options: nosniff`, so a shared cache
-  never holds a tenant document and a browser never sniffs one into a different type.
+  never holds a tenant document or photo and a browser never sniffs one into a different type.
+- **A tenant photo is personal data** (ADR-009). It is uploaded by an administrator on the tenant's
+  account page, served only through `TenantPhotoView` (staff) or `OwnPhotoView` (the tenant, whose URL
+  carries no id), and never shown to another tenant — there is no tenant-facing directory.
 - Keep uploaded files outside the web root (`media_data` volume, mounted privately).
 - Replacing or removing an image deletes the stored file, and deleting a property deletes its banner;
   replacing a lease document, or deleting its lease, deletes the old file, so uploads do not accumulate
@@ -179,7 +183,33 @@ The application-level floor is implemented in `apps/accounts/throttle.py` (ADR-0
 
 Charges and payments are append-only. Corrections are reversal or adjustment rows with an actor and a
 timestamp; history is never rewritten in place. Balances are derived from ledger entries, so a wrong
-balance is a wrong entry, not a wrong number.
+balance is a wrong entry, not a wrong number (ADR-008).
+
+- **Nothing stores a balance, and nothing stores a charge's status.** Both are computed from the
+  entries by `apps.ledger.services.build_ledger`, so four screens cannot hold four opinions and a
+  nightly recalculation cannot go stale.
+- **Amounts are positive with an explicit direction** (`Charge.direction`, `Payment.kind`), never a
+  negative number, and always `DecimalField(12,2)`. A float never touches money, including inside the
+  audit trail, where amounts are stored as strings.
+- **Immutability is enforced in layers**: `save()` freezes financial fields once written (the only
+  permitted change is a payment's `PENDING → CLEARED`/`VOID` lifecycle), `delete()` raises on both
+  models, both foreign keys to `leases_lease` are `PROTECT`, and both models are registered read-only
+  in the Django admin. There is no edit or delete route anywhere.
+- **Known limit, stated rather than implied:** `Model.objects.filter(...).delete()` bypasses
+  `Model.delete()`. The application never calls it; it remains possible from a shell, and true
+  database-level immutability would require triggers (Phase 12). Nothing in the application can
+  rewrite or remove an entry.
+- **Every mutation writes an audit event** (actor, action, target, tenancy, summary, small metadata,
+  timestamp) inside the same transaction as the change, so an event can never describe a write that
+  rolled back. `AuditEvent` itself refuses updates and deletions.
+- **Money that only exists as a promise is modeled as such.** A `PENDING` payment moves no balance;
+  only cleared, unreversed money does. Voiding and reversing are separate acts, each recorded.
+- **Who may do what:** managers may view ledgers, generate rent, add a manual charge, record a payment
+  and clear or void a pending one; **adjustments and reversals are admin-only**, because they change
+  what history means. A maintenance user has no access to the accounting area.
+- **No card or bank credential is ever stored** — not a number, not a token. A payment records an
+  amount, a date, a method label and a free-text reference. Phase 11 integrates a provider; when it
+  does, the credential belongs to the provider, never to this database.
 
 ## Dependencies and updates
 
@@ -201,6 +231,14 @@ Phases 1–3 satisfy the first four: the tests live in `tests/accounts/`, `tests
 sign-in when anonymous), that a tenant who is not on a lease gets 404 from the tenant area, that the
 tenant document URL carries no id, and that an ended lease refuses a direct POST as well as hiding the
 form.
+
+Phase 4 satisfies the fifth, in `tests/ledger/`: the balance is the charges minus the cleared payments
+(including part payments, credits and overpayments), a reversal restores the balance while leaving the
+original untouched, overdue is only ever money still owed past its due date, and a charge or payment
+cannot be edited, deleted, reversed twice, or written on a draft. `tests/audit/` asserts the trail: an
+actor and an action per change, amounts recorded without floating point, and events that refuse to be
+changed or removed. `tests/ledger/test_authorization.py` walks every accounting route for each role,
+including that a manager cannot reverse or adjust.
 
 ## Reporting a problem
 

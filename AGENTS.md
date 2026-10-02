@@ -23,7 +23,7 @@ While implementing:
 
 5. Implement only that phase's scope — no opportunistic features.
 6. Add database migrations for every model change.
-7. Add tests for the behaviour you introduce; authorization and money first.
+7. Add tests for the behavior you introduce; authorization and money first.
 8. Run `make test`, `make lint`, and `make check` (and a smoke start when the change affects runtime).
 9. Update the documentation your change makes stale.
 10. **Do not commit unless explicitly instructed.**

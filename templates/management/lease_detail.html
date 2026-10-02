@@ -121,20 +121,72 @@
       {% endif %}
     </section>
 
+    <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Ledger</h2>
+        {% if lease.status != "DRAFT" %}
+          <div class="text-right">
+            {% if ledger.balance_due > 0 %}
+              <span class="text-lg font-semibold">{{ ledger.balance_due|money }}</span>
+              <span class="text-sm text-ink-muted">due</span>
+              {% if ledger.is_overdue %}
+                <span class="ml-2 rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+                  {{ ledger.overdue_amount|money }} overdue
+                </span>
+              {% endif %}
+            {% elif ledger.credit > 0 %}
+              <span class="text-lg font-semibold text-success">{{ ledger.credit|money }}</span>
+              <span class="text-sm text-ink-muted">in credit</span>
+            {% else %}
+              <span class="text-lg font-semibold text-ink-muted">Settled</span>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+
+      {% if lease.status == "DRAFT" %}
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          A draft lease has no ledger: its rent and term can still change. Activate the lease and its
+          rent charges can be created.
+        </p>
+      {% else %}
+        {% if ledger.next_due %}
+          <p class="mt-2 text-sm text-ink-muted">
+            Next due {{ ledger.next_due.charge.due_date }} — {{ ledger.next_due.charge.amount|money }}
+            ({{ ledger.next_due.charge.description }}).
+          </p>
+        {% endif %}
+        {% if ledger.activity %}
+          <ul class="mt-4 divide-y divide-surface-muted text-sm">
+            {% for row in ledger.activity|slice:":5" %}
+              <li class="flex items-center justify-between gap-4 py-2">
+                <span>
+                  <span class="text-ink-muted">{{ row.date }}</span>
+                  <span class="ml-2">{{ row.label }}</span>
+                </span>
+                <span class="font-medium">
+                  {% if row.amount > 0 %}+{% else %}−{% endif %}{{ row.amount|absolute|money }}
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+            Nothing has been charged on this lease yet. Create its rent charges on the ledger.
+          </p>
+        {% endif %}
+        <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">
+          Open the ledger
+        </a>
+      {% endif %}
+    </section>
+
     {% if lease.status == "ENDED" %}
       <section class="rhp-card">
         <h2 class="text-sm font-semibold">History</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-muted">
           This lease has ended and is kept as a record. It is no longer editable, so the history stays
-          intact.
-        </p>
-      </section>
-    {% else %}
-      <section class="rhp-card">
-        <h2 class="text-sm font-semibold">Not here yet</h2>
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Rent charges, payments, and the running balance arrive with Phase 4. Nothing is shown until
-          it is real.
+          intact. The ledger above stays open: an ended tenancy can still owe money.
         </p>
       </section>
     {% endif %}

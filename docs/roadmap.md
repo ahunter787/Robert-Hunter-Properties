@@ -28,7 +28,7 @@ see [`phase-guide.md`](phase-guide.md). This file is the terse checklist.
 | Milestone | Phases | Outcome |
 | --- | --- | --- |
 | 1 | 0 + 1 | A deployed portal where RHP can create tenant accounts and tenants can sign in safely |
-| 2 | 2 + 3 | The real portfolio is modelled: properties, units, tenants, leases |
+| 2 | 2 + 3 | The real portfolio is modeled: properties, units, tenants, leases |
 | 3 | 4 + 5 | Tenants see their balance and rent due; the ledger is authoritative |
 | 4 | 6 + 7 | Documents and maintenance requests work end to end |
 | 5 | 8 + 9 | Communication and an operational dashboard for the RHP team |
@@ -106,7 +106,7 @@ Review round (ADR-006), added while the phase is open:
       deleted
 - [x] Unit screens read **identifier first, property second** (`Storefront` / `- 910 Stark`)
 
-Deferred on purpose, each labelled in the UI rather than faked (ADR-005):
+Deferred on purpose, each labeled in the UI rather than faked (ADR-005):
 
 | Panel or counter the spec lists | Arrives with |
 | --- | --- |
@@ -115,36 +115,77 @@ Deferred on purpose, each labelled in the UI rather than faked (ADR-005):
 | Open maintenance requests counter | Phase 7 |
 | Full admin dashboard | Phase 9 |
 
-## Phase 3 — Lease management (in review: owner testing)
+## Phase 3 — Lease management (complete)
 
-**Status note:** implemented and tested on the `rhp-3` branch, not yet signed off. `main` is not updated
-until the owner has exercised it; the branch is squashed into one commit on `main` afterwards.
+Folded into `main` as a single commit after owner testing, and the `rhp-3` branch was deleted.
 
 Delivered: the lease desk — leases created and edited by managers and admins, moving *draft* → *active* →
 *ended* under explicit actions; one or more tenants per lease with exactly one primary contact; monthly
 rent, deposit and rent due day; the lease term; a signed-lease document; and the tenant-facing `/lease/`
 page showing their unit, term, rent, deposit, co-tenants and document. The Phase 2 property and unit
-panels and the occupied/vacant counters are now filled from leases rather than labelled as missing.
+panels and the occupied/vacant counters are now filled from leases rather than labeled as missing.
 
 Acceptance criteria from the specification:
 
-- [x] A unit cannot be let twice: `one_active_lease_per_unit` is a database constraint, not a form rule
+- [x] A unit cannot be rented twice: `one_active_lease_per_unit` is a database constraint, not a form rule
 - [x] A lease is ended by a person, never by the calendar; ended leases are read-only history
 - [x] Co-tenants are supported with exactly one primary contact (`UniqueConstraint` per lease)
 - [x] A tenant sees their own lease and document, and nothing else: the tenant document URL carries no id
 - [x] Documents are never served by the proxy; both document views check permissions first
 
-Decisions are recorded in [ADR-007](decisions/ADR-007-lease-modelling.md) (lease modelling: one active
+Decisions are recorded in [ADR-007](decisions/ADR-007-lease-modeling.md) (lease modeling: one active
 lease per unit, explicit status, frozen unit, co-tenants, one document, one occupancy definition).
 
 Deliberately not built here: balances, charges and payments (Phase 4), the full tenant dashboard
 (Phase 5), the documents area (Phase 6), electronic signatures (not in the specification).
 
-## Phase 4 — Rent ledger
+## Phase 4 — Rent ledger (in review: owner testing)
 
-Recurring rent charges, manual charges, recorded payments, reversals and adjustments, and an
-immutable, auditable ledger from which balances are derived. Statuses distinguish unpaid, partially
-paid, paid, overdue, and pending. No card or bank credential storage, ever.
+**Status note:** implemented and tested on the `rhp-4` branch, not yet signed off. `main` is not updated
+until the owner has exercised it; the branch is squashed into one commit on `main` afterward.
+
+Delivered: the ledger — recurring monthly rent charges generated on demand and never twice for the same
+month, manual charges, recorded payments (cleared or pending), reversals, adjustments, and a running
+balance derived from the entries. The accounting area at `/manage/ledger/` lists every live lease with
+its balance, overdue amount and next due date; each lease has a ledger with its charges, payments,
+merged activity and a History panel written from the audit trail; the tenant's `/lease/` page shows
+their own balance, next rent and recent activity; and the staff landing page counts what is outstanding
+and what is late. The audit table the phase plan promised now exists and records lease status changes,
+money movements and role changes.
+
+Acceptance criteria from the specification:
+
+- [x] Balance is derived from ledger entries — there is no stored balance or charge status anywhere
+- [x] Financial history is immutable **and** auditable: append-only models, `PROTECT` foreign keys,
+      read-only in the Django admin, and an audit event in the same transaction as every change
+- [x] Edits and corrections leave an audit trail: a reversal or adjustment row, with an actor, a
+      timestamp and a reason, shown on the lease's History panel
+- [x] A tenant sees an understandable balance: what is owed (or in credit), what is next due, and the
+      recent activity, on `/lease/`
+- [x] Statuses distinguish unpaid, partly paid, paid, overdue and payment pending
+- [x] No card or bank credential is stored, and the model leaves room for a provider: amount, date,
+      method, free-text reference and a pending state already exist
+
+Decisions are recorded in [ADR-008](decisions/ADR-008-rent-ledger.md) (two tables with explicit
+directions, derived balances and states, first-in-first-out allocation, corrections as new entries,
+rent generation that is idempotent and bounded by the term, managers record and admins correct).
+
+Deliberately not built here: proration, late fees, interest, invoicing or receipt PDFs (none are in the
+specification), deposit returns and deductions, and any payment-provider integration (Phase 11).
+
+Review round, added while the phase is open:
+
+- [x] The **Residential/Commercial designation moved to the property**; units inherit it, the data
+      migration gives each property the designation its units had, and a property cannot be switched to
+      commercial while its units still record bedrooms or bathrooms (ADR-006 revision)
+- [x] Units gained **square feet** and **amenities**, the latter from a list staff maintain in the back
+      office and retired rather than deleted (ADR-006 revision)
+- [x] `/manage/units/` is **grouped by property** and pages by property, with square footage replacing
+      the old Type column
+- [x] The ledger's adjustment screen **prefills the amount with what is still owed**, so zeroing a
+      charge is one submit, with a second button for the full charge amount
+- [x] Tenants gained a **photo** on the account page, admin-set, served through a permission-checked
+      view, with a drawn placeholder when there is none (ADR-009)
 
 ## Phase 5 — Tenant dashboard
 

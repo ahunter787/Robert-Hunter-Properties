@@ -22,6 +22,19 @@ def money(value) -> str:
 
 
 @register.filter
+def absolute(value):
+    """The size of an amount, ignoring its direction.
+
+    A ledger shows the sign itself (``+`` for a charge, ``−`` for a payment) and
+    then the amount, never a minus sign inside the currency.
+    """
+    try:
+        return abs(Decimal(value))
+    except InvalidOperation, TypeError, ValueError:
+        return value
+
+
+@register.filter
 def ordinal_day(value) -> str:
     """1 → ``1st``. Named to stay distinct from humanize's numeric filter."""
     try:

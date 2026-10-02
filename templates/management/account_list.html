@@ -48,7 +48,15 @@
           <tbody class="divide-y divide-surface-muted">
             {% for account in accounts %}
               <tr>
-                <td class="py-3 pr-4 font-medium">{{ account.display_name }}</td>
+                <td class="py-3 pr-4">
+                  <div class="flex items-center gap-3">
+                    {% if account.tenant_profile.photo %}
+                      {% url 'manage:account-photo' account.pk as photo_url %}
+                    {% endif %}
+                    {% include "components/avatar.html" with photo_url=photo_url size="sm" %}
+                    <span class="font-medium">{{ account.display_name }}</span>
+                  </div>
+                </td>
                 <td class="py-3 pr-4">{{ account.username }}</td>
                 <td class="py-3 pr-4">{{ account.email|default:"Not set" }}</td>
                 <td class="py-3 pr-4">

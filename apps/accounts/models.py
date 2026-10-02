@@ -9,10 +9,25 @@ RHP portal. They are related but deliberately separate concepts - see
 ``docs/decisions/ADR-003-role-on-user-model.md``.
 """
 
+from pathlib import Path
+from uuid import uuid4
+
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.models import UserManager as DjangoUserManager
 from django.db import models
 from django.utils import timezone
+
+
+def tenant_photo_path(instance, filename: str) -> str:
+    """Randomised storage path for a tenant photo.
+
+    Never the client's filename: uploads are stored under a generated name so a
+    crafted name cannot influence where a file lands (docs/security.md).
+    """
+    suffix = Path(filename).suffix.lower()
+    if len(suffix) > 10 or not suffix.isascii():
+        suffix = ""
+    return f"tenant_photos/{uuid4().hex}{suffix}"
 
 
 class Role(models.TextChoices):
@@ -104,6 +119,14 @@ class TenantProfile(models.Model):
     """
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="tenant_profile")
+    #: A photo of the tenant, uploaded by staff. Personal data: served only
+    #: through a permission-checked view, never from a public media path.
+    photo = models.ImageField(
+        upload_to=tenant_photo_path,
+        blank=True,
+        null=True,
+        help_text="JPEG, PNG, or WebP. Shown beside the tenant's name.",
+    )
     phone = models.CharField("phone number", max_length=32, blank=True)
     preferred_contact_method = models.CharField(
         max_length=10,

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Add a charge — {{ lease.unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="underline-offset-2 hover:underline">Ledger</a>
+        · {{ lease.unit.identifier }}
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Add a charge</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        For anything that is not the monthly rent: a repair recharge, a replacement key, or a part
+        month when a tenancy starts after the rent due day.
+      </p>
+    </div>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">Add the charge</button>
+          <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="text-sm text-ink-muted">
+      A charge is never edited once it is saved. A mistake is corrected with an adjustment, which
+      leaves both entries visible.
+    </p>
+  </div>
+{% endblock %}

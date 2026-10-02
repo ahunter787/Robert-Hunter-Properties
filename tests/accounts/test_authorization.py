@@ -238,7 +238,7 @@ def test_only_superadmin_sees_the_role_control(client):
     assert "Change role" in superadmin_body
 
 
-# --- Landing behaviour ----------------------------------------------------
+# --- Landing behavior ----------------------------------------------------
 
 
 def test_anonymous_visitor_can_reach_the_sign_in_page(client):

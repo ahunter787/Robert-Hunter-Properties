@@ -4,16 +4,12 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from PIL import Image
 
 from apps.common.forms import StyledModelForm
-from apps.properties.constants import (
-    BANNER_ALLOWED_CONTENT_TYPES,
-    BANNER_MAX_DIMENSION,
-    UnitType,
-)
+from apps.common.images import validate_image_upload
+from apps.properties.constants import PropertyType
 from apps.properties.locations import parse_coordinates
-from apps.properties.models import Property, Unit
+from apps.properties.models import Amenity, Property, Unit
 
 
 class PropertyForm(StyledModelForm):
@@ -37,6 +33,7 @@ class PropertyForm(StyledModelForm):
         model = Property
         fields = [
             "name",
+            "property_type",
             "street",
             "city",
             "state",
@@ -75,39 +72,35 @@ class PropertyForm(StyledModelForm):
         return " ".join(self.cleaned_data["city"].split())
 
     def clean_banner_image(self):
-        image = self.cleaned_data.get("banner_image")
-        # No content_type means the field is holding the file already on disk
-        # rather than a fresh upload. Django has validated that one, and opening
-        # a stored file here would leave a handle for the test suite to trip over.
-        if not image or not hasattr(image, "content_type"):
-            return image
+        return validate_image_upload(
+            self.cleaned_data.get("banner_image"),
+            max_bytes=settings.RHP_MAX_UPLOAD_MB * 1024 * 1024,
+        )
 
-        max_bytes = settings.RHP_MAX_UPLOAD_MB * 1024 * 1024
-        if image.size > max_bytes:
-            raise ValidationError(
-                f"That image is larger than {settings.RHP_MAX_UPLOAD_MB} MB. "
-                "Resize it and try again."
+    def clean_property_type(self) -> str:
+        """Refuse to strand residential detail under a commercial designation.
+
+        Turning a property commercial while its units still record bedrooms or
+        bathrooms would leave data the screens then call "not applicable" — so it
+        is refused, with the units named, rather than silently cleared.
+        """
+        property_type = self.cleaned_data["property_type"]
+        if (
+            self.instance.pk
+            and property_type == PropertyType.COMMERCIAL
+            and not self.instance.is_commercial
+        ):
+            furnished = self.instance.units.filter(
+                Q(bedrooms__isnull=False) | Q(bathrooms__isnull=False)
             )
-
-        content_type = getattr(image, "content_type", "")
-        if content_type and content_type not in BANNER_ALLOWED_CONTENT_TYPES:
-            raise ValidationError("Upload a JPEG, PNG, or WebP image.")
-
-        try:
-            with Image.open(image) as opened:
-                width, height = opened.size
-        except Exception as error:  # noqa: BLE001 - Pillow raises several types
-            raise ValidationError("That file is not an image RHP can read.") from error
-        finally:
-            # Pillow leaves the pointer inside the file; the storage backend needs
-            # to read it from the start.
-            image.seek(0)
-
-        if width > BANNER_MAX_DIMENSION or height > BANNER_MAX_DIMENSION:
-            raise ValidationError(
-                f"That image is larger than {BANNER_MAX_DIMENSION}×{BANNER_MAX_DIMENSION} pixels."
-            )
-        return image
+            if furnished.exists():
+                names = ", ".join(unit.identifier for unit in furnished[:5])
+                more = "" if furnished.count() <= 5 else f" and {furnished.count() - 5} more"
+                raise ValidationError(
+                    f"{self.instance.name} has units with bedrooms or bathrooms recorded "
+                    f"({names}{more}). Clear those first, then set the property to commercial."
+                )
+        return property_type
 
     def clean(self):
         cleaned = super().clean()
@@ -141,16 +134,17 @@ class UnitForm(StyledModelForm):
         fields = [
             "property",
             "identifier",
-            "unit_type",
+            "square_feet",
             "bedrooms",
             "bathrooms",
+            "amenities",
             "is_active",
         ]
-        labels = {"is_active": "In service", "unit_type": "Unit type"}
+        labels = {"is_active": "In service"}
         help_texts = {
             "is_active": "Uncheck for a unit that is out of service.",
-            "bedrooms": "Residential units only.",
-            "bathrooms": "Residential units only. Half baths are allowed, for example 1.5.",
+            "bedrooms": "Residential properties only.",
+            "bathrooms": "Residential properties only. Half baths are allowed, for example 1.5.",
         }
 
     def __init__(self, *args, **kwargs):
@@ -165,6 +159,16 @@ class UnitForm(StyledModelForm):
             )
         self.fields["property"].queryset = properties.order_by("name")
         self.fields["property"].empty_label = "Select a property"
+
+        # Retired amenities stay on the units that have them, but are no longer
+        # offered; a unit being edited keeps any it already has selectable.
+        offered = Amenity.objects.filter(is_active=True)
+        if self.instance.pk:
+            offered = Amenity.objects.filter(
+                Q(is_active=True) | Q(pk__in=self.instance.amenities.values("pk"))
+            )
+        self.fields["amenities"].queryset = offered.order_by("name")
+        self.fields["amenities"].label = "Amenities"
 
     def clean_identifier(self) -> str:
         identifier = " ".join(self.cleaned_data["identifier"].split())
@@ -185,14 +189,18 @@ class UnitForm(StyledModelForm):
                 self.add_error("identifier", "That identifier is already used at this property.")
 
         # Bedrooms and bathrooms describe residential space, so they are not
-        # meaningful on a commercial unit. Enforced here rather than by hiding the
-        # inputs, so the rule holds whatever the browser sends.
-        if cleaned.get("unit_type") == UnitType.COMMERCIAL and (
-            cleaned.get("bedrooms") is not None or cleaned.get("bathrooms") is not None
+        # meaningful in a commercial property. Enforced here rather than by hiding
+        # the inputs, so the rule holds whatever the browser sends — and checked
+        # against the *submitted* property, so moving a unit into a commercial
+        # building is refused rather than quietly saved.
+        if (
+            property_
+            and property_.is_commercial
+            and (cleaned.get("bedrooms") is not None or cleaned.get("bathrooms") is not None)
         ):
             self.add_error(
                 None,
-                "Bedrooms and bathrooms describe residential units; leave them blank for a "
-                "commercial unit.",
+                f"{property_.name} is a commercial property, so bedrooms and bathrooms are "
+                "not recorded for its units. Leave them blank.",
             )
         return cleaned

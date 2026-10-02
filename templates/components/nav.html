@@ -20,6 +20,7 @@
             <li><a href="{% url 'portfolio:property-list' %}" class="rhp-nav-link">Properties</a></li>
             <li><a href="{% url 'portfolio:unit-list' %}" class="rhp-nav-link">Units</a></li>
             <li><a href="{% url 'leases:lease-list' %}" class="rhp-nav-link">Leases</a></li>
+            <li><a href="{% url 'ledger:overview' %}" class="rhp-nav-link">Accounting</a></li>
             <li><a href="{% url 'manage:account-list' %}" class="rhp-nav-link">Tenants</a></li>
           {% endif %}
           {% if user.is_tenant %}

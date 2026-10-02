@@ -8,7 +8,7 @@
 
 Reviewing Phase 2 raised three things the portfolio model did not cover:
 
-1. A unit is not always a dwelling. RHP manages **storefronts** as well as flats, and the review
+1. A unit is not always a dwelling. RHP manages **storefronts** as well as apartments, and the review
    surfaced that bedrooms and bathrooms — fields taken straight from the specification's `UNIT`
    model — are meaningless for commercial space.
 2. A property needs a **location** on a map so staff can find it and recognise it.
@@ -63,7 +63,7 @@ the portfolio is legible at a glance.
 
 **Positive**
 
-- A storefront is modelled as what it is, and the screens stop implying that missing bedrooms are
+- A storefront is modeled as what it is, and the screens stop implying that missing bedrooms are
   missing data.
 - No API key, no outbound network, and no per-save cost for the map: pasting a link is a one-time act
   and the pin is then local data.
@@ -129,3 +129,60 @@ which in the owner's own link sits about 380 m from the actual place. The parser
 decision explicitly avoided. It is bounded (one host family, five hops, five seconds, no credentials)
 and it is the only outbound request in RHP. The containment is asserted by tests that feed the resolver
 a redirect to a link-local address and check that it is refused without being requested.
+
+## Revision: the designation moves to the property, and units gain size and amenities
+
+**Date:** 2026-10-02, while Phase 4 was open, after owner review of the portfolio screens.
+
+The decision above put the Residential/Commercial designation on the **unit**. In use that is the wrong
+place for it: a designation describes a *building*, it was being asked for once per unit inside a
+building that already answers the question, and a mixed set of units in one property was a data-entry
+problem rather than a real distinction. Three changes follow from that review.
+
+### The property carries the designation; units inherit it
+
+- `Unit.unit_type` is **removed** and `Property.property_type` takes its place (`PropertyType`, same
+  two values, indexed, defaulting to residential).
+- `Unit.is_commercial` now reads through its property, so every screen and rule keeps working while the
+  field that people fill in exists once per building.
+- The residential rule moves with it: bedrooms and bathrooms are refused for a unit **in a commercial
+  property** — including when an existing unit is moved into one, because the rule is checked against
+  the property being submitted, not the one it came from.
+- Switching a property **to** commercial while any of its units still records bedrooms or bathrooms is
+  refused, and the refusal names those units. Silently clearing them would destroy a measurement
+  somebody entered; refusing lets a person decide.
+- The data migration gives each property the designation its units had: commercial only when **every**
+  unit was commercial, residential otherwise. A property with no units, and a mixed one, become
+  residential.
+
+**The trade-off, stated plainly.** A mixed-use building — a storefront with apartments above it — can no
+longer be expressed, because the building now has one answer. The migration resolves the ambiguity
+deterministically rather than guessing, the current database is empty so nothing was lost when it ran,
+and if mixed-use turns out to matter, a per-unit override can be added later without disturbing the
+property-level field. What the review gained is a designation that matches how staff talk about these
+buildings ("the Stark Street shops") and one fewer field per unit.
+
+### Units record their size
+
+`Unit.square_feet` is an optional `PositiveIntegerField` (1 … 1 000 000, `0` refused as nonsense).
+Blank means "not recorded" and every screen says so rather than showing a zero. The unit list's old Type
+column becomes **Square footage**, and the property page adds a total when at least one unit has a
+figure — the measurement is per unit because that is what an agreement is about.
+
+### Amenities come from a list staff maintain
+
+`Amenity(name, is_active)` with a many-to-many from `Unit`, seeded with seventeen common amenities by
+the same migration. Chosen from a multi-select on the unit form, shown as chips on the unit page.
+
+- A row in the database rather than a fixed choice list, so an amenity can be added or renamed in the
+  back office without a code change — the review round's whole point was that these lists change.
+- **Retire, don't delete.** An amenity in use is unticked, not removed: deleting a row would quietly
+  change every unit that had it. A retired amenity leaves the picker but stays on the units that have
+  it, and stays selectable while editing one of those units.
+
+### The unit list is grouped by property
+
+`/manage/units/` pages by **property** (25 per page) rather than by unit, so the grouping survives
+pagination and a property's units are never split across pages. Filters scope both levels: a property
+appears because it has a matching unit, and shows only those units. Each group is headed by the
+property's name, its type and its address, with an **Add unit** link that preselects it.

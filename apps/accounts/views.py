@@ -12,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -23,6 +24,7 @@ from apps.accounts.forms import (
     InvitationPasswordForm,
     ProfileForm,
     TenantCreateForm,
+    TenantProfileForm,
     TenantRoleForm,
     ThrottledLoginForm,
 )
@@ -35,9 +37,23 @@ from apps.accounts.permissions import (
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
 from apps.leases.models import Lease, LeaseStatus
+from apps.ledger import services as ledger_services
 from apps.properties.models import Property, Unit
 
 logger = logging.getLogger("apps.accounts")
+
+
+def photo_response(field_file) -> FileResponse:
+    """Serve a stored photo from the application, never from the proxy.
+
+    ``private`` keeps it out of shared caches; ``nosniff`` stops a browser
+    treating one file type as another (docs/security.md).
+    """
+    field_file.open("rb")
+    response = FileResponse(field_file)
+    response["Cache-Control"] = "private, max-age=300"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # --- Authentication -------------------------------------------------------
@@ -188,6 +204,14 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
             context["lease_draft_count"] = Lease.objects.filter(status=LeaseStatus.DRAFT).count()
             context["lease_expiring_count"] = Lease.objects.expiring_within(30).count()
 
+            # Money comes from the ledger's own definitions, not from a second
+            # opinion about what a balance is (ADR-008).
+            ledger_rows = ledger_services.ledger_rows()
+            ledger_totals = ledger_services.totals(ledger_rows)
+            context["ledger_outstanding"] = ledger_totals["outstanding"]
+            context["ledger_overdue"] = ledger_totals["overdue"]
+            context["ledger_overdue_leases"] = ledger_totals["overdue_leases"]
+
         if user.is_admin_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()
         return context
@@ -274,7 +298,74 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["role_form"] = TenantRoleForm(instance=self.object)
         context["can_change_roles"] = self.request.user.is_superadmin
+        profile = getattr(self.object, "tenant_profile", None)
+        context["profile"] = profile
+        context["photo_form"] = TenantProfileForm(instance=profile) if profile else None
         return context
+
+
+class TenantAccountPhotoUpdateView(AdminRequiredMixin, View):
+    """Set, replace, or remove a tenant's photo.
+
+    Admin-only, like every other change to an account: managers read accounts,
+    administrators change them. Replacing or removing the photo deletes the file
+    it replaced, so nothing accumulates as an orphan.
+    """
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        account = get_object_or_404(User, pk=pk, role=Role.TENANT)
+        profile, _ = TenantProfile.objects.get_or_create(user=account)
+        previous = profile.photo.name if profile.photo else ""
+        form = TenantProfileForm(request.POST, request.FILES, instance=profile)
+
+        if not form.is_valid():
+            for error in form.errors.get("photo", []):
+                messages.error(request, error)
+            for error in form.errors.get("remove_photo", []):
+                messages.error(request, error)
+            return redirect("manage:account-detail", pk=account.pk)
+
+        profile = form.save()
+        current = profile.photo.name if profile.photo else ""
+        if previous and previous != current:
+            profile.photo.storage.delete(previous)
+
+        logger.info("tenant photo updated user=%s has_photo=%s", account.pk, bool(current))
+        messages.success(
+            request,
+            f"{account.display_name}'s photo was removed."
+            if not current
+            else f"{account.display_name}'s photo was updated.",
+        )
+        return redirect("manage:account-detail", pk=account.pk)
+
+
+class TenantPhotoView(ManagerRequiredMixin, View):
+    """Serve a tenant's photo through the application, never from /media."""
+
+    http_method_names = ["get"]
+
+    def get(self, request, pk):
+        account = get_object_or_404(User, pk=pk, role=Role.TENANT)
+        profile = getattr(account, "tenant_profile", None)
+        if profile is None or not profile.photo:
+            raise Http404("This tenant has no photo.")
+        return photo_response(profile.photo)
+
+
+class OwnPhotoView(LoginRequiredMixin, View):
+    """A tenant's own photo. The resource is implied by the session, so there is
+    no id in the URL that could be changed to reach somebody else's."""
+
+    http_method_names = ["get"]
+
+    def get(self, request):
+        profile = getattr(request.user, "tenant_profile", None)
+        if profile is None or not profile.photo:
+            raise Http404("There is no photo on your account.")
+        return photo_response(profile.photo)
 
 
 class TenantAccountToggleActiveView(AdminRequiredMixin, View):
@@ -328,7 +419,7 @@ class TenantRoleChangeView(AdminRequiredMixin, View):
             raise PermissionDenied("Only a superadmin may change roles.")
         account = get_object_or_404(User, pk=pk)
         # Captured before the form is bound: a ModelForm mutates its instance
-        # during validation, so reading it afterwards would report the new role.
+        # during validation, so reading it afterward would report the new role.
         previous = account.role
         form = TenantRoleForm(request.POST, instance=account)
         if not form.is_valid():

@@ -8,13 +8,14 @@ than showing a zero that looks like real data.
 from pathlib import Path
 from uuid import uuid4
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
 from django.utils.functional import cached_property
 
 from apps.properties.constants import (  # noqa: F401 - USState re-exported
     ZIP_CODE_VALIDATOR,
-    UnitType,
+    PropertyType,
     USState,
 )
 
@@ -54,6 +55,15 @@ class Property(models.Model):
         db_index=True,
         help_text="Inactive properties stay in history but drop out of pickers.",
     )
+    # The designation belongs to the building, not to each unit: a property is
+    # residential or commercial, and its units inherit that (ADR-006 revision).
+    property_type = models.CharField(
+        max_length=16,
+        choices=PropertyType.choices,
+        default=PropertyType.RESIDENTIAL,
+        db_index=True,
+        help_text="Bedrooms and bathrooms are only recorded for units in a residential property.",
+    )
     notes = models.TextField(blank=True)
     # Stored measurement, not a float: six decimals is about 11 cm.
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -88,6 +98,38 @@ class Property(models.Model):
     def has_banner(self) -> bool:
         return bool(self.banner_image)
 
+    @property
+    def is_commercial(self) -> bool:
+        return self.property_type == PropertyType.COMMERCIAL
+
+    @property
+    def is_residential(self) -> bool:
+        return self.property_type == PropertyType.RESIDENTIAL
+
+
+class Amenity(models.Model):
+    """Something a unit offers, chosen from a list staff maintain.
+
+    A row rather than a fixed choice list so an amenity can be added or renamed
+    without a code change. Amenities in use are **retired** (``is_active``),
+    never deleted: deleting one would quietly change every unit that had it.
+    """
+
+    name = models.CharField(max_length=60, unique=True)
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Retired amenities stay on the units that have them but leave the picker.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "amenities"
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class UnitQuerySet(models.QuerySet):
     def active(self):
@@ -108,12 +150,18 @@ class Unit(models.Model):
         max_length=32,
         help_text="Label used inside the property, for example '1', 'A', or 'Rear'.",
     )
-    unit_type = models.CharField(
-        max_length=12,
-        choices=UnitType.choices,
-        default=UnitType.RESIDENTIAL,
-        db_index=True,
-        help_text="Commercial units have no bedrooms or bathrooms.",
+    square_feet = models.PositiveIntegerField(
+        "square feet",
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(1_000_000)],
+        help_text="Optional. Leave blank when the size is not known.",
+    )
+    amenities = models.ManyToManyField(
+        Amenity,
+        blank=True,
+        related_name="units",
+        help_text="Hold Ctrl (or Cmd) to choose more than one.",
     )
     bedrooms = models.PositiveSmallIntegerField(null=True, blank=True)
     bathrooms = models.DecimalField(
@@ -159,7 +207,8 @@ class Unit(models.Model):
 
     @cached_property
     def is_commercial(self) -> bool:
-        return self.unit_type == UnitType.COMMERCIAL
+        """A unit is commercial because its building is (ADR-006 revision)."""
+        return self.property.is_commercial
 
     # --- Occupancy --------------------------------------------------------
     # The definition lives in apps.leases (LeaseQuerySet.current): a unit is
@@ -191,6 +240,6 @@ class Unit(models.Model):
 
         A unit that is out of service is a third state: its tenancy stays in the
         records (see ``current_lease``), but it counts as neither occupied nor
-        vacant, because it cannot be let.
+        vacant, because it cannot be rented.
         """
         return self.is_active and self.current_lease is not None

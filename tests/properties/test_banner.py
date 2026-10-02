@@ -45,6 +45,7 @@ def as_admin(client):
 def property_payload(property_, **overrides):
     payload = {
         "name": property_.name,
+        "property_type": property_.property_type,
         "street": property_.street,
         "city": property_.city,
         "state": property_.state,

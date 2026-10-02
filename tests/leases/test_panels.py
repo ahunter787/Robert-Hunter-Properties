@@ -1,4 +1,4 @@
-"""What Phase 3 fills in: the panels and counters Phase 2 left labelled."""
+"""What Phase 3 fills in: the panels and counters Phase 2 left labeled."""
 
 import pytest
 from django.urls import reverse

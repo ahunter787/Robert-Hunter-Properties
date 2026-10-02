@@ -18,6 +18,8 @@ urlpatterns = [
     path("login/", views.ThrottledLoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("profile/", views.ProfileView.as_view(), name="profile"),
+    # The tenant's own photo: no id in the URL by design.
+    path("photo/", views.OwnPhotoView.as_view(), name="photo"),
     path(
         "password/",
         auth_views.PasswordChangeView.as_view(

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load rhp_format %}
 
 {% block title %}Management — RHP{% endblock %}
 
@@ -49,6 +50,22 @@
           <a href="{% url 'leases:lease-list' %}?expiring=30" class="rhp-btn rhp-btn-secondary mt-4">Review</a>
         </div>
         <div class="rhp-card">
+          <p class="rhp-eyebrow">Outstanding</p>
+          <p class="mt-2 text-3xl font-semibold">{{ ledger_outstanding|money }}</p>
+          <p class="mt-1 text-sm text-ink-muted">owed across every live lease</p>
+          <a href="{% url 'ledger:overview' %}" class="rhp-btn rhp-btn-secondary mt-4">Accounting</a>
+        </div>
+        <div class="rhp-card">
+          <p class="rhp-eyebrow">Overdue</p>
+          <p class="mt-2 text-3xl font-semibold {% if ledger_overdue %}text-danger{% endif %}">
+            {{ ledger_overdue|money }}
+          </p>
+          <p class="mt-1 text-sm text-ink-muted">
+            {{ ledger_overdue_leases }} lease{{ ledger_overdue_leases|pluralize }} past a due date
+          </p>
+          <a href="{% url 'ledger:overview' %}?overdue=1" class="rhp-btn rhp-btn-secondary mt-4">Chase</a>
+        </div>
+        <div class="rhp-card">
           <p class="rhp-eyebrow">Tenants</p>
           <p class="mt-2 text-3xl font-semibold">{{ tenant_active_count }}</p>
           <p class="mt-1 text-sm text-ink-muted">active accounts</p>
@@ -67,8 +84,8 @@
       <section class="rhp-card">
         <h2 class="text-sm font-semibold">Not counted yet</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Rent due, collected and outstanding need the ledger (Phase 4); open maintenance requests need
-          the maintenance workflow (Phase 7). RHP does not show a number here until it is real.
+          Open maintenance requests need the maintenance workflow (Phase 7). RHP does not show a
+          number here until it is real.
         </p>
       </section>
     {% else %}

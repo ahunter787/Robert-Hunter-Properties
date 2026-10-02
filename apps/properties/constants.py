@@ -66,16 +66,39 @@ ZIP_CODE_VALIDATOR = RegexValidator(
 )
 
 
-class UnitType(models.TextChoices):
-    """What kind of space a unit is.
+class PropertyType(models.TextChoices):
+    """What kind of space a building holds.
 
-    Bedrooms and bathrooms describe residential space, so they are only
-    meaningful for RESIDENTIAL units (enforced in the unit form and reflected in
-    the unit screens).
+    The designation belongs to the **property**, not to each unit: a building is
+    residential or commercial and its units inherit that. Bedrooms and bathrooms
+    describe residential space, so they are only meaningful in a residential
+    property (enforced in the unit form and reflected in the screens).
     """
 
     RESIDENTIAL = "RESIDENTIAL", "Residential"
     COMMERCIAL = "COMMERCIAL", "Commercial"
+
+
+#: The amenities every new RHP database starts with. Editable in the back office.
+DEFAULT_AMENITIES = (
+    "Parking",
+    "Off-street parking",
+    "Laundry in unit",
+    "Laundry in building",
+    "Dishwasher",
+    "Air conditioning",
+    "Balcony or patio",
+    "Storage",
+    "Fireplace",
+    "Furnished",
+    "Pet friendly",
+    "Elevator",
+    "Gym",
+    "Pool",
+    "Security system",
+    "Utilities included",
+    "Wheelchair accessible",
+)
 
 
 #: Upload limits for property banners.

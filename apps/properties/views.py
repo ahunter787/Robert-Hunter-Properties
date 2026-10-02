@@ -11,7 +11,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.db.models.deletion import ProtectedError
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -26,7 +26,6 @@ from django.views.generic import (
 )
 
 from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
-from apps.properties.constants import UnitType
 from apps.properties.forms import PropertyForm, UnitForm
 from apps.properties.locations import embed_url, external_url
 from apps.properties.models import Property, Unit
@@ -99,6 +98,9 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         context["units"] = units
         context["unit_total"] = len(units)
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
+        # Only meaningful when at least one unit records a size; the template hides
+        # the line rather than showing "0 sq ft".
+        context["total_square_feet"] = sum(unit.square_feet or 0 for unit in units) or None
         # Units that are currently under an active lease. Reading this per unit
         # costs one query each; the occupancy rule itself lives in apps.leases.
         context["occupancy"] = [
@@ -227,35 +229,58 @@ class PropertyDeleteView(AdminRequiredMixin, DeleteView):
 
 
 class UnitListView(ManagerRequiredMixin, ListView):
+    """Every unit, grouped under the property it belongs to.
+
+    The page is paginated by **property**, not by unit, so the grouping survives
+    pagination: a page holds up to 25 properties with all of their matching units,
+    which is how the portfolio is actually read. Filters scope both levels — a
+    property appears because it has a matching unit, and shows only those units.
+    """
+
     template_name = "management/unit_list.html"
-    context_object_name = "units"
+    context_object_name = "properties"
     paginate_by = 25
 
-    def get_queryset(self):
-        queryset = Unit.objects.select_related("property").order_by("property__name", "identifier")
+    def _matching_units(self):
+        units = Unit.objects.order_by("identifier")
         search = self.request.GET.get("q", "").strip()
         if search:
-            queryset = queryset.filter(
+            units = units.filter(
                 Q(identifier__icontains=search)
                 | Q(property__name__icontains=search)
                 | Q(property__city__icontains=search)
             )
-        property_id = self.request.GET.get("property", "")
-        if property_id.isdigit():
-            queryset = queryset.filter(property_id=property_id)
         status = self.request.GET.get("status", "")
         if status == "active":
-            queryset = queryset.filter(is_active=True)
+            units = units.filter(is_active=True)
         elif status == "inactive":
-            queryset = queryset.filter(is_active=False)
-        return queryset
+            units = units.filter(is_active=False)
+        return units
+
+    def get_queryset(self):
+        units = self._matching_units()
+        properties = (
+            Property.objects.filter(units__in=units)
+            .prefetch_related(Prefetch("units", queryset=units, to_attr="listed_units"))
+            .distinct()
+            .order_by("name")
+        )
+        property_id = self.request.GET.get("property", "")
+        if property_id.isdigit():
+            properties = properties.filter(pk=property_id)
+        return properties
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["search"] = self.request.GET.get("q", "")
         context["status"] = self.request.GET.get("status", "")
-        context["properties"] = Property.objects.order_by("name")
+        context["all_properties"] = Property.objects.order_by("name")
         context["selected_property"] = self.request.GET.get("property", "")
+        # The page's units, flattened: the summary line reads from this, and it
+        # keeps one familiar list for anything that only needs the units.
+        context["units"] = [
+            unit for property_ in context["properties"] for unit in property_.listed_units
+        ]
         return context
 
 
@@ -266,9 +291,6 @@ class UnitCreateView(ManagerRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
-        # A create view has no instance, so the model default is not in the form's
-        # initial data; make it explicit so the dropdown arrives preselected.
-        initial.setdefault("unit_type", UnitType.RESIDENTIAL)
         property_id = self.request.GET.get("property", "")
         if property_id.isdigit() and Property.objects.active().filter(pk=property_id).exists():
             initial["property"] = int(property_id)

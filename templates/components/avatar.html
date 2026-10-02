@@ -1,0 +1,22 @@
+{% comment %}
+A tenant's portrait, or a neutral placeholder when there is none.
+
+Call with: {% include "components/avatar.html" with photo_url=url size="md" %}
+
+
+A placeholder is drawn rather than stored: no media file, no static asset, and
+nothing to clean up. Sizes are the three the screens use; the caller passes one.
+{% endcomment %}
+{% if photo_url %}
+  <img src="{{ photo_url }}" alt=""
+       class="rounded-full object-cover {% if size == 'sm' %}h-8 w-8{% elif size == 'lg' %}h-24 w-24{% else %}h-12 w-12{% endif %}">
+{% else %}
+  <span class="inline-flex items-center justify-center rounded-full bg-surface-muted text-ink-muted
+               {% if size == 'sm' %}h-8 w-8{% elif size == 'lg' %}h-24 w-24{% else %}h-12 w-12{% endif %}"
+        role="img" aria-label="No photo">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"
+         class="{% if size == 'sm' %}h-5 w-5{% elif size == 'lg' %}h-14 w-14{% else %}h-7 w-7{% endif %}">
+      <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1h16v-1c0-2.76-3.58-5-8-5Z"/>
+    </svg>
+  </span>
+{% endif %}

@@ -68,7 +68,7 @@ def test_detail_shows_the_address_and_units(signed_in):
     assert "12 Maple St, Springfield, IL 62704" in body
     assert "Unit A" not in body  # the table shows the bare identifier
     assert ">A<" in body
-    assert "Not tracked here yet" in body  # deferred panels are labelled, not faked
+    assert "Not tracked here yet" in body  # deferred panels are labeled, not faked
 
 
 def test_create_property(signed_in):
@@ -76,6 +76,7 @@ def test_create_property(signed_in):
         reverse("portfolio:property-create"),
         {
             "name": "Oak Street Fourplex",
+            "property_type": "RESIDENTIAL",
             "street": "8 Oak St",
             "city": "Peoria",
             "state": "IL",
@@ -109,6 +110,7 @@ def test_a_duplicate_name_is_reported_rather_than_crashing(signed_in):
         reverse("portfolio:property-create"),
         {
             "name": "maple street duplex",
+            "property_type": "RESIDENTIAL",
             "street": "12 Maple St",
             "city": "Springfield",
             "state": "IL",
@@ -128,6 +130,7 @@ def test_edit_property(signed_in):
         reverse("portfolio:property-update", args=[property_.pk]),
         {
             "name": "Maple Street Duplex",
+            "property_type": "RESIDENTIAL",
             "street": "14 Maple St",
             "city": "Springfield",
             "state": "IL",

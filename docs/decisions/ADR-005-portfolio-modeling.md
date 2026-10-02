@@ -1,4 +1,4 @@
-# ADR-005: Portfolio modelling — properties, units, and deletion policy
+# ADR-005: Portfolio modeling — properties, units, and deletion policy
 
 - **Status:** Accepted (Phase 2)
 - **Date:** 2026-10-01
@@ -75,5 +75,5 @@ to show where the data does not exist yet.
   query filter that every future view must remember. Deactivation plus rare hard deletion is simpler
   and auditable.
 - **`ManagerRequiredMixin` for deletion too**: makes the spec's confirmation requirement the only
-  guard on an irreversible action. Rejected in favour of a role boundary.
+  guard on an irreversible action. Rejected in favor of a role boundary.
 - **Showing occupancy as 0 until Phase 3**: a number that looks like data but is not. Rejected.

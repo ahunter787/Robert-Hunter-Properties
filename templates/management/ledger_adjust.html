@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Adjust a charge — {{ lease.unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="underline-offset-2 hover:underline">Ledger</a>
+        · {{ lease.unit.identifier }}
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Adjust this charge</h1>
+    </div>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">The charge</h2>
+      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Description</dt>
+          <dd class="font-medium">{{ charge.description }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Amount</dt>
+          <dd class="font-medium">{{ charge.amount|money }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Settled</dt>
+          <dd class="font-medium">{{ line.settled|money }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Still owed</dt>
+          <dd class="font-medium {% if outstanding %}text-danger{% endif %}">{{ outstanding|money }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Due</dt>
+          <dd class="font-medium">{{ charge.due_date }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Type</dt>
+          <dd class="font-medium">{{ charge.get_kind_display }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">Add the adjustment</button>
+          {% if outstanding %}
+            <button type="submit" name="use_full_amount" value="1" class="rhp-btn rhp-btn-secondary">
+              Use the full charge amount ({{ charge.amount|money }})
+            </button>
+          {% endif %}
+          <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+      <p class="rhp-help mt-4">
+        {% if outstanding %}
+          The amount starts at what is still owed, so a reduction with no changes zeroes this charge.
+        {% else %}
+          This charge is already settled, so the amount is blank: an adjustment here would put the
+          account in credit rather than clear the charge.
+        {% endif %}
+        The charge itself is never changed — a separate adjustment entry is added, which is why the
+        ledger still shows what was originally charged.
+      </p>
+    </div>
+  </div>
+{% endblock %}

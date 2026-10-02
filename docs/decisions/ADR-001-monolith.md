@@ -25,7 +25,7 @@ with **Docker Compose** (Caddy reverse proxy + gunicorn + PostgreSQL).
 - One deployable artefact is identical on the development workstation, the local VM, and a cloud VPS;
   only environment variables and Caddy differ.
 - PostgreSQL is used from day one (no SQLite stepping stone) so tests, constraints, and `Decimal`
-  behaviour match production exactly.
+  behavior match production exactly.
 - Tailwind CSS is compiled at image-build time; there is no JavaScript application.
 
 ## Consequences

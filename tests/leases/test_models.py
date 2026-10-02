@@ -1,4 +1,4 @@
-"""Lease model behaviour: the constraints that make the data trustworthy."""
+"""Lease model behavior: the constraints that make the data trustworthy."""
 
 import datetime as dt
 
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.django_db
 TODAY = timezone.localdate()
 
 
-# --- one active lease per unit (the rule that stops double-letting) -------
+# --- one active lease per unit (the rule that stops double-renting) -------
 
 
 def test_a_unit_can_only_have_one_active_lease():
@@ -204,7 +204,7 @@ def test_an_out_of_service_unit_is_neither_vacant_nor_occupied():
     """A retired unit is a third state, not a vacancy.
 
     Retiring a unit does not end the tenancy in the records (see the next test),
-    but a unit that cannot be let must not be counted as vacant either.
+    but a unit that cannot be rented must not be counted as vacant either.
     """
     unit = make_unit(is_active=False)
     make_lease(unit)

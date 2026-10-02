@@ -1,4 +1,4 @@
-# ADR-007: How a lease is modelled
+# ADR-007: How a lease is modeled
 
 - **Status:** Accepted (Phase 3)
 - **Date:** 2026-10-01
@@ -59,7 +59,7 @@ starts disagreeing with the page it links to.
 
 A unit that is **out of service** is a third state, not a vacancy: its tenancy stays in the records
 (retiring a unit is not an eviction), but it is counted as neither occupied nor vacant, because it
-cannot be let. The unit page shows "Out of service" for exactly that case.
+cannot be rented. The unit page shows "Out of service" for exactly that case.
 
 ### Ended leases are history
 
@@ -115,7 +115,7 @@ enumerate: a tenant can only ever fetch the document of a lease they are on.
 
 **Positive**
 
-- A unit cannot be let twice, even under concurrency, and the constraint is named in the database.
+- A unit cannot be rented twice, even under concurrency, and the constraint is named in the database.
 - Nothing about a tenancy changes without a person's action, which is what makes the Phase 4 audit
   table meaningful and what keeps history stable.
 - Occupancy is one query, so the dashboard, the property page, the unit page and the tenant portal

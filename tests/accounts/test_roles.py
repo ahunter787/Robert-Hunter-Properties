@@ -1,4 +1,4 @@
-"""Role model behaviour: the properties every authorization decision relies on."""
+"""Role model behavior: the properties every authorization decision relies on."""
 
 import importlib
 

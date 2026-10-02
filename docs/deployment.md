@@ -11,7 +11,7 @@ TLS/settings environment differ.
   docker --version
   docker compose version      # must print v2.x
   sudo apt-get install -y docker-compose-v2     # if the plugin is missing
-  sudo usermod -aG docker "$USER"               # log out/in afterwards
+  sudo usermod -aG docker "$USER"               # log out/in afterward
   ```
 - `git`, and either Node 22+/`uv` (see *Building on the host*) or a warm Docker build.
 - Ports 80 and 443 reachable for a public deployment; 8000 for development.

@@ -32,9 +32,6 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Details</h2>
         <div class="flex flex-wrap items-center gap-2">
-          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
-            {{ unit.get_unit_type_display }}
-          </span>
           {% if unit.is_active %}
             <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
           {% else %}
@@ -52,8 +49,14 @@
           <dd class="font-medium">{{ unit.property.address_line }}</dd>
         </div>
         <div>
-          <dt class="text-ink-muted">Type</dt>
-          <dd class="font-medium">{{ unit.get_unit_type_display }}</dd>
+          <dt class="text-ink-muted">Square feet</dt>
+          <dd class="font-medium">
+            {% if unit.square_feet %}{{ unit.square_feet }} sq ft{% else %}Not recorded{% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Property type</dt>
+          <dd class="font-medium">{{ unit.property.get_property_type_display }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Bedrooms</dt>
@@ -69,8 +72,31 @@
         </div>
       </dl>
       {% if unit.is_commercial %}
-        <p class="rhp-help mt-4">Bedrooms and bathrooms are residential details, so they are not recorded for a commercial unit.</p>
+        <p class="rhp-help mt-4">
+          {{ unit.property.name }} is a commercial property, so bedrooms and bathrooms are not
+          recorded for its units.
+        </p>
       {% endif %}
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Amenities</h2>
+      {% if unit.amenities.all %}
+        <ul class="mt-4 flex flex-wrap gap-2">
+          {% for amenity in unit.amenities.all %}
+            <li class="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-ink">
+              {{ amenity.name }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          No amenities recorded for this unit yet.
+        </p>
+      {% endif %}
+      <p class="rhp-help mt-4">
+        Amenities come from a list staff maintain — add or rename one in the back office.
+      </p>
     </section>
 
     <section class="rhp-card">
