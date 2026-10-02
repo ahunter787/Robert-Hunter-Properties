@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Your payments — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'accounts:home' %}" class="underline-offset-2 hover:underline">Dashboard</a>
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Your payments</h1>
+      {% if lease %}
+        <p class="mt-2 text-sm text-ink-muted">
+          {{ lease.unit.display_name }} · {{ lease.unit.property.name }} · rent
+          {{ lease.monthly_rent|money }}, due {{ lease.due_day_label }}
+        </p>
+      {% endif %}
+    </div>
+
+    {% if lease %}
+      <section class="rhp-card">
+        {% include "components/amounts_due.html" %}
+      </section>
+
+      <section class="rhp-card">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-sm font-semibold">Your statement</h2>
+          <span class="text-sm text-ink-muted">
+            {{ statement_total }} entr{{ statement_total|pluralize:"y,ies" }}
+          </span>
+        </div>
+        {% if statement %}
+          <ul class="mt-4 divide-y divide-surface-muted text-sm">
+            {% for row in statement %}
+              {% include "components/statement_row.html" with row=row %}
+            {% endfor %}
+          </ul>
+
+          {% if page_obj %}
+            <div class="mt-4 flex items-center justify-between text-sm">
+              <span class="text-ink-muted">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+              </span>
+              <div class="flex gap-2">
+                {% if page_obj.has_previous %}
+                  <a class="rhp-btn rhp-btn-secondary" href="?page={{ page_obj.previous_page_number }}">Newer</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                  <a class="rhp-btn rhp-btn-secondary" href="?page={{ page_obj.next_page_number }}">Older</a>
+                {% endif %}
+              </div>
+            </div>
+          {% endif %}
+        {% else %}
+          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+            No rent has been charged yet. Your charges and payments will appear here.
+          </p>
+        {% endif %}
+      </section>
+
+      <p class="rhp-help">
+        Please contact Robert Hunter Properties if anything here does not look right.
+      </p>
+    {% else %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">No lease yet</h2>
+        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+          There is no lease attached to your account, so there is nothing to show here yet. When
+          Robert Hunter Properties sets one up, your rent and payments will appear.
+        </p>
+        <a href="{% url 'accounts:home' %}" class="rhp-btn rhp-btn-secondary mt-4">Back to your dashboard</a>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

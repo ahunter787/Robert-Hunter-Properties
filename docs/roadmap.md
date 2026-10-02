@@ -11,11 +11,11 @@ see [`phase-guide.md`](phase-guide.md). This file is the terse checklist.
 | --- | --- | --- |
 | 0 | Foundation and architecture | **Complete** |
 | 1 | Authentication and authorization | **Complete** |
-| 2 | Property and tenant management | **In review** (owner testing) |
-| 3 | Lease management | Not started |
-| 4 | Rent ledger | Not started |
-| 5 | Tenant dashboard | Not started |
-| 6 | Document management | Not started |
+| 2 | Property and tenant management | **Complete** |
+| 3 | Lease management | **Complete** |
+| 4 | Rent ledger | **Complete** |
+| 5 | Tenant dashboard | **Complete** |
+| 6 | Document management | **Next** |
 | 7 | Maintenance system | Not started |
 | 8 | Communications (announcements) | Not started |
 | 9 | Admin dashboard | Not started |
@@ -139,19 +139,20 @@ lease per unit, explicit status, frozen unit, co-tenants, one document, one occu
 Deliberately not built here: balances, charges and payments (Phase 4), the full tenant dashboard
 (Phase 5), the documents area (Phase 6), electronic signatures (not in the specification).
 
-## Phase 4 — Rent ledger (in review: owner testing)
+## Phase 4 — Rent ledger (complete)
 
-**Status note:** implemented and tested on the `rhp-4` branch, not yet signed off. `main` is not updated
-until the owner has exercised it; the branch is squashed into one commit on `main` afterward.
+**Status note:** implemented and tested on the `rhp-4` branch, reviewed by the owner, and squashed into
+`main` as one commit. Phase 5 refines how a tenant *reads* these figures — what is due now, what is past
+due, and what is coming due (ADR-012) — without changing the ledger itself.
 
 Delivered: the ledger — recurring monthly rent charges generated on demand and never twice for the same
 month, manual charges, recorded payments (cleared or pending), reversals, adjustments, and a running
 balance derived from the entries. The accounting area at `/manage/ledger/` lists every live lease with
-its balance, overdue amount and next due date; each lease has a ledger with its charges, payments,
+its balance, what is past due and what is coming due; each lease has a ledger with its charges, payments,
 merged activity and a History panel written from the audit trail; the tenant's `/lease/` page shows
-their own balance, next rent and recent activity; and the staff landing page counts what is outstanding
-and what is late. The audit table the phase plan promised now exists and records lease status changes,
-money movements and role changes.
+what they owe now, their next rent and recent activity; and the staff landing page counts what is
+outstanding and what is late. The audit table the phase plan promised now exists and records lease status
+changes, money movements and role changes.
 
 Acceptance criteria from the specification:
 
@@ -187,10 +188,45 @@ Review round, added while the phase is open:
 - [x] Tenants gained a **photo** on the account page, admin-set, served through a permission-checked
       view, with a drawn placeholder when there is none (ADR-009)
 
-## Phase 5 — Tenant dashboard
+## Phase 5 — Tenant dashboard (complete)
 
-The tenant's five questions answered on one page: how much do I owe, when is it due, where is my
-lease, is my maintenance request being handled, has management sent me anything. Mobile-first.
+**Status note:** implemented and tested on the `rhp-5` branch, reviewed by the owner (including on a
+phone), and squashed into `main` as one commit; the branch was deleted.
+
+Delivered: the tenant's landing page at `/account/` — what is due now (or that they are in credit, or that
+nothing is owing), when the next rent falls due and how much, when their lease ends, quick actions, and
+their recent activity — plus `/payments/`, their own statement, and a tenant navigation that has become
+real (Dashboard, Lease, Payments). Expected money is labelled "expected" and does not move the balance;
+voided entries are hidden from the tenant; the two panels that belong to later phases are labelled rather
+than faked.
+
+Acceptance criteria from the specification:
+
+- [x] Works well at phone width — single column, full-width tap targets, list rows rather than tables,
+      nothing hidden at small sizes (the final check is the owner's own phone)
+- [x] No unnecessary information density — three figures, three actions, five recent rows
+- [x] The tenant's critical information is visible without digging — it is the page they land on
+- [x] Decided in [ADR-010](decisions/ADR-010-tenant-dashboard.md), including what is deliberately a
+      sentence rather than a screen
+
+Deliberately not built here: maintenance requests (Phase 7), announcements (Phase 8), documents (Phase 6)
+and payments taken through the site (Phase 11). Phase 5 adds no data of its own.
+
+Review round, added while the phase was open (ADR-010 revision, ADR-011, ADR-012):
+
+- [x] The greeting, the "Your home" eyebrow and the "thank you" copy are **removed** along with
+      `RHP_DISPLAY_TIME_ZONE`; the header is a thin banner naming the unit and the property
+- [x] A correction is **absorbed into the charge it corrects** for the tenant, so a cancelled charge reads
+      "$0.00, nothing to pay" rather than a charge and an opposing credit
+- [x] Paid money and credited money are shown separately, each charge states its own settlement
+- [x] Charges and payments are **one statement**, paginated, instead of two disconnected boxes
+- [x] The office's ledger, the audit trail and every balance are unchanged
+- [x] The tenant's headline is **what is due now** — with how much of it is past due, and since when — not
+      the remainder of the whole lease
+- [x] **"Next rent due" is the incoming month**, dated from the lease when the office has not raised it yet,
+      instead of the oldest unpaid month
+- [x] What is billed but not yet due is **stated in a sentence**, never headlined; the office screens keep
+      the whole balance, the age of the oldest unpaid charge, and what is coming due (ADR-012)
 
 ## Phase 6 — Document management
 

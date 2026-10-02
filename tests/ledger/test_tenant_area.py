@@ -16,7 +16,7 @@ pytestmark = pytest.mark.django_db
 TODAY = timezone.localdate()
 
 
-def test_a_tenant_sees_their_balance_next_due_and_activity(client):
+def test_a_tenant_sees_what_is_due_the_next_rent_and_activity(client):
     tenant = make_tenant(username="ada", first_name="Ada")
     lease = make_lease(tenants=[tenant], monthly_rent=Decimal("1850.00"))
     make_charge(
@@ -30,8 +30,8 @@ def test_a_tenant_sees_their_balance_next_due_and_activity(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "Your balance" in body
-    assert "1,350.00" in body, "the balance shown is the derived one"
+    assert "Due now" in body
+    assert "1,350.00" in body, "what is shown is the derived figure"
     assert "Next rent due" in body
     assert "Rent for this month" in body, "the activity list is real"
     assert "Payment received" in body
@@ -59,7 +59,7 @@ def test_a_settled_tenancy_says_nothing_is_owing(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "Settled" in body
+    assert "Nothing due" in body
     assert "nothing is owing" in body
 
 
@@ -92,7 +92,7 @@ def test_a_tenant_without_a_lease_gets_the_empty_page_not_a_ledger(client):
     body = client.get(reverse("tenancy:lease")).content.decode()
 
     assert "No lease yet" in body
-    assert "Your balance" not in body
+    assert "Due now" not in body
 
 
 def test_a_draft_lease_is_not_shown_to_its_tenant(client):
@@ -125,8 +125,10 @@ def test_the_tenant_sees_an_expected_payment_as_pending_not_as_paid(client):
     body = client.get(reverse("tenancy:lease")).content.decode()
 
     assert ledger.balance_due == Decimal("100.00")
-    assert "100.00" in body, "the balance does not drop until the money is real"
-    assert ledger.next_due.charge.pk == charge.pk
+    assert "100.00" in body, "nothing drops until the money is real"
+    assert ledger.due_now == Decimal("100.00")
+    assert ledger.arrears == Decimal("0.00"), "the charge is due today, not late"
+    assert ledger.charges[0].charge.pk == charge.pk, "and it would settle that charge"
 
 
 def test_a_voided_expected_payment_disappears_from_the_activity(client):

@@ -35,8 +35,8 @@ def test_the_landing_page_shows_what_is_owed_and_what_is_late(signed_in):
     response = signed_in.get(reverse("manage:home"))
 
     assert response.context["ledger_outstanding"] == Decimal("750.00")
-    assert response.context["ledger_overdue"] == Decimal("750.00")
-    assert response.context["ledger_overdue_leases"] == 1
+    assert response.context["ledger_arrears"] == Decimal("750.00")
+    assert response.context["ledger_arrears_leases"] == 1
     body = response.content.decode()
     assert "750.00" in body
 
@@ -49,7 +49,7 @@ def test_the_landing_page_counts_nothing_when_nothing_is_owed(signed_in):
     response = signed_in.get(reverse("manage:home"))
 
     assert response.context["ledger_outstanding"] == Decimal("0.00")
-    assert response.context["ledger_overdue_leases"] == 0
+    assert response.context["ledger_arrears_leases"] == 0
 
 
 def test_a_draft_lease_is_not_counted_as_money(signed_in):
@@ -82,7 +82,7 @@ def test_the_lease_page_shows_an_outstanding_balance(signed_in):
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
     assert "1,850.00" in body
-    assert "overdue" in body
+    assert "past due" in body
 
 
 def test_the_accounting_area_is_in_the_navigation_for_managers(signed_in):

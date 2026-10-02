@@ -12,11 +12,16 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 from django.views.generic import DetailView, TemplateView
 
-from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
+from apps.accounts.permissions import (
+    AdminRequiredMixin,
+    ManagerRequiredMixin,
+    TenantRequiredMixin,
+)
 from apps.audit.services import events_for_lease
 from apps.leases.models import Lease, LeaseStatus
 from apps.ledger import services
@@ -52,16 +57,16 @@ class LedgerOverviewView(ManagerRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         search = self.request.GET.get("q", "").strip()
-        overdue_only = self.request.GET.get("overdue") == "1"
+        arrears_only = self.request.GET.get("arrears") == "1"
         property_id = self.request.GET.get("property") or None
 
         rows = services.ledger_rows(search=search, property_id=property_id)
         context.update(
             {
-                "rows": [row for row in rows if row.is_overdue] if overdue_only else rows,
+                "rows": [row for row in rows if row.has_arrears] if arrears_only else rows,
                 "totals": services.totals(rows),
                 "search": search,
-                "overdue_only": overdue_only,
+                "arrears_only": arrears_only,
                 "property_id": property_id,
                 "properties": Property.objects.active().order_by("name"),
             }
@@ -352,3 +357,42 @@ class ChargeAdjustView(AdminRequiredMixin, View):
 
         messages.success(request, "The adjustment was added.")
         return redirect("ledger:lease-ledger", pk=charge.lease_id)
+
+
+# --- The tenant's own money -----------------------------------------------
+
+
+class TenantPaymentsView(TenantRequiredMixin, TemplateView):
+    """A tenant's own payment history: what was charged, what was paid.
+
+    Read-only and deliberately thin: it renders `build_ledger`'s numbers, so the
+    tenant and the office are looking at the same derivation. There is no id in
+    the URL — the session decides whose money this is — and voided entries, which
+    are office noise, are not shown.
+    """
+
+    template_name = "tenancy/payments.html"
+    #: Entries per page: roughly a year of rent and payments on one screen.
+    per_page = 20
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lease = Lease.objects.visible_for(self.request.user)
+        ledger = services.build_ledger(lease) if lease else None
+        statement = ledger.statement if ledger else []
+
+        # One list, so a long tenancy reads a page at a time rather than growing
+        # without end. An out-of-range link falls back rather than 404-ing.
+        paginator = Paginator(statement, self.per_page)
+        page = paginator.get_page(self.request.GET.get("page"))
+
+        context.update(
+            {
+                "lease": lease,
+                "ledger": ledger,
+                "statement": page.object_list,
+                "statement_total": paginator.count,
+                "page_obj": page if paginator.num_pages > 1 else None,
+            }
+        )
+        return context

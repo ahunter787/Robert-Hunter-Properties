@@ -16,7 +16,7 @@ def test_sign_in_page_renders(client):
     assert b"Forgot your password?" in response.content
 
 
-def test_tenant_signs_in_and_lands_on_the_account_page(client):
+def test_tenant_signs_in_and_lands_on_the_dashboard(client):
     make_tenant(username="tenant-login")
 
     response = client.post(
@@ -26,7 +26,13 @@ def test_tenant_signs_in_and_lands_on_the_account_page(client):
 
     assert response.status_code == 302
     assert response["Location"] == reverse("accounts:home")
-    assert client.get(reverse("accounts:home"))["Location"] == reverse("accounts:profile")
+
+    # The landing page is the dashboard itself, not a redirect to the profile.
+    landing = client.get(reverse("accounts:home"))
+    assert landing.status_code == 200
+    # This tenant has no lease, so the dashboard shows its neutral banner.
+    assert b"Your account" in landing.content
+    assert b"Dashboard" in landing.content, "the tenant navigation"
 
 
 def test_staff_signs_in_and_lands_on_the_management_area(client):

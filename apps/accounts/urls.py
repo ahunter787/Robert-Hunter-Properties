@@ -13,8 +13,8 @@ from apps.accounts.forms import InvitationPasswordForm
 app_name = "accounts"
 
 urlpatterns = [
-    # Role-aware landing: staff → management, tenant → account page.
-    path("", views.PostLoginRedirectView.as_view(), name="home"),
+    # Role-aware home: the tenant dashboard, or the management area for staff.
+    path("", views.TenantDashboardView.as_view(), name="home"),
     path("login/", views.ThrottledLoginView.as_view(), name="login"),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("profile/", views.ProfileView.as_view(), name="profile"),

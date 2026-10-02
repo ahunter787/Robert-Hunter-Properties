@@ -21,8 +21,14 @@
         {% if ledger.balance_due > 0 %}
           <p class="rhp-eyebrow">Balance due</p>
           <p class="mt-1 text-3xl font-semibold">{{ ledger.balance_due|money }}</p>
-          {% if ledger.is_overdue %}
-            <p class="mt-1 text-sm font-medium text-danger">{{ ledger.overdue_amount|money }} overdue</p>
+          {% if ledger.has_arrears %}
+            <p class="mt-1 text-sm font-medium text-danger">
+              {{ ledger.arrears|money }} past due
+              {% if ledger.arrears_oldest %}· since {{ ledger.arrears_oldest.date }}{% endif %}
+            </p>
+          {% endif %}
+          {% if ledger.not_yet_due > 0 %}
+            <p class="mt-1 text-sm text-ink-muted">{{ ledger.not_yet_due|money }} billed, not yet due</p>
           {% endif %}
         {% elif ledger.credit > 0 %}
           <p class="rhp-eyebrow">In credit</p>
@@ -30,6 +36,16 @@
         {% else %}
           <p class="rhp-eyebrow">Balance</p>
           <p class="mt-1 text-3xl font-semibold text-ink-muted">Settled</p>
+        {% endif %}
+        {% if ledger.next_charge %}
+          <p class="mt-2 text-sm text-ink-muted">
+            Coming due {{ ledger.next_charge.date }} · {{ ledger.next_charge.left|money }}
+          </p>
+        {% elif ledger.next_rent_date %}
+          <p class="mt-2 text-sm text-ink-muted">
+            Coming due {{ ledger.next_rent_date }} · {{ ledger.next_rent_amount|money }} ·
+            not billed
+          </p>
         {% endif %}
       </div>
     </div>
@@ -99,7 +115,7 @@
                     {% elif line.state == "PENDING" %}
                       <span class="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Payment pending</span>
                     {% elif line.state == "OVERDUE" %}
-                      <span class="rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">Overdue</span>
+                      <span class="rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">Past due</span>
                     {% elif line.state == "PARTIAL" %}
                       <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Partly paid</span>
                     {% else %}

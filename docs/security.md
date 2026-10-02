@@ -226,8 +226,9 @@ running container. `python manage.py check --deploy` runs in CI.
 - Balance calculations, partial payments, reversals, and overdue determination (Phase 4).
 - Uploads reject disallowed types and oversize files (Phase 6/7).
 
-Phases 1–3 satisfy the first four: the tests live in `tests/accounts/`, `tests/properties/` and
-`tests/leases/`. The lease suite asserts the role matrix route by route (403 for the wrong area, 302 to
+Phases 1–3 satisfy the first four, and Phase 5 extends the first to money: a tenant's dashboard and
+payment history show only their own tenancy (there is no id in either URL), and the tests live in
+`tests/accounts/`, `tests/properties/` and `tests/leases/`. The lease suite asserts the role matrix route by route (403 for the wrong area, 302 to
 sign-in when anonymous), that a tenant who is not on a lease gets 404 from the tenant area, that the
 tenant document URL carries no id, and that an ended lease refuses a direct POST as well as hiding the
 form.

@@ -6,6 +6,8 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.formats import date_format
+from django.utils.html import strip_tags
 
 from apps.ledger import services
 from apps.ledger.models import Charge, ChargeKind, Direction, Payment, PaymentStatus
@@ -330,16 +332,48 @@ def test_the_overview_lists_balances_and_totals(signed_in):
     assert lease.unit.identifier in body
 
 
-def test_the_overview_can_filter_to_overdue_leases(signed_in):
-    overdue_lease = make_lease()
-    make_charge(overdue_lease, amount=Decimal("100.00"), due_date=TODAY - dt.timedelta(days=10))
-    settled_lease = make_lease()
-    make_charge(settled_lease, amount=Decimal("100.00"), due_date=TODAY)
+def test_the_overview_can_filter_to_leases_in_arrears(signed_in):
+    late_lease = make_lease()
+    make_charge(late_lease, amount=Decimal("100.00"), due_date=TODAY - dt.timedelta(days=10))
+    due_today_lease = make_lease()
+    make_charge(due_today_lease, amount=Decimal("100.00"), due_date=TODAY)
 
-    response = signed_in.get(reverse("ledger:overview"), {"overdue": "1"})
+    response = signed_in.get(reverse("ledger:overview"), {"arrears": "1"})
     rows = response.context["rows"]
 
-    assert [row.lease.pk for row in rows] == [overdue_lease.pk]
+    assert [row.lease.pk for row in rows] == [late_lease.pk]
+
+
+def test_the_overview_separates_what_is_late_from_what_is_coming(signed_in):
+    """One number to chase with, one date to expect: not the whole lease at once."""
+    lease = make_lease(monthly_rent=Decimal("2084.00"), rent_due_day=1)
+    make_charge(lease, amount=Decimal("2084.00"), due_date=TODAY - dt.timedelta(days=40))
+
+    response = signed_in.get(reverse("ledger:overview"))
+    row = response.context["rows"][0]
+    body = strip_tags(response.content.decode())
+
+    assert row.arrears == Decimal("2084.00")
+    assert row.balance_due == Decimal("2084.00")
+    assert "Past due" in body
+    assert "Coming due" in body
+    assert date_format(row.next_rent_date) in body
+    assert "not billed" in body, "the desk sees the month the office has not raised yet"
+
+
+def test_the_lease_ledger_states_what_is_late_and_what_is_billed(signed_in):
+    lease = make_lease(monthly_rent=Decimal("2084.00"), rent_due_day=1)
+    make_charge(lease, amount=Decimal("2084.00"), due_date=TODAY - dt.timedelta(days=40))
+    year, month = (TODAY.year + 1, 1) if TODAY.month == 12 else (TODAY.year, TODAY.month + 1)
+    make_charge(lease, amount=Decimal("2084.00"), due_date=dt.date(year, month, 1))
+
+    body = strip_tags(
+        signed_in.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode()
+    )
+
+    assert "$2,084.00 past due" in " ".join(body.split())
+    assert "$2,084.00 billed, not yet due" in " ".join(body.split())
+    assert "Coming due" in body
 
 
 def test_the_overview_searches_by_tenant_or_unit(signed_in):

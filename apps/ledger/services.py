@@ -93,6 +93,103 @@ class ActivityRow:
     is_charge: bool
 
 
+# --- reading the ledger as a tenant ---------------------------------------
+# The office reads entries (a charge, then the adjustment that corrects it); a
+# tenant reads a statement (what a thing costs now, and what is paid). Same
+# records, same balance, two readings — ADR-011.
+
+
+@dataclass
+class StatementCharge:
+    """One charge as the person paying it should read it.
+
+    An adjustment is not a separate line: it is absorbed here, so a charge raised
+    at $2,084 and corrected to nothing reads as "$0.00, adjusted" rather than as
+    money arriving and leaving again.
+    """
+
+    date: dt.date
+    title: str
+    detail: str
+    gross: Decimal
+    net: Decimal
+    adjusted_by: Decimal
+    adjustment_count: int
+    paid: Decimal
+    left: Decimal
+    pending: Decimal
+    kind: str = "charge"
+
+    @property
+    def was_adjusted(self) -> bool:
+        return self.adjustment_count > 0
+
+    @property
+    def amount(self) -> Decimal:
+        """What to show as this charge's cost: never a negative headline."""
+        return max(self.net, ZERO)
+
+    @property
+    def credit(self) -> Decimal:
+        """An adjustment that overshot leaves money in the tenant's favor."""
+        return -self.net if self.net < ZERO else ZERO
+
+    @property
+    def is_overdue(self) -> bool:
+        return self.left > ZERO and self.date < timezone.localdate()
+
+    @property
+    def state(self) -> str:
+        """The tenant's reading: adjusted, paid, pending, overdue, part paid, unpaid."""
+        if self.net <= ZERO:
+            return ChargeState.ADJUSTMENT
+        if self.left <= ZERO:
+            return ChargeState.PAID
+        if self.pending >= self.left:
+            return ChargeState.PENDING
+        if self.is_overdue:
+            return ChargeState.OVERDUE
+        if self.paid > ZERO:
+            return ChargeState.PARTIAL
+        return ChargeState.UNPAID
+
+    @property
+    def state_label(self) -> str:
+        return {
+            ChargeState.ADJUSTMENT: "Adjusted",
+            ChargeState.PAID: "Paid",
+            ChargeState.PENDING: "Payment pending",
+            ChargeState.OVERDUE: "Past due",
+            ChargeState.PARTIAL: "Partly paid",
+            ChargeState.UNPAID: "Unpaid",
+        }[self.state]
+
+
+@dataclass
+class StatementPayment:
+    """Money in, as the tenant reads it."""
+
+    date: dt.date
+    amount: Decimal
+    method: str
+    reference: str
+    status: str
+    is_reversal: bool
+    kind: str = "payment"
+
+    @property
+    def label(self) -> str:
+        if self.is_reversal:
+            return "Payment reversed"
+        if self.status == PaymentStatus.PENDING:
+            return "Payment expected"
+        return "Payment received"
+
+    @property
+    def status_label(self) -> str:
+        return "Expected" if self.status == PaymentStatus.PENDING else "Cleared"
+
+
 @dataclass
 class LeaseLedger:
     """Everything one lease's money adds up to."""
@@ -135,23 +232,85 @@ class LeaseLedger:
         balance = self.balance_due
         return -balance if balance < ZERO else ZERO
 
-    @property
-    def overdue_amount(self) -> Decimal:
-        return sum((line.outstanding for line in self.charges if line.is_overdue), ZERO)
+    # --- What is owed, when -------------------------------------------------
+    # Three different questions, three different answers. Calling the oldest unpaid
+    # charge "the next rent due" reads as "the next obligation", which is a
+    # different thing entirely (ADR-012).
 
     @property
-    def is_overdue(self) -> bool:
-        return self.overdue_amount > ZERO
+    def statement_charges(self) -> list[StatementCharge]:
+        """The charges, read net, without the payments mixed in."""
+        return [row for row in self.statement if isinstance(row, StatementCharge)]
 
     @property
-    def next_due(self) -> ChargeLine | None:
-        """The soonest charge that is not settled yet, if there is one."""
-        unsettled = [
-            line
-            for line in self.charges
-            if line.charge.balance_effect > ZERO and line.settled < line.charge.amount
-        ]
-        return min(unsettled, key=lambda line: (line.charge.due_date, line.charge.pk), default=None)
+    def due_now(self) -> Decimal:
+        """What the tenant should pay now: everything due today or earlier."""
+        today = timezone.localdate()
+        return sum((row.left for row in self.statement_charges if row.date <= today), ZERO)
+
+    @property
+    def arrears(self) -> Decimal:
+        """The part of what is owed whose due date has already passed."""
+        today = timezone.localdate()
+        return sum((row.left for row in self.statement_charges if row.date < today), ZERO)
+
+    @property
+    def has_arrears(self) -> bool:
+        return self.arrears > ZERO
+
+    @property
+    def arrears_oldest(self) -> StatementCharge | None:
+        """The oldest unpaid charge, so a screen can say how far behind this is.
+
+        The desk works the oldest bucket first, and the age is what says so.
+        """
+        overdue = [row for row in self.statement_charges if row.date < timezone.localdate()]
+        unpaid = [row for row in overdue if row.left > ZERO]
+        return min(unpaid, key=lambda row: (row.date, row.title), default=None)
+
+    @property
+    def arrears_age_days(self) -> int | None:
+        oldest = self.arrears_oldest
+        if oldest is None:
+            return None
+        return (timezone.localdate() - oldest.date).days
+
+    @property
+    def next_charge(self) -> StatementCharge | None:
+        """The next obligation: the soonest charge due after today that still owes."""
+        today = timezone.localdate()
+        upcoming = [row for row in self.statement_charges if row.date > today and row.left > ZERO]
+        return min(upcoming, key=lambda row: (row.date, row.title), default=None)
+
+    @property
+    def not_yet_due(self) -> Decimal:
+        """Billed, but not due yet — stated, never headlined."""
+        today = timezone.localdate()
+        return sum((row.left for row in self.statement_charges if row.date > today), ZERO)
+
+    @property
+    def next_rent_date(self) -> dt.date | None:
+        """When the next rent falls due, whether or not it has been billed yet.
+
+        The office raises charges a month at a time, so the coming period may not
+        exist as an entry; the lease still says when it is. A tenant should never
+        see an empty card because nobody pressed a button.
+        """
+        charge = self.next_charge
+        if charge is not None:
+            return charge.date
+        return upcoming_rent_date(self.lease)
+
+    @property
+    def next_rent_amount(self) -> Decimal:
+        """What the next rent is: what is left on it, or what the lease says."""
+        charge = self.next_charge
+        if charge is not None:
+            return charge.left
+        date = upcoming_rent_date(self.lease)
+        if date is None:
+            return ZERO
+        return self.lease.rent_for(date)
 
     @property
     def activity(self) -> list[ActivityRow]:
@@ -172,6 +331,8 @@ class LeaseLedger:
                 label=(
                     "Payment reversed"
                     if payment.kind == PaymentKind.REVERSAL
+                    else "Payment expected"
+                    if payment.status == PaymentStatus.PENDING
                     else "Payment received"
                 ),
                 detail=payment.get_method_display(),
@@ -183,8 +344,100 @@ class LeaseLedger:
         ]
         return sorted(rows, key=lambda row: (row.date, row.is_charge), reverse=True)
 
+    @property
+    def statement(self) -> list[StatementCharge | StatementPayment]:
+        """This money as the tenant reads it: one list, adjustments absorbed.
+
+        Every figure is derived from data already loaded — the adjustments are
+        charges with an ``adjusts`` link — so this costs no further queries. The
+        office keeps reading ``charges`` and ``activity``; this is the other
+        reading of the same records (ADR-011).
+        """
+        absorbed: dict[int, list[Charge]] = {}
+        for line in self.charges:
+            charge = line.charge
+            if charge.kind == ChargeKind.ADJUSTMENT and charge.adjusts_id is not None:
+                absorbed.setdefault(charge.adjusts_id, []).append(charge)
+
+        rows: list[StatementCharge | StatementPayment] = []
+        for line in self.charges:
+            charge = line.charge
+            # An adjustment that names a charge is shown inside that charge; one
+            # that names nothing is a charge in its own right.
+            if charge.kind == ChargeKind.ADJUSTMENT and charge.adjusts_id is not None:
+                continue
+
+            adjustments = absorbed.get(charge.pk, [])
+            adjusted_by = sum((entry.balance_effect for entry in adjustments), ZERO)
+            reductions = sum(
+                (-entry.balance_effect for entry in adjustments if entry.balance_effect < ZERO),
+                ZERO,
+            )
+            net = charge.amount + adjusted_by
+            # `settled` holds corrections first and money after them, so what is
+            # left once the corrections are taken out is what was actually paid.
+            paid = max(line.settled - reductions, ZERO)
+            rows.append(
+                StatementCharge(
+                    date=charge.due_date,
+                    title=charge.description,
+                    detail=charge.get_kind_display(),
+                    gross=charge.amount,
+                    net=net,
+                    adjusted_by=adjusted_by,
+                    adjustment_count=len(adjustments),
+                    paid=paid,
+                    left=max(net - paid, ZERO),
+                    pending=line.pending,
+                )
+            )
+
+        rows += [
+            StatementPayment(
+                date=payment.payment_date,
+                amount=payment.amount,
+                method=payment.get_method_display(),
+                reference=payment.external_reference,
+                status=payment.status,
+                is_reversal=payment.kind == PaymentKind.REVERSAL,
+            )
+            for payment in self.payments
+            if payment.status != PaymentStatus.VOID
+        ]
+        # Newest first; on a shared date the charge is shown before the payment
+        # that settled it, which is the order it happened in.
+        return sorted(rows, key=lambda row: (row.date, row.kind == "charge"), reverse=True)
+
 
 # --- building a ledger ----------------------------------------------------
+
+
+def upcoming_rent_date(lease: Lease, *, today: dt.date | None = None) -> dt.date | None:
+    """The lease's next rent due date, whether or not a charge has been raised.
+
+    The office raises charges a month at a time, so the coming period often has no
+    entry yet; the lease itself still says when the rent falls due, and a tenant
+    should not see an empty card because nobody pressed a button.
+
+    The due day is clamped to a day the month actually has (a 31st is the 28th in
+    February), a tenancy is never billed before it starts, and no rent falls due
+    after the term ends.
+    """
+    day = today or timezone.localdate()
+    if lease.status != LeaseStatus.ACTIVE or lease.end_date < day:
+        return None
+
+    # Start from the current month, or from the month the term begins when that is
+    # still ahead: an unstarted tenancy's first rent is its next rent.
+    anchor = max(day, lease.start_date - dt.timedelta(days=1))
+    year, month = anchor.year, anchor.month
+    while True:
+        due = due_date_in(year, month, lease.rent_due_day)
+        if due > lease.end_date:
+            return None
+        if due > day and due >= lease.start_date:
+            return due
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
 
 def _allocate(lines: list[ChargeLine], amounts: list[Decimal], *, pending: bool) -> None:
@@ -253,14 +506,14 @@ def totals(ledgers) -> dict:
     return {
         "outstanding": sum((led.balance_due for led in ledgers if led.balance_due > ZERO), ZERO),
         "credits": sum((led.credit for led in ledgers), ZERO),
-        "overdue": sum((led.overdue_amount for led in ledgers), ZERO),
-        "overdue_leases": sum(1 for led in ledgers if led.is_overdue),
+        "arrears": sum((led.arrears for led in ledgers), ZERO),
+        "arrears_leases": sum(1 for led in ledgers if led.has_arrears),
     }
 
 
 def by_urgency(ledgers) -> list[LeaseLedger]:
-    """Overdue first, then the largest balance: the order the desk works in."""
-    return sorted(ledgers, key=lambda led: (-led.overdue_amount, -led.balance_due))
+    """Past due first, then the largest balance: the order the desk works in."""
+    return sorted(ledgers, key=lambda led: (-led.arrears, -led.balance_due))
 
 
 # --- rent generation ------------------------------------------------------

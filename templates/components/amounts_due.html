@@ -1,0 +1,43 @@
+{% load rhp_format %}
+{# What is owed, when — the same three answers on every tenant screen (ADR-012). #}
+<div class="flex flex-wrap items-start justify-between gap-3">
+  <h2 class="text-sm font-semibold">Due now</h2>
+  {% if ledger.due_now > 0 %}
+    <div class="text-right">
+      <p class="text-2xl font-semibold">{{ ledger.due_now|money }}</p>
+      {% if ledger.arrears > 0 %}
+        <p class="text-sm font-medium text-danger">
+          {{ ledger.arrears|money }} past due
+          {% if ledger.arrears_oldest %}· since {{ ledger.arrears_oldest.date }}{% endif %}
+        </p>
+      {% else %}
+        <p class="text-sm text-ink-muted">due today</p>
+      {% endif %}
+    </div>
+  {% elif ledger.credit > 0 %}
+    <div class="text-right">
+      <p class="text-2xl font-semibold text-success">{{ ledger.credit|money }}</p>
+      <p class="text-sm text-ink-muted">in credit</p>
+    </div>
+  {% else %}
+    <div class="text-right">
+      <p class="text-2xl font-semibold text-ink-muted">Nothing due</p>
+      <p class="text-sm text-ink-muted">nothing is owing at the moment</p>
+    </div>
+  {% endif %}
+</div>
+
+{% if ledger.next_rent_date %}
+  <p class="mt-4 text-sm">
+    Next rent due <span class="font-medium">{{ ledger.next_rent_date }}</span>:
+    <span class="font-medium">{{ ledger.next_rent_amount|money }}</span>.
+  </p>
+{% else %}
+  <p class="mt-4 text-sm text-ink-muted">No further rent falls due on this lease.</p>
+{% endif %}
+
+{% if ledger.not_yet_due > 0 %}
+  <p class="mt-2 text-sm text-ink-muted">
+    {{ ledger.not_yet_due|money }} is billed but not yet due, and is listed below month by month.
+  </p>
+{% endif %}

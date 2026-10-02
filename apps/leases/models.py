@@ -57,6 +57,28 @@ class LeaseQuerySet(models.QuerySet):
     def for_tenant(self, user):
         return self.filter(lease_tenants__tenant=user).distinct()
 
+    def visible_for(self, user):
+        """The one lease a tenant should see: the current one, otherwise the latest.
+
+        A draft is the office's working copy — its rent and term can still change —
+        so a tenant never sees one. They see nothing until the tenancy is
+        activated, and the screens say so rather than showing terms that may not
+        be agreed.
+
+        This is the single lookup behind every tenant-facing page, so a tenant can
+        only ever be shown a lease they are actually on.
+        """
+        leases = (
+            self.for_tenant(user)
+            .exclude(status=LeaseStatus.DRAFT)
+            .select_related("unit__property")
+            .prefetch_related("lease_tenants__tenant")
+        )
+        current = leases.current().first()
+        if current is not None:
+            return current
+        return leases.order_by("-end_date", "-start_date").first()
+
 
 class Lease(models.Model):
     """A tenancy: a term, a rent, and the people on it, for one unit."""
@@ -145,6 +167,16 @@ class Lease(models.Model):
     @property
     def due_day_label(self) -> str:
         return f"{ordinal(self.rent_due_day)} of every month"
+
+    def rent_for(self, on_date):
+        """What this lease charges per month on a given date.
+
+        One amount for the whole term today. A lease whose rent steps up over its
+        term would answer this per period, which is why callers ask the lease
+        rather than reading the field directly (the rent-schedule extension, not
+        yet built).
+        """
+        return self.monthly_rent
 
     @property
     def tenants(self):

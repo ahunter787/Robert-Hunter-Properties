@@ -24,7 +24,9 @@
             <li><a href="{% url 'manage:account-list' %}" class="rhp-nav-link">Tenants</a></li>
           {% endif %}
           {% if user.is_tenant %}
+            <li><a href="{% url 'accounts:home' %}" class="rhp-nav-link">Dashboard</a></li>
             <li><a href="{% url 'tenancy:lease' %}" class="rhp-nav-link">Lease</a></li>
+            <li><a href="{% url 'payments:home' %}" class="rhp-nav-link">Payments</a></li>
           {% endif %}
           <li>
             <a href="{% url 'accounts:profile' %}" class="rhp-nav-link">

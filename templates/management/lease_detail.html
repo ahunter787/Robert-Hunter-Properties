@@ -128,10 +128,10 @@
           <div class="text-right">
             {% if ledger.balance_due > 0 %}
               <span class="text-lg font-semibold">{{ ledger.balance_due|money }}</span>
-              <span class="text-sm text-ink-muted">due</span>
-              {% if ledger.is_overdue %}
+              <span class="text-sm text-ink-muted">outstanding</span>
+              {% if ledger.has_arrears %}
                 <span class="ml-2 rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                  {{ ledger.overdue_amount|money }} overdue
+                  {{ ledger.arrears|money }} past due
                 </span>
               {% endif %}
             {% elif ledger.credit > 0 %}
@@ -150,10 +150,15 @@
           rent charges can be created.
         </p>
       {% else %}
-        {% if ledger.next_due %}
+        {% if ledger.next_charge %}
           <p class="mt-2 text-sm text-ink-muted">
-            Next due {{ ledger.next_due.charge.due_date }} — {{ ledger.next_due.charge.amount|money }}
-            ({{ ledger.next_due.charge.description }}).
+            Coming due {{ ledger.next_charge.date }} — {{ ledger.next_charge.left|money }}
+            ({{ ledger.next_charge.title }}).
+          </p>
+        {% elif ledger.next_rent_date %}
+          <p class="mt-2 text-sm text-ink-muted">
+            Coming due {{ ledger.next_rent_date }} — {{ ledger.next_rent_amount|money }}
+            (not billed yet).
           </p>
         {% endif %}
         {% if ledger.activity %}

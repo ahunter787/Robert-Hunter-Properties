@@ -295,22 +295,10 @@ class LeaseDocumentView(ManagerRequiredMixin, View):
 
 
 def visible_lease_for(user):
-    """The lease a tenant should see: the current one, otherwise the latest.
-
-    A draft is the office's working copy — its rent and term can still change —
-    so a tenant never sees one. They see nothing until the tenancy is activated,
-    and the page says so rather than showing terms that may not be agreed.
-    """
-    leases = (
-        Lease.objects.for_tenant(user)
-        .exclude(status=LeaseStatus.DRAFT)
-        .select_related("unit__property")
-        .prefetch_related("lease_tenants__tenant")
-    )
-    current = leases.current().first()
-    if current is not None:
-        return current
-    return leases.order_by("-end_date", "-start_date").first()
+    """The lease a tenant should see. The rule lives on the queryset, so every
+    tenant-facing page (the lease, the dashboard, the payment history) resolves it
+    the same way."""
+    return Lease.objects.visible_for(user)
 
 
 class TenantLeaseView(TenantRequiredMixin, TemplateView):

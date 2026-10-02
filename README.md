@@ -9,13 +9,14 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 4 (the rent ledger) — in review, with a portfolio review round on the same
-branch.** RHP models the properties and units it manages,
-the tenancies inside them, and the money: staff and tenants sign in, tenants are created by staff and
-invited, roles gate every route server-side, the portfolio can be created, edited, and taken out of
-service, and a lease ties a unit to its tenants with a term, rent, deposit and due day. On top of that
-sits the ledger — rent charges, one-off charges, recorded payments, reversals and adjustments, and a
-balance derived from the entries rather than stored — with the tenant's own balance on `/lease/`.
+**Current status: Phase 5 (the tenant dashboard) is complete; Phase 6 (documents) is next.** RHP models the
+properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
+tenants are created by staff and invited, roles gate every route server-side, the portfolio can be
+created, edited, and taken out of service, and a lease ties a unit to its tenants with a term, rent,
+deposit and due day. On top of that sits the ledger — rent charges, one-off charges, recorded payments,
+reversals and adjustments, and a balance derived from the entries rather than stored — and the tenant's
+own pages at `/account/`, `/lease/` and `/payments/` say what is due now, what is past due, and what is
+coming due.
 Properties carry a map pin and a banner photo; units are residential or commercial. Documents and
 maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 
@@ -37,9 +38,11 @@ maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 | `/manage/` | staff landing page with portfolio, occupancy and money counters |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
 | `/manage/leases/` | the lease desk: create, edit, activate, end, and attach the signed lease; deleting a draft is admin-only |
-| `/manage/ledger/` | accounting: balances across every live lease, with an overdue filter; each lease has its own ledger |
+| `/manage/ledger/` | accounting: each live lease's balance, what is past due, and what is coming due; each lease has its own ledger |
 | `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role/photo for admins |
-| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their document, and their balance |
+| `/account/` | where a tenant lands: what is due now, the next rent, the lease end date, recent activity and quick actions |
+| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their document, and what they owe now |
+| `/payments/` | a tenant's own statement: what each charge costs now, what is paid, and what is left |
 | `/admin/` | Django back office for superusers |
 
 Create the first account with `make superuser`, then sign in at `/account/login/`. Invitations and
@@ -63,6 +66,12 @@ active lease** — a database constraint, not a form rule — and a lease moves 
 by explicit action, never because a date passed. Ended leases are read-only history; only a draft can be
 deleted, and only by an admin. Tenants read their own lease at `/lease/`, whose document URL carries no
 id and is served through a permission-checked view.
+
+A tenant's own portal is three pages — the **dashboard** at `/account/` (a thin banner naming the unit and
+building, then the balance, next rent due and lease end date), the **lease**, and the **statement** at
+`/payments/` — built mobile-first: one column, full-width buttons, and list rows rather than tables. The
+statement shows each charge at what it costs **now**, with any correction absorbed into it rather than as
+a separate opposing amount, and states what has been paid against it.
 
 The **ledger** records what happened to the money: rent charges generated one month at a time (never
 twice for the same month, never beyond the tenancy's term), one-off charges, payments recorded as
@@ -97,6 +106,12 @@ make superuser     # create the first admin account
 ```
 
 Then open <http://localhost:8000>. `make init` is idempotent: it never overwrites an existing `.env`.
+
+**Testing from a phone.** The dev stack binds every interface, so the same server is reachable from
+another device on your network — find the address with `hostname -I` and open `http://<address>:8000`.
+Development settings accept any host (`DJANGO_ALLOWED_HOSTS=*`), which is what makes a DHCP address work;
+production refuses to boot without an explicit list, so nothing about this reaches a real deployment.
+Sign-in works over that address too, because Django checks the origin against the host it was reached on.
 
 ### Common commands
 

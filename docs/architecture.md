@@ -130,14 +130,14 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/account/password-reset/…` | password reset (four steps, single-use link) |
 | `/account/invite/<uidb64>/<token>/` | accept an invitation and set a password |
 | `/account/profile/`, `/account/password/` | account page, contact details, password change |
-| `/account/` | role-aware landing: staff → `/manage/`, tenant → `/account/profile/` |
+| `/account/` | role-aware home: the **tenant dashboard**, or a redirect to `/manage/` for staff |
 | `/manage/` | staff landing page with the counters that role can use |
 | `/manage/properties/…` | portfolio: list, create, detail, edit, take out of service, delete (admin) |
 | `/manage/properties/<pk>/banner/` | the banner photo, served by a permission-checked view (never a public media path) |
 | `/manage/units/…` | units the same way, attached to a property |
 | `/manage/leases/…` | lease desk: list, create, detail, edit, activate/end (POST), delete a draft (admin) |
 | `/manage/leases/<pk>/document/` | the signed lease, served by a permission-checked view |
-| `/manage/ledger/` | accounting: balances across every live lease, with totals and an overdue filter |
+| `/manage/ledger/` | accounting: each live lease's balance, what is past due and what is coming due, with totals and a past-due filter |
 | `/manage/ledger/leases/<pk>/` | one tenancy's ledger: charges, payments, activity and its recorded history |
 | `/manage/ledger/leases/<pk>/rent-charges/` | generate the missing monthly rent charges (POST, idempotent) |
 | `/manage/ledger/leases/<pk>/charges/new/`, `…/payments/new/` | add a charge, record a payment |
@@ -146,6 +146,7 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/manage/accounts/…` | tenant accounts: read for managers, create/invite/deactivate/role/photo for admins |
 | `/manage/accounts/<pk>/photo/`, `/account/photo/` | a tenant photo, served by a permission-checked view — the tenant's own URL carries **no id** |
 | `/lease/`, `/lease/document/` | the tenant's own lease and its document — tenant-only, scoped, and the document URL carries **no id** |
+| `/payments/` | the tenant's own statement — tenant-only, no id in the URL, one paginated list of list rows rather than tables |
 | `/admin/` | Django back office (`is_staff` gate) |
 
 Three URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts, `portfolio`
@@ -165,6 +166,13 @@ cannot be probed.
 - **Timestamps are timezone-aware UTC**; rent due dates are plain dates.
 - **Logging** goes to stdout (console handler), level from `DJANGO_LOG_LEVEL`; no secrets or tenant
   PII in log messages.
+- **One record, two readings.** The office reads ledger *entries* (each correction its own row, with its
+  author and reason); the tenant reads a *statement* (corrections absorbed into the charge). Both come from
+  one derivation over one `LeaseLedger`, so they cannot disagree (ADR-011).
+- **One derivation, one question per name.** The balance over the term, what is due now, what is past due,
+  and what is coming due are four different questions asked of the same allocation. Each has its own
+  property on `LeaseLedger` (`balance_due`, `due_now`, `arrears`, `next_charge` / `next_rent_date`), so no
+  screen reuses one figure to answer another (ADR-012).
 - **Derived facts are computed in one place.** Occupancy is defined once, by `LeaseQuerySet.current()`,
   and every screen reads it; there is no stored occupancy column (ADR-007). The same holds for money:
   `apps.ledger.services.build_ledger` is the only definition of a balance or a charge's state, and
@@ -172,6 +180,21 @@ cannot be probed.
 - **Append-only money.** A charge or payment is corrected by a reversal or an adjustment row, never
   edited or deleted, and every mutation appends an `AuditEvent` in the same transaction.
 - **Tests** exercise behavior through the public HTTP surface and the ORM, against PostgreSQL.
+
+## Not in Phase 5
+
+Documents (6), maintenance (7), communications (8), the full admin dashboard (9), reporting (10), payment
+integration (11), production hardening — MFA, monitoring, proxy-level rate limiting (12). The dashboard
+shows two labelled panels for the maintenance and announcements work it cannot yet answer.
+
+## What Phase 5 changed in earlier work
+
+Phase 4's tenant page showed a balance; Phase 5 gave the tenant somewhere to land, so `/account/` is now a
+rendered dashboard rather than a redirect to the account page, and the tenant navigation grew from one
+item to three. One small correction came out of it: an *expected* payment is labelled "expected" rather
+than "received" in the activity list, because the dashboard made that list prominent. The tenant-lease
+lookup moved from a view function onto `LeaseQuerySet.visible_for`, so the lease page, the dashboard and
+the payment history resolve a tenancy one way. No model, migration or dependency was added.
 
 ## Not in Phase 4
 

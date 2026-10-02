@@ -6,6 +6,7 @@ gated by a mixin from :mod:`apps.accounts.permissions` (ADR-003).
 
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -14,6 +15,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.views import View
@@ -37,6 +39,7 @@ from apps.accounts.permissions import (
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
 from apps.leases.models import Lease, LeaseStatus
+from apps.leases.views import visible_lease_for as leases_visible_for
 from apps.ledger import services as ledger_services
 from apps.properties.models import Property, Unit
 
@@ -82,13 +85,46 @@ class ThrottledLoginView(LoginView):
         return super().form_invalid(form)
 
 
-class PostLoginRedirectView(LoginRequiredMixin, View):
-    """Send each role to the area it can actually use."""
+class TenantDashboardView(LoginRequiredMixin, View):
+    """The tenant's home: their five questions answered on one page.
+
+    This is also the role-aware landing (`LOGIN_REDIRECT_URL`), so a tenant who
+    signs in arrives here. Staff are sent to the management area instead, which is
+    friendlier than a 403 on the page they were redirected to.
+
+    Everything shown is derived: the balance and the activity come from
+    `apps.ledger.services.build_ledger`, the same definition the staff ledger
+    reads, and the lease comes from `Lease.objects.visible_for` — so a tenant can
+    only ever see their own tenancy. Maintenance and announcements belong to
+    Phases 7 and 8, and the page says so rather than showing a dead button.
+    """
+
+    template_name = "account/dashboard.html"
 
     def get(self, request):
         if request.user.is_rhp_staff:
             return redirect("manage:home")
-        return redirect("accounts:profile")
+
+        lease = leases_visible_for(request.user)
+        ledger = ledger_services.build_ledger(lease) if lease else None
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "lease": lease,
+                "ledger": ledger,
+                "activity_limit": settings.RHP_LEDGER_ACTIVITY_LIMIT,
+                "lease_days_remaining": _days_remaining(lease),
+            },
+        )
+
+
+def _days_remaining(lease):
+    """Days until a lease ends: positive while it runs, negative once it has."""
+    if lease is None:
+        return None
+    return (lease.end_date - timezone.localdate()).days
 
 
 # --- Account self-service -------------------------------------------------
@@ -209,8 +245,8 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
             ledger_rows = ledger_services.ledger_rows()
             ledger_totals = ledger_services.totals(ledger_rows)
             context["ledger_outstanding"] = ledger_totals["outstanding"]
-            context["ledger_overdue"] = ledger_totals["overdue"]
-            context["ledger_overdue_leases"] = ledger_totals["overdue_leases"]
+            context["ledger_arrears"] = ledger_totals["arrears"]
+            context["ledger_arrears_leases"] = ledger_totals["arrears_leases"]
 
         if user.is_admin_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()

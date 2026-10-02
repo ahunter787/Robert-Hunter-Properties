@@ -1,8 +1,8 @@
 """The ledger's arithmetic: balances, allocation, states, and immutability.
 
 These are the specification's FINANCIAL tests — balance calculations, partial
-payments, reversals, overdue determination — plus the rules that make the ledger
-trustworthy: entries are append-only, and nothing stores a balance.
+payments, reversals, arrears — plus the rules that make the ledger trustworthy:
+entries are append-only, and nothing stores a balance.
 """
 
 import datetime as dt
@@ -62,7 +62,7 @@ def test_a_full_payment_settles_the_charge():
     ledger = ledger_for(lease)
     assert ledger.balance_due == Decimal("0.00")
     assert state_of(ledger, charge) == ChargeState.PAID
-    assert ledger.next_due is None
+    assert ledger.next_charge is None, "nothing billed is still owed"
 
 
 def test_paying_more_than_is_owed_is_a_credit_not_a_negative_debt():
@@ -73,7 +73,7 @@ def test_paying_more_than_is_owed_is_a_credit_not_a_negative_debt():
     ledger = ledger_for(lease)
     assert ledger.balance_due == Decimal("-100.00")
     assert ledger.credit == Decimal("100.00")
-    assert ledger.overdue_amount == Decimal("0.00")
+    assert ledger.arrears == Decimal("0.00")
 
 
 def test_no_balance_is_ever_stored():
@@ -473,8 +473,9 @@ def test_a_lease_with_nothing_on_it_has_a_settled_ledger():
     ledger = ledger_for(lease)
 
     assert ledger.balance_due == Decimal("0.00")
-    assert ledger.overdue_amount == Decimal("0.00")
-    assert ledger.next_due is None
+    assert ledger.arrears == Decimal("0.00")
+    assert ledger.next_charge is None
+    assert ledger.next_rent_date is not None, "the lease still says when rent falls due"
     assert ledger.activity == []
 
 
@@ -483,3 +484,183 @@ def test_an_out_of_service_unit_still_has_a_ledger():
     make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
 
     assert ledger_for(lease).balance_due == Decimal("100.00")
+
+
+# --- the tenant's reading of the same records -----------------------------
+
+
+def statement_for(lease):
+    return services.build_ledger(lease).statement
+
+
+def charges_only(lease):
+    return [row for row in statement_for(lease) if row.kind == "charge"]
+
+
+def test_an_adjustment_is_absorbed_into_the_charge_it_corrects():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("1000.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("250.00"), reason="overcharged"
+    )
+
+    rows = statement_for(lease)
+
+    assert len(rows) == 1, "the correction is not a second line for the tenant"
+    row = rows[0]
+    assert row.kind == "charge"
+    assert row.gross == Decimal("1000.00")
+    assert row.adjusted_by == Decimal("-250.00")
+    assert row.net == Decimal("750.00"), "the charge costs what it costs now"
+    assert row.amount == Decimal("750.00")
+    assert row.was_adjusted is True
+
+
+def test_a_charge_zeroed_by_an_adjustment_reads_as_nothing_to_pay():
+    """The owner's case: $2,084 charged and $2,084 credited is not +2,084 then −2,084."""
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("2084.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("2084.00"), reason="raised in error"
+    )
+
+    row = statement_for(lease)[0]
+
+    assert row.net == Decimal("0.00")
+    assert row.amount == Decimal("0.00")
+    assert row.left == Decimal("0.00")
+    assert row.state == ChargeState.ADJUSTMENT
+    assert row.state_label == "Adjusted"
+
+
+def test_an_adjustment_never_counts_as_a_payment():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("1000.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("400.00"), reason="overcharged"
+    )
+
+    row = statement_for(lease)[0]
+
+    assert row.paid == Decimal("0.00"), "a credit is not money received"
+    assert row.left == Decimal("600.00")
+    assert row.state == ChargeState.UNPAID
+
+
+def test_a_real_payment_and_an_adjustment_add_up():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("1000.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("400.00"), reason="overcharged"
+    )
+    make_payment(lease, amount=Decimal("600.00"), payment_date=TODAY)
+
+    row = statement_for(lease)[0]
+
+    assert row.net == Decimal("600.00")
+    assert row.paid == Decimal("600.00"), "only the money is money"
+    assert row.left == Decimal("0.00")
+    assert row.state == ChargeState.PAID
+
+
+def test_an_adjustment_that_overshoots_leaves_the_rest_in_credit():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("150.00"), reason="goodwill"
+    )
+
+    row = statement_for(lease)[0]
+
+    assert row.net == Decimal("-50.00")
+    assert row.amount == Decimal("0.00"), "nothing is owed on it"
+    assert row.credit == Decimal("50.00")
+    assert services.build_ledger(lease).credit == Decimal("50.00")
+
+
+def test_an_increase_is_netted_the_same_way():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("1000.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.INCREASE, amount=Decimal("75.00"), reason="extra works"
+    )
+
+    row = statement_for(lease)[0]
+
+    assert row.net == Decimal("1075.00")
+    assert row.adjusted_by == Decimal("75.00")
+    assert row.left == Decimal("1075.00")
+
+
+def test_an_untargeted_adjustment_stays_its_own_line():
+    """There is nothing to net it into, so it is shown as what it is."""
+    lease = make_lease()
+    Charge.objects.create(
+        lease=lease,
+        kind=ChargeKind.ADJUSTMENT,
+        description="Late key replacement",
+        amount=Decimal("40.00"),
+        due_date=TODAY,
+        reason="keys",
+        direction=Direction.INCREASE,
+    )
+
+    rows = charges_only(lease)
+
+    assert len(rows) == 1
+    assert rows[0].title == "Late key replacement"
+    assert rows[0].net == Decimal("40.00")
+
+
+def test_the_statement_holds_charges_and_payments_in_one_list():
+    lease = make_lease()
+    make_charge(lease, amount=Decimal("100.00"), due_date=TODAY - dt.timedelta(days=30))
+    make_payment(lease, amount=Decimal("100.00"), payment_date=TODAY)
+    make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
+
+    rows = statement_for(lease)
+
+    assert [row.kind for row in rows] == ["charge", "payment", "charge"], "newest first"
+    assert rows[1].label == "Payment received"
+    assert rows[1].status_label == "Cleared"
+
+
+def test_a_voided_payment_is_not_in_the_statement():
+    lease = make_lease()
+    payment = make_payment(
+        lease, amount=Decimal("10.00"), payment_date=TODAY, status=PaymentStatus.PENDING
+    )
+    services.void_payment(payment)
+
+    assert statement_for(lease) == []
+
+
+def test_the_next_charge_reads_net_and_ignores_settled_charges():
+    lease = make_lease()
+    zeroed = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY + dt.timedelta(days=1))
+    services.create_adjustment(
+        zeroed, direction=Direction.DECREASE, amount=Decimal("100.00"), reason="raised in error"
+    )
+    soonest = make_charge(lease, amount=Decimal("500.00"), due_date=TODAY + dt.timedelta(days=2))
+    make_payment(lease, amount=Decimal("200.00"), payment_date=TODAY)
+
+    ledger = services.build_ledger(lease)
+
+    assert ledger.next_charge is not None
+    assert ledger.next_charge.title == soonest.description
+    assert ledger.next_charge.left == Decimal("300.00"), "what is left, not the gross"
+
+
+def test_the_statement_costs_no_extra_queries(django_assert_num_queries):
+    """It is a reading of the ledger, not another trip to the database."""
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
+    services.create_adjustment(
+        charge, direction=Direction.DECREASE, amount=Decimal("25.00"), reason="overcharged"
+    )
+    ledger = services.build_ledger(lease)
+
+    with django_assert_num_queries(0):
+        rows = ledger.statement
+
+    assert len(rows) == 1

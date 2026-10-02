@@ -56,14 +56,14 @@
           <a href="{% url 'ledger:overview' %}" class="rhp-btn rhp-btn-secondary mt-4">Accounting</a>
         </div>
         <div class="rhp-card">
-          <p class="rhp-eyebrow">Overdue</p>
-          <p class="mt-2 text-3xl font-semibold {% if ledger_overdue %}text-danger{% endif %}">
-            {{ ledger_overdue|money }}
+          <p class="rhp-eyebrow">Past due</p>
+          <p class="mt-2 text-3xl font-semibold {% if ledger_arrears %}text-danger{% endif %}">
+            {{ ledger_arrears|money }}
           </p>
           <p class="mt-1 text-sm text-ink-muted">
-            {{ ledger_overdue_leases }} lease{{ ledger_overdue_leases|pluralize }} past a due date
+            {{ ledger_arrears_leases }} lease{{ ledger_arrears_leases|pluralize }} past a due date
           </p>
-          <a href="{% url 'ledger:overview' %}?overdue=1" class="rhp-btn rhp-btn-secondary mt-4">Chase</a>
+          <a href="{% url 'ledger:overview' %}?arrears=1" class="rhp-btn rhp-btn-secondary mt-4">Chase</a>
         </div>
         <div class="rhp-card">
           <p class="rhp-eyebrow">Tenants</p>
