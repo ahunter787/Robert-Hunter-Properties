@@ -1,8 +1,9 @@
-# RHP — extensions E1–E3
+# RHP — extensions E1–E4
 
-**Where this stands:** **E1 (lease templates) is built and in `main`.** **E2 (property responsibilities
-charged to the unit) is built on the `rhp-responsibilities` branch** and awaiting the owner's testing.
-**E3 (concessions) is unchanged** from the earlier proposal, at the owner's instruction.
+**Where this stands:** **E1 (lease templates) and E2 (property responsibilities) are in `main`.** **E4
+(retroactive onboarding) is approved** and is the next unit of work, because RHP's live tenancies cannot be
+brought in without it. **E3 (concessions) remains proposed**, unchanged from the earlier proposal at the
+owner's instruction, and is the entry after E4 unless the owner redirects.
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -12,8 +13,9 @@ the working model compiled by the owner with Robert. The governing specification
 | # | What it is | Kind | Status |
 | --- | --- | --- | --- |
 | **E1** | **Lease templates** — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
-| **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **Built** — [ADR-014](decisions/ADR-014-property-responsibilities.md), branch `rhp-responsibilities` |
-| **E3** | **Concessions** — forgiveness and deferral | Additive | Proposed, unchanged — see [§4](#4-e3--concessions) |
+| **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
+| **E3** | **Concessions** — forgiveness and deferral | Additive | Proposed, unchanged — see section 4 |
+| **E4** | **Retroactive onboarding** — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Approved** — see section 5 |
 
 ---
 
@@ -44,8 +46,8 @@ statuses live here instead, and an approved change is written into the specifica
 7. **The money rules are not renegotiable per extension:** nothing stores a balance, nothing edits or
    deletes a ledger entry, corrections are new entries, and money is never a float.
 8. **One decision record (ADR) per built extension**, linked from the entry.
-9. **An approved change gets one appendix row in the specification**, so the contract and what was built
-   stay in step.
+9. **A built extension gets one appendix row in the specification**, so the contract and what the code
+   does stay in step. (E1's and E2's rows are there; E4's lands when E4 is built.)
 
 ---
 
@@ -118,25 +120,13 @@ Rent for August 2026                 $2,896.25
       Pruning $144.00
 ```
 
-### What it would change
+### The real-world flow this models
 
-- **A responsibility attached to a property** — name, category (utility / maintenance), how often its cost
-  is updated (the owner's example is every 3 months), the cycle start and end, the **current cycle** value
-  and a **staged next cycle** value that an admin enters when the bill arrives. Robert's real flow: a
-  utility is billed to the property every three months, divided by three for a monthly figure, and
-  allocated to each unit.
-- **An allocation per unit** — the lease (or the unit) says how the property's cost is divided: a
-  proportionate share by square feet, a flat amount, or (as a stretch goal) a bespoke split such as the
-  real case where one tenant is billed 1–2 CCF of water and the other the remainder.
-- **A CAM formula**, since the owner's document gives one: property square feet, the unit's share of it,
-  and a rate per square foot ($0.20). CAM is folded into the lease's base rent, so this is a *derivation
-  the office can see*, not a charge of its own.
-- **Monthly charges per responsibility**, on the unit's due date, alongside rent and NNN — each its own
-  ledger entry, so one utility can be corrected without touching the rent.
-- **The expandable month card**, read from the month's charges: base rent, NNN, and each responsibility,
-  with "steps up in N months" / "updates in N months" labels.
-- **The admin screen the owner sketched**: `/manage/properties/<id>/` gains the property's landlord
-  responsibilities, each with its update cycle, current cycle, and a button to stage the next one.
+Robert's practice, which the model follows: a utility is billed to the property every three months, divided
+by three for a monthly figure, and allocated to each unit; and the division is not always a formula — one
+property splits water by usage, one unit's figure and the other the remainder. CAM is the owner's document's
+other case: a pro-rata share of taxes, insurance and maintenance, folded into the lease's base rent, which
+is why RHP records it as a rate per square foot and shows the derivation rather than billing it.
 
 ### What was built
 
@@ -192,4 +182,126 @@ than adding new arithmetic. One decision is still open from the earlier draft: *
 concession's wording?** (the recommendation was yes, from a note written for them, as a deliberate
 exception to ADR-011's rule that an adjustment's free-text reason stays office-facing).
 
-It will be planned properly once E2 is done.
+**Sequencing:** E4 was approved ahead of it on 2026-10-03, because RHP's live tenancies cannot be brought
+into the system without a cutover. E3 is the next entry after E4 unless the owner redirects, and nothing in
+it is blocked in the meantime: a concession is expressible today as an adjustment (forgiveness) or an
+adjustment plus a new dated charge (deferral) — E3 is what makes the decision *legible*, not what makes it
+possible.
+
+---
+
+## 5. E4 — Retroactive onboarding
+
+**Status: approved 2026-10-03; not built.** Owner's words: *"all of the RHP tenants have a currently live
+lease, and I do not intend to wait for their lease to expire to enroll them into this new system."*
+
+### The problem, stated with the evidence
+
+A live tenancy that started years ago cannot be onboarded by activating it and pressing "Create charges":
+the generator walks from the term start, so it bills the whole past as if it were new. On a real lease
+(Michael Ortolano, 910 SE Stark, June 2022 → May 2027) that produced **108 charges and a $100,536.18
+"balance"**, of which $96,533.60 read as arrears — for a tenant who is paid up. That figure was reset on
+2026-10-03 (see §6) and RHP must make it impossible, not merely discouraged.
+
+The same lease exposed a second gap: its real schedule is **six amounts over irregular dates**, including a
+mid-year change in November 2023 ("Extra Space", $1,852). E1 works a schedule out from a rule (a month plus
+a percentage or a fixed amount) and cannot express that; and hand-entering a period at a date the rule does
+not plan is **silently deleted by "Work the schedule out again"** — verified in a rolled-back transaction on
+2026-10-03.
+
+### Classification
+
+**Core-semantic**, with one invariant: a lease with no cutover and no opening position behaves exactly as it
+does today — charges from the term start, a schedule generated from the rule.
+
+### What it will do
+
+1. **A cutover date on the lease** (`billing_start_date`): the first month RHP raises charges for. Nothing
+   before it is billed unless the office explicitly asks for the history.
+2. **An opening position**, recorded once, with a reason and the date it speaks to:
+   - **Model A (default — "books in RHP from day one"):** raise the historic charges and record the **total
+     received to date** as one settling payment. The ledger's existing oldest-first allocation settles the
+     past months and leaves the true current position; the tenant gets a complete, month-paginated
+     statement.
+   - **Model B (fallback — "state the position"):** start at the cutover and record one opening line:
+     *balance brought forward $X*, or *paid through `<date>`*.
+3. **A stated schedule.** A lease may say "the lease states the amounts" instead of "rise by a rule", and
+   the office can add, change or remove a dated amount — which is what a mid-year step, an "Extra Space"
+   change or a renegotiation needs. **The defect above is fixed with it**: a period the office entered by
+   hand is never removed by regenerating, and a regression test pins that.
+4. **An NNN series the office stages** — dated rates, adjusted when the lease says. The live lease says
+   **October**; our earlier note (from the owner's first document) said November, and the docs are corrected
+   to "whenever the lease says".
+5. **The lease's own record, entered not reconciled.** A retroactive lease is entered as the paper reads:
+   the rent due day the lease names (Michael's says the 1st; RHP had the 5th), the amounts it states, the
+   square footage as it changed. Where the paper disagrees with itself (this lease says both "$305/month"
+   and "$0.19/sf" for 2022 NNN), the office records what governs; RHP's job is to make the disagreement
+   visible, not to pick a winner.
+6. **Guard rails, before any of it:**
+   - no charges may be raised before the cutover without an explicit "include the history" choice;
+   - a retroactively-dated lease with no opening position tells the **office** that history is not set up,
+     and never shows a tenant an unearned arrears figure;
+   - the staff screen says which of A or B a lease was onboarded with.
+
+### Acceptance criteria
+
+- Onboarding Michael's lease produces the true position: his real schedule (six amounts), his NNN series,
+  and either a settled history (A) or one stated opening line (B) — with no phantom balance at any point.
+- A lease with no cutover behaves exactly as it does today (regression test).
+- A hand-entered period survives regeneration; a period that has been charged still cannot be rewritten.
+- A tenant cannot be shown a balance that the office has not stood behind, and the staff screen names the
+  state of onboarding.
+- The due day, amounts and square footage the lease states are what the portal shows.
+
+### What E4 deliberately will not do
+
+No late fees or interest (see §6), no usage/meter billing (E2's non-goal), no tax, depreciation or land
+valuation (that is the owner-facing direction in §7), no rewriting of anything already charged once a lease
+is onboarded, and no automatic reconciliation of the lease's internal inconsistencies.
+
+### After E4
+
+Every live RHP tenancy is onboarded the same way, Michael's first as the pilot. The reset that E4 replaces
+was a manual database operation with a written record; E4 should ship the tool that makes that operation
+unnecessary — a lease can be re-onboarded through the screens while it has no charges.
+
+---
+
+## 6. Recorded decisions
+
+Decisions taken by the owner that are not entries of their own, kept here so nobody re-opens them by
+accident.
+
+- **Late fees and interest are not modelled (2026-10-03).** RHP's leases carry a clause — the live lease at
+  910 SE Stark charges 24% a year after ten days plus a 10% late charge — but it has not been used in thirty
+  years. The specification's Non-goal stands: if pressure on a tenant is ever needed, the office raises a
+  **manual charge with the reason "late fee"**, and the entry is auditable like any other. Nothing is
+  automatic.
+- **The system records what the lease says; it does not reconcile discrepancies (2026-10-03).** RHP exists
+  to make the owner's and the tenant's understanding of a live lease legible. Where a lease has drifted —
+  values moved, an "Extra Space" change mid-term, two different NNN figures in one document — the record
+  carries what governs, and the disagreement is visible to the office rather than silently resolved.
+- **Michael Ortolano's lease history was reset (2026-10-03).** 108 charges ($100,536.18) and five invented
+  rent periods, generated before E4 existed, were removed; his due day was corrected to the 1st; a note on
+  the lease says history awaits E4. No other tenancy was touched. E4 should make this operation unnecessary.
+
+---
+
+## 7. Directions not yet proposed
+
+Recorded so they are not lost, with **no design committed**: the owner intends to extend RHP *after Phase 12
+(hardening)* into a tool for managing the business side of the portfolio — property taxes, depreciation
+schedules, land values, and the tax and business data that is **owner-facing rather than tenant-facing**.
+The owner will consult Robert before any of it becomes register entries.
+
+Three things worth knowing when that work is planned, none of them decided here:
+
+1. **It is a separate domain, not an extension of the rent ledger.** An owner's books hold assessments,
+   cost basis, placed-in-service dates, depreciation methods and lives, and land-versus-building
+   allocation. The tenant ledger stays rent, charges and payments (ADR-008) — mixing the two would put the
+   tenant-facing figures that RHP has just made trustworthy at risk.
+2. **Time becomes first-class in a way it is not today.** The ledger thinks in due dates; tax and
+   depreciation think in *periods* — tax years, partial years, mid-month conventions.
+3. **It needs its own visibility rule.** Today access is decided by role plus tenancy scoping; owner
+   financials must be server-side owner/staff-only and never reachable by a tenant, and probably want their
+   own area rather than appearing inside the portal tenants use.
