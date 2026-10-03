@@ -178,13 +178,16 @@ Concessions."*
 The proposal stands as it was first written: a concession is a **decision** recorded once — forgiveness (a
 charge credited) or deferral (a charge credited and re-raised on a later date) — with an office-facing
 reason and a short note written for the tenant, wrapping the ledger's existing adjustment mechanics rather
-than adding new arithmetic. One decision is still open from the earlier draft: **does the tenant see the
-concession's wording?** (the recommendation was yes, from a note written for them, as a deliberate
-exception to ADR-011's rule that an adjustment's free-text reason stays office-facing).
+than adding new arithmetic.
 
-**Sequencing:** E4 was approved ahead of it on 2026-10-03, because RHP's live tenancies cannot be brought
-into the system without a cutover. E3 is the next entry after E4 unless the owner redirects, and nothing in
-it is blocked in the meantime: a concession is expressible today as an adjustment (forgiveness) or an
+**The open decision is settled (2026-10-03): the tenant *does* see the concession's wording**, from a short
+note written for them. That is a deliberate, recorded exception to ADR-011's rule that an adjustment's
+free-text reason stays office-facing — a concession is a decision made *about* the tenant and communicated
+to them — so the note is a separate field from the internal reason, and office shorthand never reaches a
+tenant page.
+
+**Sequencing (confirmed 2026-10-03): E4 first, then E3.** E4 went ahead because RHP's live tenancies cannot
+be brought into the system without a cutover; E3 follows it. Nothing in E3 is blocked in the meantime: a concession is expressible today as an adjustment (forgiveness) or an
 adjustment plus a new dated charge (deferral) — E3 is what makes the decision *legible*, not what makes it
 possible.
 
