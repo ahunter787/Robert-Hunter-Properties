@@ -1,9 +1,8 @@
 # RHP — extensions E1–E3
 
-**Where this stands:** **E1 (lease templates) is built on the `rhp-lease-templates` branch** and awaiting the
-owner's testing. **E2 (property responsibilities charged to the unit) is proposed** and needs the owner's
-answers to the questions in section 3 before it is built. **E3 (concessions) is unchanged** from the
-earlier proposal, at the owner's instruction.
+**Where this stands:** **E1 (lease templates) is built and in `main`.** **E2 (property responsibilities
+charged to the unit) is built on the `rhp-responsibilities` branch** and awaiting the owner's testing.
+**E3 (concessions) is unchanged** from the earlier proposal, at the owner's instruction.
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -12,8 +11,8 @@ the working model compiled by the owner with Robert. The governing specification
 
 | # | What it is | Kind | Status |
 | --- | --- | --- | --- |
-| **E1** | **Lease templates** — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **Built** — [ADR-013](decisions/ADR-013-lease-templates.md), branch `rhp-lease-templates` |
-| **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant | Additive | Proposed — see [§3](#3-e2--property-responsibilities-charged-to-the-unit) |
+| **E1** | **Lease templates** — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
+| **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **Built** — [ADR-014](decisions/ADR-014-property-responsibilities.md), branch `rhp-responsibilities` |
 | **E3** | **Concessions** — forgiveness and deferral | Additive | Proposed, unchanged — see [§4](#4-e3--concessions) |
 
 ---
@@ -52,7 +51,7 @@ statuses live here instead, and an approved change is written into the specifica
 
 ## 2. E1 — Lease templates (Fixed, Step Up, Triple Net)
 
-**Status: built** on `rhp-lease-templates`; the decision record is
+**Status: in `main`** (folded as one commit); the decision record is
 [ADR-013](decisions/ADR-013-lease-templates.md). Core-semantic, with the invariant stated below.
 
 ### What was asked for
@@ -93,7 +92,8 @@ expandable month card — those are E2.
 
 ## 3. E2 — Property responsibilities charged to the unit
 
-**Status: proposed.** Next unit of work once the questions at the end of this section are answered.
+**Status: built** on `rhp-responsibilities`; the decision record is
+[ADR-014](decisions/ADR-014-property-responsibilities.md).
 
 ### What it is
 
@@ -138,25 +138,45 @@ Rent for August 2026                 $2,896.25
 - **The admin screen the owner sketched**: `/manage/properties/<id>/` gains the property's landlord
   responsibilities, each with its update cycle, current cycle, and a button to stage the next one.
 
-### Decisions to make
+### What was built
 
-| # | Question | Options | Recommendation |
-| --- | --- | --- | --- |
-| E2-D1 | Where does a responsibility live? | On the property (RHP's actual arrangement), on the unit, or on the lease | **On the property**, with the allocation governed by the unit's lease — that is how the bills arrive |
-| E2-D2 | How is a property cost divided between units? | Proportionate share by square feet; equal shares; a per-unit amount typed by the office; a formula per responsibility | **Proportionate share by square feet, with a typed override per unit** — the override covers the water case without a formula engine |
-| E2-D3 | What is stored: the property's cost, or each unit's charge? | The property's cycle cost, allocated per unit at generation; or the office types each unit's amount | **The property's cycle cost, allocated at generation**, with an override per unit per cycle — so the bill is the record and the allocation is visible |
-| E2-D4 | When does a staged cycle take effect? | On the date the office gives it; on a fixed day (the 1st of the month after the bill) | **A date the office gives**, defaulting to the next rent due date, exactly like the NNN rate |
-| E2-D5 | Which categories? | Utilities and maintenance; a free-text label with a short category | **A short category list (utility, maintenance, other) plus a label** — the label is what the tenant reads |
-| E2-D6 | How is a responsibility stopped? | An end date on the allocation; an inactive flag; deleting it | **An end date** — nothing already charged is affected |
-| E2-D7 | How is the disproportionate water split handled? | A per-unit override on the allocation; a full usage-based billing engine | **The override**, and record usage billing as a separate future extension — the owner's document already calls it a stretch goal |
-| E2-D8 | Does the tenant see the property-level bill? | Only their unit's share, with the category named; the whole property cost | **Only their share**, named by category and label. What the property paid is the office's business |
-| E2-D9 | Is every unit on a property charged, or only those whose lease says so? | Opt-in per lease; all units by default | **Opt-in per lease**, because the lease governs the division |
+- **A responsibility on the property** — a label, a category (utility, maintenance, other), and how many
+  months one bill covers; stopped with an "in use" switch rather than deleted.
+- **Cycles staged in advance** — the property's bill, the months it covers, and the date it applies from;
+  the one in force keeps applying until the staged one's date.
+- **Each unit's monthly amount, stored per cycle** — proposed from the unit's square-foot share and
+  editable, because the division is not always a formula. What the office stores is what the ledger
+  charges; no percentage is re-applied later.
+- **Charges raised alongside rent and NNN** by the one idempotent generator, each responsibility its own
+  entry, so a correction is an adjustment against that cost.
+- **The month card** — the tenant's statement groups a month's charges into one openable card: rent, NNN,
+  and responsibilities by category with subtotals, each carrying the lease's own news ("steps up in 1
+  month"). Pagination counts a month as one entry.
+- **CAM as a metric** — the property records a rate per square foot and shows the derivation; it is folded
+  into base rent, so it never becomes a charge of its own.
+- **Locking** — a cycle whose months have been charged cannot be restaged or re-divided; the correction is
+  an adjustment, as everywhere else.
+
+### Decisions taken (recorded in ADR-014)
+
+| # | Question | Taken as |
+| --- | --- | --- |
+| E2-D1 | Where a responsibility lives | **On the property** — that is how the bills arrive |
+| E2-D2 | How the cost is divided | **Proportionate share by square feet, proposed; the office's typed figures win**, per unit and per cycle |
+| E2-D3 | What is stored | **The property's cycle total and each unit's monthly amount**, so the bill and the division are both records |
+| E2-D4 | When a staged cycle takes effect | **A date the office gives**, defaulting to the day after the last cycle ends |
+| E2-D5 | Categories | **Utility / Maintenance / Other**, plus the free-text label the tenant reads |
+| E2-D6 | Stopping one | **The "in use" switch** — months already charged are untouched |
+| E2-D7 | The disproportionate water split | **Two typed amounts**; usage/meter billing stays a separate future extension |
+| E2-D8 | What the tenant sees | **Their unit's share only**, named by category and label |
+| E2-D9 | Who is charged | **Only units under a lease**; a vacant unit's share is shown as the landlord's |
 
 ### What E2 deliberately will not do
 
 No metered/usage-based billing, no meter readings or estimates, no utility accounts, no utility invoices
-or statements as documents (Phase 6), no landlord-side expense tracking or owner statements, and no
-annual reconciliation/true-up flow (a later extension if the office wants it).
+or statements as documents (Phase 6), no landlord-side expense tracking or owner statements, no annual
+reconciliation/true-up flow, and no re-cutting a vacant unit's share onto the occupied ones (a tenant's
+bill must not depend on a neighbour's vacancy).
 
 ---
 

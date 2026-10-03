@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from django.utils import timezone
 
 from apps.audit.models import AuditAction
@@ -28,6 +28,7 @@ from apps.ledger.models import (
     PaymentKind,
     PaymentStatus,
 )
+from apps.responsibilities.models import PropertyResponsibility
 
 ZERO = Decimal("0.00")
 
@@ -104,6 +105,18 @@ class ActivityRow:
 # records, same balance, two readings — ADR-011.
 
 
+#: How each derived charge state reads to a person. One definition, used by a
+#: single charge row and by a month's card (E2).
+STATE_LABELS = {
+    ChargeState.ADJUSTMENT: "Adjusted",
+    ChargeState.PAID: "Paid",
+    ChargeState.PENDING: "Payment pending",
+    ChargeState.OVERDUE: "Past due",
+    ChargeState.PARTIAL: "Partly paid",
+    ChargeState.UNPAID: "Unpaid",
+}
+
+
 @dataclass
 class StatementCharge:
     """One charge as the person paying it should read it.
@@ -128,6 +141,10 @@ class StatementCharge:
     #: What the charge is: rent, NNN, a manual charge or an adjustment, so a
     #: screen can talk about rent without reading the description (E1).
     charge_kind: str = ""
+    #: Where a responsibility charge came from, so a month can be grouped by
+    #: category and the tenant reads "Utility" rather than a kind name (E2).
+    category: str = ""
+    responsibility_label: str = ""
 
     @property
     def was_adjusted(self) -> bool:
@@ -164,14 +181,7 @@ class StatementCharge:
 
     @property
     def state_label(self) -> str:
-        return {
-            ChargeState.ADJUSTMENT: "Adjusted",
-            ChargeState.PAID: "Paid",
-            ChargeState.PENDING: "Payment pending",
-            ChargeState.OVERDUE: "Past due",
-            ChargeState.PARTIAL: "Partly paid",
-            ChargeState.UNPAID: "Unpaid",
-        }[self.state]
+        return STATE_LABELS[self.state]
 
 
 @dataclass
@@ -197,6 +207,121 @@ class StatementPayment:
     @property
     def status_label(self) -> str:
         return "Expected" if self.status == PaymentStatus.PENDING else "Cleared"
+
+
+@dataclass
+class ComponentRow:
+    """One part of a month, with the thing worth saying about it.
+
+    The note is the lease's own news — "steps up in 1 month", "updates in 2 months"
+    — read against the month the card is for, exactly as the owner's sketch shows it.
+    """
+
+    component: StatementCharge
+    note: str = ""
+
+
+@dataclass
+class ResponsibilityGroup:
+    """A month's responsibility charges under one category, with their subtotal."""
+
+    label: str
+    rows: list[ComponentRow] = field(default_factory=list)
+
+    @property
+    def subtotal(self) -> Decimal:
+        return sum((row.component.amount for row in self.rows), ZERO)
+
+
+@dataclass
+class StatementMonth:
+    """One month of a tenancy's charges, as the tenant's card reads it (E2).
+
+    A reading, not a record: the month's rent, NNN and responsibilities are separate
+    ledger entries that share a due date, and this sums them so a tenant sees one
+    figure and can open it up. ``LeaseLedger.statement`` still holds the plain rows
+    (ADR-011).
+    """
+
+    date: dt.date
+    rows: list[ComponentRow] = field(default_factory=list)
+    kind: str = "month"
+
+    @property
+    def components(self) -> list[StatementCharge]:
+        return [row.component for row in self.rows]
+
+    @property
+    def total(self) -> Decimal:
+        """What the month costs, at the figures the charges now stand at."""
+        return sum((component.amount for component in self.components), ZERO)
+
+    @property
+    def left(self) -> Decimal:
+        return sum((component.left for component in self.components), ZERO)
+
+    @property
+    def state(self) -> str:
+        """The month's own state: the most pressing thing in it wins."""
+        states = [component.state for component in self.components]
+        if not states:
+            return ChargeState.UNPAID
+        if ChargeState.OVERDUE in states:
+            return ChargeState.OVERDUE
+        if ChargeState.PENDING in states:
+            return ChargeState.PENDING
+        if ChargeState.PARTIAL in states:
+            return ChargeState.PARTIAL
+        if all(state == ChargeState.PAID for state in states):
+            return ChargeState.PAID
+        if all(state == ChargeState.ADJUSTMENT for state in states):
+            return ChargeState.ADJUSTMENT
+        return ChargeState.UNPAID
+
+    @property
+    def state_label(self) -> str:
+        if self.state == ChargeState.ADJUSTMENT:
+            return "Nothing to pay"
+        return STATE_LABELS[self.state]
+
+    @property
+    def is_one_line(self) -> bool:
+        """A month of a single charge needs no card: it reads as a row."""
+        return len(self.rows) == 1
+
+    def _of_kind(self, kind: str) -> list[ComponentRow]:
+        return [row for row in self.rows if row.component.charge_kind == kind]
+
+    @property
+    def rent_rows(self) -> list[ComponentRow]:
+        return self._of_kind(ChargeKind.RENT)
+
+    @property
+    def nnn_rows(self) -> list[ComponentRow]:
+        return self._of_kind(ChargeKind.NNN)
+
+    @property
+    def responsibility_rows(self) -> list[ComponentRow]:
+        return self._of_kind(ChargeKind.RESPONSIBILITY)
+
+    @property
+    def other_rows(self) -> list[ComponentRow]:
+        """Manual charges, and anything the ledger grows later."""
+        return [
+            row
+            for row in self.rows
+            if row.component.charge_kind
+            not in (ChargeKind.RENT, ChargeKind.NNN, ChargeKind.RESPONSIBILITY)
+        ]
+
+    @property
+    def responsibility_groups(self) -> list[ResponsibilityGroup]:
+        """The month's responsibilities under their categories, in a stable order."""
+        groups: dict[str, ResponsibilityGroup] = {}
+        for row in self.responsibility_rows:
+            label = row.component.category or "Other"
+            groups.setdefault(label, ResponsibilityGroup(label=label)).rows.append(row)
+        return [groups[label] for label in sorted(groups)]
 
 
 @dataclass
@@ -467,6 +592,7 @@ class LeaseLedger:
             # `settled` holds corrections first and money after them, so what is
             # left once the corrections are taken out is what was actually paid.
             paid = max(line.settled - reductions, ZERO)
+            responsibility = charge.responsibility
             rows.append(
                 StatementCharge(
                     date=charge.due_date,
@@ -480,6 +606,12 @@ class LeaseLedger:
                     left=max(net - paid, ZERO),
                     pending=line.pending,
                     charge_kind=charge.kind,
+                    category=(
+                        responsibility.get_category_display() if responsibility is not None else ""
+                    ),
+                    responsibility_label=(
+                        responsibility.label if responsibility is not None else ""
+                    ),
                 )
             )
 
@@ -498,6 +630,46 @@ class LeaseLedger:
         # Newest first; on a shared date the charge is shown before the payment
         # that settled it, which is the order it happened in.
         return sorted(rows, key=lambda row: (row.date, row.kind == "charge"), reverse=True)
+
+    # --- the same rows, read as months (E2) --------------------------------
+    # A month's rent, NNN and responsibilities are separate entries that share a
+    # date. The card groups them so a tenant sees one figure and can open it up;
+    # the plain rows above are untouched (ADR-011, ADR-014).
+
+    def _note_for(self, component: StatementCharge, on_date: dt.date) -> str:
+        """The lease's own news about one component, read against the month."""
+        if component.charge_kind == ChargeKind.RENT:
+            change = self.lease.next_rent_change(today=on_date)
+            if change is not None:
+                return _in_months("steps up", on_date, change.effective_from)
+        if component.charge_kind == ChargeKind.NNN:
+            change = self.lease.next_nnn_change(today=on_date)
+            if change is not None:
+                return _in_months("updates", on_date, change.effective_from)
+        return ""
+
+    def statement_months(self) -> list[StatementMonth | StatementPayment]:
+        """The statement grouped by due date, newest first."""
+        grouped: list[StatementMonth | StatementPayment] = []
+        for row in self.statement:
+            if isinstance(row, StatementPayment):
+                grouped.append(row)
+                continue
+            component = ComponentRow(component=row, note=self._note_for(row, row.date))
+            last = grouped[-1] if grouped else None
+            if isinstance(last, StatementMonth) and last.date == row.date:
+                last.rows.append(component)
+            else:
+                grouped.append(StatementMonth(date=row.date, rows=[component]))
+        return grouped
+
+
+def _in_months(verb: str, from_date: dt.date, to_date: dt.date) -> str:
+    """``steps up in 1 month`` — the news a component carries on a month's card."""
+    months = (to_date.year - from_date.year) * 12 + (to_date.month - from_date.month)
+    if months <= 0:
+        return f"{verb} this month"
+    return f"{verb} in {months} month{'' if months == 1 else 's'}"
 
 
 # --- building a ledger ----------------------------------------------------
@@ -560,9 +732,21 @@ def _allocate(lines: list[ChargeLine], amounts: list[Decimal], *, pending: bool)
             return
 
 
+def _load_charges(lease: Lease) -> list[Charge]:
+    """A lease's charges, with the responsibility attached, in one query.
+
+    A prefetched list is reused when the caller already fetched one (the list
+    screens do), so nothing pays two queries for the same rows.
+    """
+    prefetched = getattr(lease, "_prefetched_objects_cache", {}).get("charges")
+    if prefetched is not None:
+        return list(prefetched)
+    return list(lease.charges.select_related("responsibility"))
+
+
 def build_ledger(lease: Lease) -> LeaseLedger:
     """The one place a tenancy's money is worked out."""
-    charges = list(lease.charges.all())
+    charges = _load_charges(lease)
     payments = list(lease.payments.all())
 
     ledger = LeaseLedger(
@@ -587,7 +771,10 @@ def build_ledger(lease: Lease) -> LeaseLedger:
 def build_ledgers(leases) -> dict[int, LeaseLedger]:
     """Ledgers for a page of leases, in two queries rather than two per lease."""
     if hasattr(leases, "prefetch_related"):
-        leases = leases.prefetch_related("charges", "payments")
+        leases = leases.prefetch_related(
+            Prefetch("charges", queryset=Charge.objects.select_related("responsibility")),
+            "payments",
+        )
     return {lease.pk: build_ledger(lease) for lease in leases}
 
 
@@ -656,6 +843,7 @@ def generate_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Char
         created.extend(_create_rent_charge(lease, due, actor=actor))
         if lease.template == LeaseTemplate.NNN:
             created.extend(_create_nnn_charge(lease, due, actor=actor))
+        created.extend(_create_responsibility_charges(lease, due, actor=actor))
     return created
 
 
@@ -718,6 +906,63 @@ def _create_nnn_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
         source="NNN generation",
     )
     return [charge]
+
+
+def responsibilities_due(
+    lease: Lease, due: dt.date
+) -> list[tuple[PropertyResponsibility, Decimal]]:
+    """The property bills this tenancy carries on one due date (E2).
+
+    A responsibility counts when it is active, its staged cycle covers the month,
+    and the unit has a share for that cycle. No share means the unit is not carrying
+    it — which is how a unit opts out, and how a vacant unit's share stays with the
+    landlord instead of being invented for a tenant.
+    """
+    unit = lease.unit
+    due_rows: list[tuple[PropertyResponsibility, Decimal]] = []
+    responsibilities = PropertyResponsibility.objects.filter(
+        property_id=unit.property_id, is_active=True
+    )
+    for responsibility in responsibilities:
+        cycle = responsibility.cycle_covering(due)
+        if cycle is None or not cycle.covers(due, lease):
+            continue
+        share = next((entry for entry in cycle.shares.all() if entry.unit_id == unit.pk), None)
+        if share is None or share.monthly_amount <= ZERO:
+            continue
+        due_rows.append((responsibility, share.monthly_amount))
+    return due_rows
+
+
+def _create_responsibility_charges(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
+    """One charge per property responsibility the unit carries this month."""
+    created: list[Charge] = []
+    for responsibility, amount in responsibilities_due(lease, due):
+        charge, was_created = Charge.objects.get_or_create(
+            lease=lease,
+            kind=ChargeKind.RESPONSIBILITY,
+            responsibility=responsibility,
+            due_date=due,
+            defaults={
+                "amount": amount,
+                "description": f"{responsibility.label} for {due:%B %Y}",
+                "created_by": _actor(actor),
+            },
+        )
+        if not was_created:
+            continue
+        record(
+            actor,
+            AuditAction.CHARGE_CREATED,
+            obj=charge,
+            lease=lease,
+            summary=(f"{responsibility.label} charge for {due:%B %Y} created ({charge.amount})"),
+            amount=charge.amount,
+            due_date=due,
+            source="responsibility generation",
+        )
+        created.append(charge)
+    return created
 
 
 # --- the actions that change the ledger -----------------------------------

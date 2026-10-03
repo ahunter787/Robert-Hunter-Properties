@@ -19,7 +19,7 @@ from django.utils import timezone
 
 from apps.audit.models import AuditAction
 from apps.audit.services import record
-from apps.common.dates import due_date_in
+from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
     Lease,
@@ -91,13 +91,13 @@ def _next_month(year: int, month: int) -> tuple[int, int]:
 
 
 def first_due_on_or_after(lease: Lease, day: dt.date) -> dt.date:
-    """The first date this lease's rent falls due on or after ``day``."""
-    year, month = day.year, day.month
-    due = due_date_in(year, month, lease.rent_due_day)
-    while due < day:
-        year, month = _next_month(year, month)
-        due = due_date_in(year, month, lease.rent_due_day)
-    return due
+    """The first date this lease's rent falls due on or after ``day``.
+
+    The rule itself lives in ``apps.common.dates``, because a property
+    responsibility works out which months its bill covers with the same question
+    (E2).
+    """
+    return due_date_on_or_after(day, lease.rent_due_day)
 
 
 def _stepped_amount(amount: Decimal, lease: Lease) -> Decimal:

@@ -195,6 +195,135 @@
     </section>
 
     <section class="rhp-card">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-sm font-semibold">Responsibilities</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          {% if property.cam_rate %}
+            <span class="text-sm text-ink-muted">
+              CAM {{ property.cam_rate|money }} a square foot
+              {% if total_square_feet %}· {{ total_square_feet }} sq ft recorded{% endif %}
+            </span>
+          {% endif %}
+          {% if can_manage_responsibilities %}
+            <a href="{% url 'responsibilities:responsibility-create' property.pk %}"
+               class="rhp-btn rhp-btn-secondary">Add a responsibility</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+        Bills the property carries — water, trash, pruning — charged to each unit's share. Staging a
+        bill here is what lets the ledger raise it on each tenancy.
+      </p>
+
+      {% if responsibilities %}
+        <div class="mt-4 space-y-6">
+          {% for row in responsibilities %}
+            <div class="rounded-card border border-surface-muted p-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="font-medium">
+                    {{ row.responsibility.label }}
+                    <span class="ml-2 rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
+                      {{ row.responsibility.get_category_display }}
+                    </span>
+                    {% if not row.responsibility.is_active %}
+                      <span class="ml-2 rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                        Stopped
+                      </span>
+                    {% endif %}
+                  </p>
+                  <p class="mt-1 text-sm text-ink-muted">
+                    One bill every {{ row.responsibility.cycle_months }} month{{ row.responsibility.cycle_months|pluralize }}
+                    {% if row.responsibility.note %}· {{ row.responsibility.note }}{% endif %}
+                  </p>
+                </div>
+                <div class="text-right text-sm">
+                  {% if row.current_cycle %}
+                    <p>
+                      In force: <span class="font-medium">{{ row.current_cycle.total_amount|money }}</span>
+                      from {{ row.current_cycle.starts_on }} to {{ row.current_cycle.ends_on }}
+                    </p>
+                    <p class="text-ink-muted">
+                      {{ row.current_cycle.monthly_total|money }} a month to divide
+                    </p>
+                  {% else %}
+                    <p class="text-warning" role="status">
+                      No cycle staged yet, so nothing is being charged.
+                    </p>
+                  {% endif %}
+                  {% if row.next_cycle %}
+                    <p class="mt-1 text-ink-muted">
+                      Staged from {{ row.next_cycle.starts_on }}:
+                      {{ row.next_cycle.total_amount|money }}
+                    </p>
+                  {% endif %}
+                </div>
+              </div>
+
+              {% if row.shares %}
+                <table class="mt-3 w-full text-left text-sm">
+                  <caption class="sr-only">Unit shares of {{ row.responsibility.label }}</caption>
+                  <thead class="text-xs uppercase tracking-wide text-ink-muted">
+                    <tr>
+                      <th scope="col" class="py-2 pr-4">Unit</th>
+                      <th scope="col" class="py-2 pr-4">Share of the property</th>
+                      <th scope="col" class="py-2 pr-4">A month</th>
+                      <th scope="col" class="py-2">Lease</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-surface-muted">
+                    {% for share in row.shares %}
+                      <tr>
+                        <td class="py-2 pr-4 font-medium">{{ share.unit.identifier }}</td>
+                        <td class="py-2 pr-4 text-ink-muted">
+                          {% if share.share_of_property %}{{ share.share_of_property }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="py-2 pr-4">{{ share.monthly_amount|money }}</td>
+                        <td class="py-2 {% if not share.has_lease %}text-warning{% else %}text-ink-muted{% endif %}">
+                          {% if share.has_lease %}under lease{% else %}no lease: the landlord carries it{% endif %}
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+                {% if row.landlord_monthly > 0 %}
+                  <p class="mt-2 text-sm text-warning" role="status">
+                    {{ row.landlord_monthly|money }} a month of this bill is not carried by a unit.
+                  </p>
+                {% endif %}
+              {% endif %}
+
+              {% if can_manage_responsibilities %}
+                <div class="mt-3 flex flex-wrap items-center gap-3">
+                  <a href="{% url 'responsibilities:cycle-stage' row.responsibility.pk %}"
+                     class="rhp-btn rhp-btn-secondary">Stage the next bill</a>
+                  {% if row.current_cycle %}
+                    <a href="{% url 'responsibilities:cycle-shares' row.current_cycle.pk %}"
+                       class="font-medium text-primary underline-offset-2 hover:underline">
+                      Change the unit amounts
+                    </a>
+                  {% elif row.next_cycle %}
+                    <a href="{% url 'responsibilities:cycle-shares' row.next_cycle.pk %}"
+                       class="font-medium text-primary underline-offset-2 hover:underline">
+                      Change the unit amounts
+                    </a>
+                  {% endif %}
+                  <a href="{% url 'responsibilities:responsibility-update' row.responsibility.pk %}"
+                     class="font-medium text-primary underline-offset-2 hover:underline">Edit</a>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="mt-4 text-sm text-ink-muted">
+          No responsibilities yet. Add one when a bill has to be divided between the units.
+        </p>
+      {% endif %}
+    </section>
+
+    <section class="rhp-card">
       <h2 class="text-sm font-semibold">Not tracked here yet</h2>
       <p class="mt-2 text-sm leading-relaxed text-ink-muted">
         Documents arrive with Phase 6 and maintenance history with Phase 7. Nothing is shown until it

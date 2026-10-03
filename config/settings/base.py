@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "apps.properties",
     "apps.leases",
     "apps.ledger",
+    "apps.responsibilities",
     "apps.audit",
 ]
 
@@ -127,10 +128,10 @@ RHP_RESOLVE_MAP_SHORT_LINKS = env.bool("RHP_RESOLVE_MAP_SHORT_LINKS", default=Tr
 GOOGLE_MAPS_EMBED_API_KEY = env("GOOGLE_MAPS_EMBED_API_KEY", default="")
 
 # --- The rent ledger ------------------------------------------------------
-# How far beyond the current month "create rent charges" reaches, and how much
+# How far beyond the current month "create charges" reaches, and how much
 # activity the lease pages show. Charging ahead is bounded by the lease's own end
 # date, and the same month is never charged twice.
-RHP_RENT_CHARGE_HORIZON_MONTHS = env.int("RHP_RENT_CHARGE_HORIZON_MONTHS", default=1)
+RHP_CHARGE_HORIZON_MONTHS = env.int("RHP_CHARGE_HORIZON_MONTHS", default=1)
 RHP_LEDGER_ACTIVITY_LIMIT = env.int("RHP_LEDGER_ACTIVITY_LIMIT", default=5)
 
 # --- Authentication -------------------------------------------------------

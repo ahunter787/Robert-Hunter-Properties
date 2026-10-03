@@ -120,8 +120,8 @@
             Recent activity
           </h3>
           <ul class="mt-2 divide-y divide-surface-muted text-sm">
-            {% for row in ledger.statement|slice:activity_limit %}
-              {% include "components/statement_row.html" with row=row %}
+            {% for entry in ledger.statement_months|slice:activity_limit %}
+              {% include "components/statement_entry.html" with entry=entry %}
             {% endfor %}
           </ul>
         {% else %}

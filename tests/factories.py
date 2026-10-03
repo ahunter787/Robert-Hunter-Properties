@@ -30,6 +30,12 @@ from apps.ledger.models import (
 )
 from apps.properties.constants import PropertyType
 from apps.properties.models import Amenity, Property, Unit
+from apps.responsibilities.models import (
+    PropertyResponsibility,
+    ResponsibilityCategory,
+    ResponsibilityCycle,
+    ResponsibilityShare,
+)
 
 DEFAULT_PASSWORD = "unit-test-password-41"
 
@@ -284,4 +290,62 @@ def make_nnn_rate(
         effective_from = services.first_due_on_or_after(lease, lease.start_date)
     return NnnRate.objects.create(
         lease=lease, effective_from=effective_from, monthly_amount=monthly_amount, note=note
+    )
+
+
+# --- Property responsibilities (E2) ---------------------------------------
+
+
+def make_responsibility(
+    property_obj: Property | None = None,
+    *,
+    label: str = "Water",
+    category: str = ResponsibilityCategory.UTILITY,
+    cycle_months: int = 3,
+    is_active: bool = True,
+    **fields,
+) -> PropertyResponsibility:
+    """A recurring cost on a property. A property is created when none is given."""
+    if property_obj is None:
+        property_obj = make_property(name=f"Test Property {next(_PROPERTY_SEQUENCE)}")
+    return PropertyResponsibility.objects.create(
+        property=property_obj,
+        label=label,
+        category=category,
+        cycle_months=cycle_months,
+        is_active=is_active,
+        **fields,
+    )
+
+
+def make_cycle(
+    responsibility: PropertyResponsibility,
+    *,
+    starts_on=None,
+    months: int = 3,
+    total_amount: Decimal = Decimal("600.00"),
+    **fields,
+) -> ResponsibilityCycle:
+    """One staged bill. It starts at the first of the month unless told otherwise."""
+    if starts_on is None:
+        starts_on = timezone.localdate().replace(day=1)
+    return ResponsibilityCycle.objects.create(
+        responsibility=responsibility,
+        starts_on=starts_on,
+        months=months,
+        total_amount=total_amount,
+        **fields,
+    )
+
+
+def make_share(
+    cycle: ResponsibilityCycle,
+    unit: Unit,
+    *,
+    monthly_amount: Decimal = Decimal("100.00"),
+    **fields,
+) -> ResponsibilityShare:
+    """One unit's monthly amount for one cycle."""
+    return ResponsibilityShare.objects.create(
+        cycle=cycle, unit=unit, monthly_amount=monthly_amount, **fields
     )

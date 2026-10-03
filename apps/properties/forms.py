@@ -38,6 +38,7 @@ class PropertyForm(StyledModelForm):
             "city",
             "state",
             "postal_code",
+            "cam_rate_per_sqft",
             "notes",
             "banner_image",
             "is_active",

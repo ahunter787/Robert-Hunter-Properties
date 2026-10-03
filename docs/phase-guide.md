@@ -49,8 +49,8 @@ Three additions RHP asked for that the specification does not cover. They are pr
 
 | # | Extension | Status | What it is |
 | --- | --- | --- | --- |
-| E1 | Lease templates | **Built, in review** | Fixed, Step Up, and Triple Net: the term's rent is worked out when the lease is activated, and NNN is staged each year ([ADR-013](decisions/ADR-013-lease-templates.md)) |
-| E2 | Property responsibilities | Proposed | Utilities and maintenance billed to a property and charged to each unit's share |
+| E1 | Lease templates | In `main` | Fixed, Step Up, and Triple Net: the term's rent is worked out when the lease is activated, and NNN is staged each year ([ADR-013](decisions/ADR-013-lease-templates.md)) |
+| E2 | Property responsibilities | **Built, in review** | Utilities and maintenance billed to a property, charged to each unit's share, and read as one month by the tenant ([ADR-014](decisions/ADR-014-property-responsibilities.md)) |
 | E3 | Concessions | Proposed | A month forgiven, or moved to a later date, recorded as a decision |
 
 ---
@@ -510,6 +510,57 @@ right amounts. Then open the ledger and create charges — the amounts should fo
 Triple Net lease, stage an NNN amount from the lease page and create charges again: each month should now
 carry rent and NNN. Sign in as the tenant to see the same figures on their dashboard, statement and lease
 page.
+
+## Extension E2 — Property responsibilities (built, in review)
+
+**In one sentence:** the bills a property carries — water, trash, pruning — recorded once on the property,
+divided between its units the way the office decides, and read by the tenant as one month.
+
+**What exists now:** a property has **responsibilities**: a label, a category (utility, maintenance, other),
+and how many months one bill covers. Each bill is **staged** with what the property was charged and the
+months it pays for; RHP divides it across those months and proposes each unit's share from the recorded
+square footage, and the office can type any unit's figure where the division is not a formula — the water
+bill that is not split by floor area, for instance. Those stored amounts are what the ledger charges: each
+responsibility is its own entry alongside rent and NNN, raised by the same create-charges action, and a
+correction is an adjustment like any other. The property screen shows the bill, the units' shares, and what
+the landlord is still carrying. On the tenant's side, a month's charges now read as **one card** that opens
+into base rent, NNN, and responsibilities grouped by category with subtotals — "steps up in 1 month",
+"updates in 2 months" — and the statement paginates by month rather than by line. CAM is recorded as a rate
+per square foot and shown as a metric, because the lease folds it into the base rent.
+
+**What you can do today:** add a responsibility to a property; stage a bill with its months and total;
+accept RHP's proposed unit shares or type your own; change a unit's amount before it is charged; see at a
+glance what each unit carries and what nobody does; stop a responsibility without touching its history; and
+read a tenancy's month as one figure with its parts underneath.
+
+**Deliberate decisions worth knowing:**
+
+- **The office's stored figure is what is charged.** A share is not a percentage re-applied every month;
+  it is the amount entered for that unit and that bill, so a change today cannot rewrite a month already
+  billed.
+- **A cycle covers the first months a lease falls due in**, so "which months does this bill pay for?" has
+  exactly one answer, and a tenancy that starts or ends inside it is charged only for the months it is
+  there.
+- **Only a tenancy is charged.** A vacant unit's share stays visible on the property screen as the
+  landlord's, and a bill that is not fully carried says so in plain words rather than being quietly
+  rounded onto somebody.
+- **A charged bill is history.** Its months cannot be restaged or re-divided; the correction is an
+  adjustment on the ledger, so both what was billed and what corrected it stay visible (ADR-008).
+- **CAM is reference, not a charge.** The lease folds it into base rent, so RHP shows the derivation and
+  bills the rent.
+- **The tenant's month is a reading, not a new record.** The ledger still holds one entry per cost; the
+  card groups the entries that share a due date, and the old row reading is untouched (ADR-011, ADR-014).
+
+**What it deliberately does not do:** no metered or usage-based billing, no meter readings or estimates, no
+utility invoices or statements as documents (Phase 6), no owner expenses or owner statements, no annual
+reconciliation, and no re-cutting a vacant unit's share onto the occupied ones.
+
+**How to check it:** open a property at `/manage/properties/`, add a responsibility (say Water, every 3
+months), and stage a bill for the current quarter with the property's total. RHP proposes each unit's
+share; type a different figure for one unit and save. Then open a tenancy on that unit at
+`/manage/ledger/` and press **Create charges**: the month should carry rent, any NNN, and the unit's share
+of the water as its own lines. Sign in as that tenant and open `/payments/`: the month should be one card
+that opens into base rent, NNN and the responsibilities by category.
 
 ## Cross-phase change map
 

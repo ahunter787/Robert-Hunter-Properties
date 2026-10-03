@@ -103,7 +103,8 @@ raises. Lease activation and ending, every money action, and role changes are re
 
 `services.generate_rent_charges(lease, through=…)` creates one `RENT` charge per month whose due date
 falls on or after the tenancy starts and on or before the earlier of the lease's end and the horizon
-(current month plus `RHP_RENT_CHARGE_HORIZON_MONTHS`, default 1). A database constraint
+(current month plus `RHP_CHARGE_HORIZON_MONTHS`, default 1 — named for rent when it was the only
+recurring charge, and renamed by E2 when responsibilities joined it). A database constraint
 (`one_rent_charge_per_month` on `(lease, due_date) where kind = RENT`) makes a second run, a
 double-clicked button, or two managers at once harmless — `get_or_create` absorbs the race rather than
 duplicating the charge. The same function backs the button on the ledger and

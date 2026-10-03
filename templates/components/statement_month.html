@@ -1,0 +1,62 @@
+{% comment %}
+One month of a tenancy's charges, as the tenant reads it (E2, ADR-014).
+
+A month whose charges are a single line is rendered as that line; a month made of
+rent, NNN and responsibilities becomes a card that opens — with no JavaScript,
+because <details> is the browser's own disclosure.
+
+Call with: {% include "components/statement_month.html" with month=month %}
+{% endcomment %}
+{% load rhp_format %}
+{% if month.is_one_line %}
+  {# A single charge keeps its own row: the state, the settlement line and the note. #}
+  {% include "components/statement_row.html" with row=month.rows.0.component note=month.rows.0.note %}
+{% else %}
+  <li class="py-1">
+    <details>
+      <summary class="flex cursor-pointer flex-wrap items-start justify-between gap-3 rounded-card px-2 py-2 hover:bg-surface-muted">
+        <span class="min-w-0">
+          <span class="font-medium">{{ month.date|date:"F Y" }}</span>
+          <span class="block text-ink-muted">{{ month.date }} · rent and charges</span>
+        </span>
+        <span class="text-right">
+          <span class="block font-medium">{{ month.total|money }}</span>
+          <span class="block text-xs {% if month.state == "OVERDUE" %}text-danger{% elif month.state == "PAID" %}text-success{% elif month.state == "PENDING" %}text-primary{% elif month.state == "PARTIAL" %}text-warning{% else %}text-ink-muted{% endif %}">
+            {{ month.state_label }}
+          </span>
+        </span>
+      </summary>
+
+      <div class="mt-1 space-y-2 rounded-card bg-surface-muted px-3 py-2 text-sm">
+        {% for row in month.rent_rows %}
+          {% include "components/statement_component.html" with row=row label="Base rent" %}
+        {% endfor %}
+        {% for row in month.nnn_rows %}
+          {% include "components/statement_component.html" with row=row label="NNN" %}
+        {% endfor %}
+        {% for group in month.responsibility_groups %}
+          <div class="border-t border-surface pt-2">
+            <div class="flex flex-wrap items-baseline justify-between gap-3">
+              <span class="font-medium">{{ group.label }}</span>
+              <span class="font-medium">{{ group.subtotal|money }}</span>
+            </div>
+            <div class="mt-1 pl-3">
+              {% for row in group.rows %}
+                {% include "components/statement_component.html" with row=row label=row.component.responsibility_label %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+        {% for row in month.other_rows %}
+          {% include "components/statement_component.html" with row=row %}
+        {% endfor %}
+      </div>
+
+      {% if month.left > 0 and month.left != month.total %}
+        <p class="mt-1 px-2 text-xs text-ink-muted">
+          {{ month.left|money }} of this month is still to pay.
+        </p>
+      {% endif %}
+    </details>
+  </li>
+{% endif %}

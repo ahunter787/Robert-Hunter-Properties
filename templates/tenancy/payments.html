@@ -27,13 +27,13 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-sm font-semibold">Your statement</h2>
           <span class="text-sm text-ink-muted">
-            {{ statement_total }} entr{{ statement_total|pluralize:"y,ies" }}
+            {{ statement_total }} month{{ statement_total|pluralize }} and payment{{ statement_total|pluralize }}
           </span>
         </div>
         {% if statement %}
           <ul class="mt-4 divide-y divide-surface-muted text-sm">
-            {% for row in statement %}
-              {% include "components/statement_row.html" with row=row %}
+            {% for entry in statement %}
+              {% include "components/statement_entry.html" with entry=entry %}
             {% endfor %}
           </ul>
 

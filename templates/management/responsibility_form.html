@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if responsibility %}Edit {{ responsibility.label }}{% else %}Add a responsibility{% endif %} — {{ property.name }} — RHP
+{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'portfolio:property-detail' property.pk %}"
+           class="underline-offset-2 hover:underline">{{ property.name }}</a>
+        · Responsibilities
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">
+        {% if responsibility %}Edit {{ responsibility.label }}{% else %}Add a responsibility{% endif %}
+      </h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        A bill the property carries that the units pay their share of. Adding one does not charge
+        anybody yet: stage its first cycle, then raise the charges on each tenancy's ledger.
+      </p>
+    </div>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">
+            {% if responsibility %}Save changes{% else %}Add the responsibility{% endif %}
+          </button>
+          <a href="{% url 'portfolio:property-detail' property.pk %}"
+             class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    {% if responsibility %}
+      <p class="text-sm text-ink-muted">
+        A responsibility is stopped by unchecking "In use": the months already charged stay exactly as
+        they are, and no new ones are raised.
+      </p>
+    {% endif %}
+  </div>
+{% endblock %}

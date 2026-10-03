@@ -31,6 +31,7 @@ MINIMUM_AMOUNT = Decimal("0.01")
 class ChargeKind(models.TextChoices):
     RENT = "RENT", "Rent"
     NNN = "NNN", "NNN"
+    RESPONSIBILITY = "RESPONSIBILITY", "Responsibility"
     MANUAL = "MANUAL", "Manual charge"
     ADJUSTMENT = "ADJUSTMENT", "Adjustment"
 
@@ -111,6 +112,7 @@ class Charge(models.Model):
         "amount",
         "due_date",
         "adjusts_id",
+        "responsibility_id",
     )
 
     lease = models.ForeignKey(Lease, on_delete=models.PROTECT, related_name="charges")
@@ -123,6 +125,15 @@ class Charge(models.Model):
         max_digits=12, decimal_places=2, validators=[MinValueValidator(MINIMUM_AMOUNT)]
     )
     due_date = models.DateField()
+    #: The property responsibility this charge came from, for the bills a landlord
+    #: passes to a unit (E2). Null for rent, NNN and one-off charges.
+    responsibility = models.ForeignKey(
+        "responsibilities.PropertyResponsibility",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="charges",
+    )
     #: The entry this one corrects. Required when an adjustment reduces a charge,
     #: because "which charge?" is the first question anyone will ask.
     adjusts = models.ForeignKey(
@@ -175,6 +186,12 @@ class Charge(models.Model):
                 condition=models.Q(kind=ChargeKind.NNN),
                 name="one_nnn_charge_per_month",
             ),
+            # And for each responsibility: one water charge a month, not two (E2).
+            models.UniqueConstraint(
+                fields=["lease", "responsibility", "due_date"],
+                condition=models.Q(kind=ChargeKind.RESPONSIBILITY),
+                name="one_responsibility_charge_per_month",
+            ),
         ]
         indexes = [
             models.Index(fields=["lease", "due_date"], name="charge_lease_due"),
@@ -207,6 +224,10 @@ class Charge(models.Model):
     def clean(self):
         super().clean()
         _refuse_on_a_draft(self)
+        if self.kind == ChargeKind.RESPONSIBILITY and self.responsibility is None:
+            raise ValidationError(
+                {"responsibility": "A responsibility charge has to say which cost it comes from."}
+            )
         if self.kind == ChargeKind.ADJUSTMENT:
             if not self.reason:
                 raise ValidationError({"reason": "An adjustment needs a reason."})

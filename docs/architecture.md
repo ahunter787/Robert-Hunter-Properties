@@ -173,6 +173,10 @@ cannot be probed.
   and what is coming due are four different questions asked of the same allocation. Each has its own
   property on `LeaseLedger` (`balance_due`, `due_now`, `arrears`, `next_charge` / `next_rent_date`), so no
   screen reuses one figure to answer another (ADR-012).
+- **A property answers what it was billed.** `apps/responsibilities` holds a property's recurring costs,
+  the cycles they are billed in, and **each unit's monthly amount for that cycle** — the figure the ledger
+  charges, never a percentage re-applied later (ADR-014). A month on the tenant's statement is a reading of
+  the charges that share a due date, not a record of its own.
 - **A lease answers what it charges.** `Lease.rent_for(on_date)` and `Lease.nnn_for(on_date)` are the only
   definitions of a month's base rent and NNN: a Fixed lease answers its stored rent for the whole term, a
   step-up or triple-net lease answers from the periods generated when it was activated, and nothing edits a

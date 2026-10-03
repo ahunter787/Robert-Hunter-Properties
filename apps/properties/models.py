@@ -5,6 +5,7 @@ of a *lease*, so they arrive with Phase 3 - the screens say so explicitly rather
 than showing a zero that looks like real data.
 """
 
+from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
 
@@ -65,6 +66,17 @@ class Property(models.Model):
         help_text="Bedrooms and bathrooms are only recorded for units in a residential property.",
     )
     notes = models.TextField(blank=True)
+    # The CAM rate the lease quotes: a charge per square foot, folded into base
+    # rent rather than charged to the tenant (E2).
+    cam_rate_per_sqft = models.DecimalField(
+        "CAM rate per square foot",
+        max_digits=6,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text="Optional. Common area maintenance per square foot, for reference.",
+    )
     # Stored measurement, not a float: six decimals is about 11 cm.
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
@@ -105,6 +117,22 @@ class Property(models.Model):
     @property
     def is_residential(self) -> bool:
         return self.property_type == PropertyType.RESIDENTIAL
+
+    # --- Size, for dividing a property's bills between its units (E2) --------
+
+    @property
+    def total_square_feet(self) -> int | None:
+        """Every recorded unit size added up; ``None`` when no unit records one.
+
+        Derived rather than stored, so a property's size cannot disagree with the
+        units inside it.
+        """
+        total = sum(unit.square_feet or 0 for unit in self.units.all())
+        return total or None
+
+    @property
+    def cam_rate(self) -> Decimal | None:
+        return self.cam_rate_per_sqft
 
 
 class Amenity(models.Model):
@@ -209,6 +237,20 @@ class Unit(models.Model):
     def is_commercial(self) -> bool:
         """A unit is commercial because its building is (ADR-006 revision)."""
         return self.property.is_commercial
+
+    @cached_property
+    def share_of_property(self) -> Decimal | None:
+        """This unit's share of the property's size, as a percentage (E2).
+
+        The basis for dividing a property's bills between its units. ``None`` when
+        no unit in the property records a size, so a screen says "split evenly"
+        rather than pretending to know.
+        """
+        total = self.property.total_square_feet
+        if not total or not self.square_feet:
+            return None
+        share = (Decimal(self.square_feet) / Decimal(total)) * Decimal("100")
+        return share.quantize(Decimal("0.01"))
 
     # --- Occupancy --------------------------------------------------------
     # The definition lives in apps.leases (LeaseQuerySet.current): a unit is

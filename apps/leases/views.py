@@ -221,7 +221,7 @@ class LeaseActivateView(ManagerRequiredMixin, View):
             messages.error(request, "Add at least one tenant before activating this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
 
-        horizon = ledger_services.generation_horizon(settings.RHP_RENT_CHARGE_HORIZON_MONTHS)
+        horizon = ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
         try:
             with transaction.atomic():
                 lease.status = LeaseStatus.ACTIVE

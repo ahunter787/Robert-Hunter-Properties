@@ -1,0 +1,10 @@
+{% comment %}
+One entry of the tenant's statement: a month of charges, or money in.
+
+Call with: {% include "components/statement_entry.html" with entry=entry %}
+{% endcomment %}
+{% if entry.kind == "month" %}
+  {% include "components/statement_month.html" with month=entry %}
+{% else %}
+  {% include "components/statement_row.html" with row=entry %}
+{% endif %}

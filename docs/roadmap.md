@@ -31,8 +31,8 @@ additions that are **not** phases are proposed, approved and tracked in
 
 | # | Extension | Status | Decision | Branch |
 | --- | --- | --- | --- | --- |
-| E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **Built, in review** | [ADR-013](decisions/ADR-013-lease-templates.md) | `rhp-lease-templates` |
-| E2 | Property responsibilities charged to the unit | Proposed | — | — |
+| E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
+| E2 | Property responsibilities charged to the unit | **Built, in review** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | `rhp-responsibilities` |
 | E3 | Concessions (forgiveness and deferral) | Proposed, unchanged | — | — |
 
 ## Milestones

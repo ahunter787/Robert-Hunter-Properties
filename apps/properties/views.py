@@ -29,6 +29,7 @@ from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
 from apps.properties.forms import PropertyForm, UnitForm
 from apps.properties.locations import embed_url, external_url
 from apps.properties.models import Property, Unit
+from apps.responsibilities import services as responsibility_services
 
 logger = logging.getLogger("apps.properties")
 
@@ -98,6 +99,9 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         context["units"] = units
         context["unit_total"] = len(units)
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
+        # The bills this property carries and who is carrying them (E2).
+        context["responsibilities"] = responsibility_services.property_overview(self.object)
+        context["can_manage_responsibilities"] = self.request.user.is_admin_or_above
         # Only meaningful when at least one unit records a size; the template hides
         # the line rather than showing "0 sq ft".
         context["total_square_feet"] = sum(unit.square_feet or 0 for unit in units) or None

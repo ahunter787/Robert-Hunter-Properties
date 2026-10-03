@@ -46,6 +46,14 @@ def _explain(exc: ValidationError) -> str:
     return " ".join(exc.messages)
 
 
+def _charge_count(charges, kind: str, noun: str) -> str:
+    """``3 rent charges`` — or nothing at all when that kind was not raised."""
+    count = sum(1 for charge in charges if charge.kind == kind)
+    if not count:
+        return ""
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
 # --- the overview ---------------------------------------------------------
 
 
@@ -93,8 +101,8 @@ class LeaseLedgerView(ManagerRequiredMixin, DetailView):
         context["is_admin"] = self.request.user.is_admin_or_above
         context["charge_form"] = kwargs.get("charge_form") or ChargeForm()
         context["payment_form"] = kwargs.get("payment_form") or PaymentForm()
-        context["horizon_months"] = settings.RHP_RENT_CHARGE_HORIZON_MONTHS
-        context["horizon"] = services.generation_horizon(settings.RHP_RENT_CHARGE_HORIZON_MONTHS)
+        context["horizon_months"] = settings.RHP_CHARGE_HORIZON_MONTHS
+        context["horizon"] = services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
         context["rent_dates"] = (
             services.rent_due_dates(self.object, through=context["horizon"])
             if self.object.status != LeaseStatus.DRAFT
@@ -116,7 +124,7 @@ class GenerateRentChargesView(ManagerRequiredMixin, View):
 
     def post(self, request, pk):
         lease = _ledger_lease(pk)
-        horizon = services.generation_horizon(settings.RHP_RENT_CHARGE_HORIZON_MONTHS)
+        horizon = services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
         try:
             created = services.generate_charges(lease, through=horizon, actor=request.user)
         except ValidationError as exc:
@@ -124,15 +132,14 @@ class GenerateRentChargesView(ManagerRequiredMixin, View):
             return redirect("ledger:lease-ledger", pk=lease.pk)
 
         if created:
-            rent = sum(1 for charge in created if charge.kind == ChargeKind.RENT)
-            nnn = sum(1 for charge in created if charge.kind == ChargeKind.NNN)
-            parts = []
-            if rent:
-                parts.append(f"{rent} rent charge{'' if rent == 1 else 's'}")
-            if nnn:
-                parts.append(f"{nnn} NNN charge{'' if nnn == 1 else 's'}")
+            parts = [
+                _charge_count(created, ChargeKind.RENT, "rent charge"),
+                _charge_count(created, ChargeKind.NNN, "NNN charge"),
+                _charge_count(created, ChargeKind.RESPONSIBILITY, "responsibility charge"),
+            ]
+            parts = [part for part in parts if part]
             logger.info("charges created lease=%s count=%s", lease.pk, len(created))
-            messages.success(request, f"{' and '.join(parts)} created through {horizon:%B %Y}.")
+            messages.success(request, f"{', '.join(parts)} created through {horizon:%B %Y}.")
         else:
             messages.info(request, f"Charges are already raised through {horizon:%B %Y}.")
         return redirect("ledger:lease-ledger", pk=lease.pk)
@@ -375,17 +382,18 @@ class TenantPaymentsView(TenantRequiredMixin, TemplateView):
     """
 
     template_name = "tenancy/payments.html"
-    #: Entries per page: roughly a year of rent and payments on one screen.
+    #: Entries per page: a month counts as one, so this is over a year of tenancy.
     per_page = 20
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         lease = Lease.objects.visible_for(self.request.user)
         ledger = services.build_ledger(lease) if lease else None
-        statement = ledger.statement if ledger else []
+        statement = ledger.statement_months() if ledger else []
 
         # One list, so a long tenancy reads a page at a time rather than growing
-        # without end. An out-of-range link falls back rather than 404-ing.
+        # without end: a month counts as one entry (E2). An out-of-range link
+        # falls back rather than 404-ing.
         paginator = Paginator(statement, self.per_page)
         page = paginator.get_page(self.request.GET.get("page"))
 

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Unit amounts — {{ responsibility.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'portfolio:property-detail' property.pk %}"
+           class="underline-offset-2 hover:underline">{{ property.name }}</a>
+        · Responsibilities
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">
+        What each unit pays for {{ responsibility.label }}
+      </h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        The bill from {{ cycle.starts_on }} to {{ cycle.ends_on }} —
+        {{ cycle.total_amount|money }} over {{ cycle.months }} month{{ cycle.months|pluralize }},
+        so {{ cycle.monthly_total|money }} a month to divide.
+      </p>
+    </div>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">Save the unit amounts</button>
+          <a href="{% url 'portfolio:property-detail' property.pk %}"
+             class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="text-sm text-ink-muted">
+      Setting an amount to zero takes that unit out of this bill. Once a month's charge has been
+      raised, the amounts are history: correct the charge on the ledger instead.
+    </p>
+  </div>
+{% endblock %}

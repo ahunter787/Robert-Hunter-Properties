@@ -13,6 +13,7 @@ reads what the thing costs them (ADR-011).
     <span class="min-w-0">
       <span class="font-medium">{{ row.title }}</span>
       <span class="block text-ink-muted">{{ row.date }}</span>
+      {% if note %}<span class="block text-xs text-ink-muted">{{ note }}</span>{% endif %}
       {% if row.was_adjusted %}
         <span class="block text-xs text-ink-muted">
           was {{ row.gross|money }}, adjusted
