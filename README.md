@@ -188,4 +188,5 @@ docker/          entrypoint and container healthcheck
 | [`docs/deployment.md`](docs/deployment.md) | Local VM and VPS topologies, TLS, backup/restore, upgrades |
 | [`docs/security.md`](docs/security.md) | Authorization rules, secrets handling, upload safety |
 | [`docs/roadmap.md`](docs/roadmap.md) | Phases 0–12 as a status checklist |
+| [`docs/extensions.md`](docs/extensions.md) | Additions to the specification that are not phases: the register of proposals, with the owner's decisions |
 | [`docs/harness/master-spec.md`](docs/harness/master-spec.md) | The governing product specification |

@@ -7,6 +7,8 @@ This file is the operating contract for any coding agent working in this reposit
   `docs/harness/master-spec.md`
 - Phase plan and current status: `docs/roadmap.md`
 - Architecture and structure: `docs/architecture.md`
+- Additions that are **not** phases — the register of owner-approved extensions and recorded
+  clarifications: `docs/extensions.md`
 
 ## How work happens
 

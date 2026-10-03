@@ -1,0 +1,84 @@
+RHP-5 Extension Spec for Properties, Units, and Tenant Leases
+E1, E2, E3
+
+This is a fairly large extension to the current system. It will touch many portions of the application and database. 
+
+Lets get started:
+
+E1: The Lease Templates
+RHP has 3 Lease templates (real world standard templates)
+	Fixed
+	 	- Generated the day the lease is initialized
+	 
+	Step Up (or Escalating Lease) 
+		Base Rent: 
+		- Fixed monthly with a once per year Step Up
+		- Month of step up defined in lease
+		- Generated the day the lease is initialized
+		
+	Triple Net (NNN) 
+		Base Rent: 
+			Step Up Lease Template
+		NNN:
+			- Calculated in Nov of each year
+			- Admin calculates this value dynamically as the lease is carried out
+	
+	
+With these 3 templates, we form the base of all RHP leases. 
+
+
+However, a Tenants monthly rent calculation includes more than these base templates, sometimes.
+E2: Property Responsibilities Charged to the Unit (Tenant) 
+
+I've created a nickname for the package of dues called Responsibilities. If you discover a real world term for this, I want to know what that term is. I am not an expert. My understanding is derived from speaking with the owner of RHP.  Here's how it works in the real world for RHP:
+	RHP owns several Properties, and properties have multiple units. The landlord is charged per property for responsibilities. Things like utilities and maintenance. the tenants are responsible for their Units portion of this landlord "responsibility". The Landlord receives a bill for a Property, and the UNIT is charged for their portion of the responsibility. The lease governs how this responsibility is divided up. We will need a feature to be able to add a "responsibility" to a Property. 
+
+For example The tenant should be able to expand a "Rent for November 2026" card and see a breakdown:
+If something was Stepped Up that month, it should have a mention of it
+
+Rent for August 2026:				$2896.25
+Aug.5, 2026				 	Unpaid
+(click to expand):
+	Base Rent:				$2122.56
+		Step Up in 1 Month
+	NNN:					$305.52	
+		Updates in 2 Months
+		
+	Responsibilities:			$468.17	
+		Utilities:			$324.17
+			Garbage: 		$70.17
+			Gas:			$79.00
+			Electric:		$100.00
+			Water:			$75.00
+			
+		Maintenance:			$144.00
+			Pruning:		$144.00
+
+Notice all the interactions going on here, and the database requirements this system will have. 
+An express goal of this extension is to provide clarity into somewhat complicated Leases. 
+We have constant issues with the current system and ambiguity. I will attach examples of current live leases for you to study, and potentially discover more requirements/patterns. 
+
+When generating the lease for a tenant, I want to be able to have fields to calculate these values. Some will be generated the moment the lease is initialized. Others will need to have current cycle values, and a staged (upcoming) value. An Admin will need to log in and input these values. 
+
+One responsibility is a Common Area Maintenance (CAM) charge. Its folded into the Base Rent in the lease. While we don't have to divulge how the base rent is generated, it agreed upon in the lease, and is a very useful metric, because that section of the lease talks about the tenants unit sq ft (proportional to the property sq ft). So for example, a property has 3500 sq ft. The unit this tenant is renting is calculated at 76% of the properties sq ft. the CAM charge is $0.20/sqft. So to generate this responsibility, we can use a formula. 
+Sadly, other responsibilities are not going to follow a perfect formula. 
+We have a real world situation where One property, with 2 units has a water bill which is divided disproportionately to their unit space. One tenant is billed for 1-2 CFF of water, the other is billed for whatever remains. This is where the complexity has design implications that could be difficult to implement. This may have to become a stretch goal, or a nice to have. 
+
+Utilities update their cost at different times, but must be presented at each month. RHP handles it this way:
+	Utilities are typically billed/collected to a RHP Property every 3 months. Robert (admin) divides that cost by 3 to get the monthly value. Then he allocates a utility charge to each unit of the property. 
+
+What an admin should have control over example:
+manage/properties/23/
+	Property
+		Landlord Responsibility 
+			-- Utility -- Water
+				Update Cycle: 3 Months
+				Cycle Start-End: May 5th --> July 5th:
+				Current Cycle: $788
+				Stage Next Cycle: __________ (Update Button)
+				Unit Responsibility (difficult to implement)
+
+So we need a mechanism to add/remove landlord responsibilities, determine their cycle, stage the next cycle, potentially allocate %responsibility per for each responsibility a property has.
+
+E3: Concessions
+	No changes to the current spec of Consessions.
