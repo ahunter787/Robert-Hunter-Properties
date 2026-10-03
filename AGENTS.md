@@ -33,6 +33,20 @@ While implementing:
 When finished, report exactly: implemented, files changed, migrations, tests, known limitations.
 Never claim a test passed without having run it, and never leave a known failure unstated.
 
+## Development tooling (outside this repository)
+
+Ticketing, versioning and documentation for RHP's development — Plane, Outline and a Mailpit mail sink —
+run on this machine from **their own repository**, not from this one. An RHP checkout contains the portal
+and nothing else. That tooling only ever *reads* this checkout: the tracked markdown it publishes to
+Outline, and the phase table in `docs/roadmap.md` and the register in `docs/extensions.md` that it mirrors
+into Plane. Nothing here refers to it.
+
+If another agent or workstream is working in this checkout, hand it that repository's `AGENT-BRIEFING.md`
+before it starts. Its containers must not be stopped, pruned or reconfigured, and its ports — `8080`,
+`8090`, `1025`, `8025`, `8443`, `10025`, `10465`, `10587` — are not available to RHP. The reasoning, and
+what the separation costs, is in
+[ADR-015](docs/decisions/ADR-015-development-tooling-is-external.md).
+
 ## Branches
 
 `main` is always a working, released state. **Every phase gets its own branch**: `rhp-1` for Phase 1,
