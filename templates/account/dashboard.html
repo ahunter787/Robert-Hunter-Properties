@@ -41,13 +41,15 @@
 
         <div class="rhp-card">
           <p class="rhp-eyebrow">Next rent due</p>
-          {% if ledger.next_rent_date %}
-            <p class="mt-2 text-3xl font-semibold">{{ ledger.next_rent_amount|money }}</p>
+          {% if ledger.next_due_date %}
+            <p class="mt-2 text-3xl font-semibold">{{ ledger.next_due_total|money }}</p>
             <p class="mt-1 text-sm text-ink-muted">
-              on {{ ledger.next_rent_date }}
-              {% if ledger.next_charge.pending %}
+              on {{ ledger.next_due_date }}
+              {% if ledger.next_due_nnn > 0 %}
+                · rent {{ ledger.next_due_rent|money }} + NNN {{ ledger.next_due_nnn|money }}
+              {% elif ledger.next_due_pending %}
                 · payment pending
-              {% elif not ledger.next_charge %}
+              {% elif not ledger.next_due_billed %}
                 · not yet billed
               {% endif %}
             </p>

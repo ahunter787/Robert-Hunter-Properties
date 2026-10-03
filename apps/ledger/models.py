@@ -30,6 +30,7 @@ MINIMUM_AMOUNT = Decimal("0.01")
 
 class ChargeKind(models.TextChoices):
     RENT = "RENT", "Rent"
+    NNN = "NNN", "NNN"
     MANUAL = "MANUAL", "Manual charge"
     ADJUSTMENT = "ADJUSTMENT", "Adjustment"
 
@@ -167,6 +168,12 @@ class Charge(models.Model):
                 fields=["lease", "due_date"],
                 condition=models.Q(kind=ChargeKind.RENT),
                 name="one_rent_charge_per_month",
+            ),
+            # The same rule for a triple-net lease's NNN amount (E1).
+            models.UniqueConstraint(
+                fields=["lease", "due_date"],
+                condition=models.Q(kind=ChargeKind.NNN),
+                name="one_nnn_charge_per_month",
             ),
         ]
         indexes = [

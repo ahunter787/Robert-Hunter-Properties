@@ -17,6 +17,9 @@ from django.db import models
 class AuditAction(models.TextChoices):
     LEASE_ACTIVATED = "LEASE_ACTIVATED", "Lease activated"
     LEASE_ENDED = "LEASE_ENDED", "Lease ended"
+    RENT_SCHEDULE_GENERATED = "RENT_SCHEDULE_GENERATED", "Rent schedule generated"
+    RENT_PERIOD_CHANGED = "RENT_PERIOD_CHANGED", "Rent period changed"
+    NNN_RATE_SET = "NNN_RATE_SET", "NNN amount set"
     CHARGE_CREATED = "CHARGE_CREATED", "Charge created"
     CHARGE_ADJUSTED = "CHARGE_ADJUSTED", "Charge adjusted"
     PAYMENT_RECORDED = "PAYMENT_RECORDED", "Payment recorded"

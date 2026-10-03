@@ -11,7 +11,15 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.accounts.models import Role, TenantProfile, User
-from apps.leases.models import Lease, LeaseStatus, LeaseTenant
+from apps.leases import services
+from apps.leases.models import (
+    Lease,
+    LeaseStatus,
+    LeaseTenant,
+    NnnRate,
+    RentPeriod,
+    RentPeriodOrigin,
+)
 from apps.ledger.models import (
     Charge,
     ChargeKind,
@@ -242,4 +250,38 @@ def make_payment(
         method=method,
         status=status,
         **fields,
+    )
+
+
+# --- Lease terms (E1) -----------------------------------------------------
+
+
+def make_rent_period(
+    lease: Lease,
+    *,
+    effective_from=None,
+    amount: Decimal = Decimal("1850.00"),
+    origin: str = RentPeriodOrigin.BASE,
+    note: str = "",
+) -> RentPeriod:
+    """One dated rent amount. The date defaults to the lease's first due date."""
+    if effective_from is None:
+        effective_from = services.first_due_on_or_after(lease, lease.start_date)
+    return RentPeriod.objects.create(
+        lease=lease, effective_from=effective_from, amount=amount, origin=origin, note=note
+    )
+
+
+def make_nnn_rate(
+    lease: Lease,
+    *,
+    effective_from=None,
+    monthly_amount: Decimal = Decimal("300.00"),
+    note: str = "",
+) -> NnnRate:
+    """One dated NNN amount. The date defaults to the lease's first due date."""
+    if effective_from is None:
+        effective_from = services.first_due_on_or_after(lease, lease.start_date)
+    return NnnRate.objects.create(
+        lease=lease, effective_from=effective_from, monthly_amount=monthly_amount, note=note
     )

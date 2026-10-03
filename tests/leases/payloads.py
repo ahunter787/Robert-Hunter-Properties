@@ -10,6 +10,8 @@ import datetime as dt
 
 from django.utils import timezone
 
+from apps.leases.models import LeaseTemplate
+
 TODAY = timezone.localdate()
 
 
@@ -21,11 +23,13 @@ def lease_post_data(unit, tenants=(), *, lease=None, **overrides):
     which is what the edit form in a browser sends.
     """
     initial = list(lease.lease_tenants.all().order_by("pk")) if lease is not None else []
+    template = lease.template if lease is not None else LeaseTemplate.FIXED
     data = {
         "unit": unit.pk,
         "start_date": TODAY.isoformat(),
         "end_date": (TODAY + dt.timedelta(days=365)).isoformat(),
         "monthly_rent": "1850.00",
+        "template": template,
         "deposit": "1850.00",
         "rent_due_day": "1",
         "notes": "",
@@ -34,6 +38,10 @@ def lease_post_data(unit, tenants=(), *, lease=None, **overrides):
         "lease_tenants-MIN_NUM_FORMS": "0",
         "lease_tenants-MAX_NUM_FORMS": "1000",
     }
+    if template != LeaseTemplate.FIXED and lease is not None:
+        data["step_up_month"] = str(lease.step_up_month or "")
+        data["step_up_percent"] = str(lease.step_up_percent or "")
+        data["step_up_amount"] = str(lease.step_up_amount or "")
 
     index = 0
     for membership in initial:

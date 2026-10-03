@@ -9,10 +9,11 @@ import logging
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.http import FileResponse, Http404
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
@@ -30,8 +31,11 @@ from apps.accounts.permissions import (
     ManagerRequiredMixin,
     TenantRequiredMixin,
 )
-from apps.leases.forms import LeaseForm, LeaseTenantFormSet
-from apps.leases.models import Lease, LeaseStatus
+from apps.audit.models import AuditAction
+from apps.audit.services import record
+from apps.leases import services as lease_services
+from apps.leases.forms import LeaseForm, LeaseTenantFormSet, NnnRateForm, RentPeriodForm
+from apps.leases.models import Lease, LeaseStatus, LeaseTemplate, RentPeriod
 from apps.ledger import services as ledger_services
 from apps.properties.models import Unit
 
@@ -129,7 +133,7 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant"
+            "lease_tenants__tenant", "rent_periods", "nnn_rates"
         )
 
     def get_context_data(self, **kwargs):
@@ -137,6 +141,9 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
         # The ledger is a summary here; the full screen lives in apps.ledger.
         context["ledger"] = ledger_services.build_ledger(self.object)
         context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
+        # E1: the rent schedule and the NNN history the rent card renders.
+        context["rent_schedule"] = lease_services.schedule_rows(self.object)
+        context["nnn_history"] = list(reversed(self.object.nnn_rates_ordered))
         return context
 
 
@@ -196,7 +203,12 @@ class LeaseUpdateView(ManagerRequiredMixin, UpdateView):
 
 
 class LeaseActivateView(ManagerRequiredMixin, View):
-    """Draft → active. The database refuses a second active lease on the unit."""
+    """Draft → active: work out the rent schedule, then raise the first charges.
+
+    For a step-up or triple-net lease this is where the whole term's amounts come
+    into being, so nobody has to remember a rise (E1, ADR-013). A fixed lease has
+    nothing to generate and behaves exactly as it did before.
+    """
 
     http_method_names = ["post"]
 
@@ -209,19 +221,49 @@ class LeaseActivateView(ManagerRequiredMixin, View):
             messages.error(request, "Add at least one tenant before activating this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
 
-        lease.status = LeaseStatus.ACTIVE
+        horizon = ledger_services.generation_horizon(settings.RHP_RENT_CHARGE_HORIZON_MONTHS)
         try:
             with transaction.atomic():
+                lease.status = LeaseStatus.ACTIVE
                 lease.save(update_fields=["status", "updated_at"])
+                schedule = lease_services.generate_rent_schedule(lease, actor=request.user)
+                created = ledger_services.generate_charges(
+                    lease, through=horizon, actor=request.user
+                )
+                record(
+                    request.user,
+                    AuditAction.LEASE_ACTIVATED,
+                    obj=lease,
+                    lease=lease,
+                    summary=f"Lease for {lease.unit.label} activated",
+                    template=lease.template,
+                    start_date=lease.start_date,
+                    end_date=lease.end_date,
+                )
         except IntegrityError:
             messages.error(
                 request,
                 f"{lease.unit.label} already has an active lease. End that one first.",
             )
             return redirect("leases:lease-detail", pk=lease.pk)
+        except ValidationError as exc:
+            messages.error(request, " ".join(exc.messages))
+            return redirect("leases:lease-detail", pk=lease.pk)
 
+        details = []
+        if schedule.changed:
+            details.append(schedule.summary())
+        if created:
+            count = len(created)
+            details.append(
+                f"{count} charge{'' if count == 1 else 's'} raised through {horizon:%B %Y}."
+            )
+        else:
+            details.append(f"No charge falls due through {horizon:%B %Y}.")
         logger.info("lease activated pk=%s by=%s", lease.pk, request.user.pk)
-        messages.success(request, f"{lease.unit.label} now has an active lease.")
+        messages.success(
+            request, f"{lease.unit.label} now has an active lease. " + " ".join(details)
+        )
         return redirect("leases:lease-detail", pk=lease.pk)
 
 
@@ -238,11 +280,167 @@ class LeaseEndView(ManagerRequiredMixin, View):
 
         lease.status = LeaseStatus.ENDED
         lease.save(update_fields=["status", "updated_at"])
+        record(
+            request.user,
+            AuditAction.LEASE_ENDED,
+            obj=lease,
+            lease=lease,
+            summary=f"Lease for {lease.unit.label} ended",
+            end_date=lease.end_date,
+        )
         logger.info("lease ended pk=%s by=%s", lease.pk, request.user.pk)
         messages.success(
             request, f"The lease for {lease.unit.label} was ended and kept as history."
         )
         return redirect("leases:lease-detail", pk=lease.pk)
+
+
+# --- E1: the rent schedule and the NNN amount ------------------------------
+
+
+def _schedule_lease(pk) -> Lease:
+    """The lease a schedule action applies to, with what its screen reads."""
+    return get_object_or_404(
+        Lease.objects.select_related("unit__property").prefetch_related(
+            "rent_periods", "nnn_rates"
+        ),
+        pk=pk,
+    )
+
+
+def _refuse_ended_terms(request, lease) -> bool:
+    """An ended tenancy is history: its money stays correctable, its terms do not."""
+    if lease.is_editable:
+        return False
+    messages.error(
+        request,
+        "This lease has ended. Its terms are history and do not change; its money can still "
+        "be corrected on the ledger.",
+    )
+    return True
+
+
+class RentScheduleGenerateView(AdminRequiredMixin, View):
+    """Work the term's rent periods out again, leaving charged periods alone."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        lease = _schedule_lease(pk)
+        if _refuse_ended_terms(request, lease):
+            return redirect("leases:lease-detail", pk=lease.pk)
+        if not lease.uses_schedule:
+            messages.info(
+                request,
+                "A fixed lease charges one rent for its whole term, so there is no schedule "
+                "to generate.",
+            )
+            return redirect("leases:lease-detail", pk=lease.pk)
+
+        result = lease_services.generate_rent_schedule(lease, actor=request.user)
+        if result.locked:
+            messages.warning(request, result.summary())
+        else:
+            messages.success(request, result.summary())
+        return redirect("leases:lease-detail", pk=lease.pk)
+
+
+class RentPeriodUpdateView(AdminRequiredMixin, View):
+    """Set one period's rent by hand — an agreed figure rather than a formula."""
+
+    template_name = "management/lease_rent_period_form.html"
+
+    def _period(self, pk, period_pk) -> RentPeriod:
+        """The period, scoped to the lease in the URL so ids cannot be swapped."""
+        return get_object_or_404(
+            RentPeriod.objects.select_related("lease", "lease__unit__property"),
+            pk=period_pk,
+            lease_id=pk,
+        )
+
+    def _context(self, period, form):
+        return {"lease": period.lease, "period": period, "form": form}
+
+    def get(self, request, pk, period_pk):
+        period = self._period(pk, period_pk)
+        if _refuse_ended_terms(request, period.lease):
+            return redirect("leases:lease-detail", pk=period.lease_id)
+        return render(
+            request,
+            self.template_name,
+            self._context(period, RentPeriodForm(instance=period)),
+        )
+
+    def post(self, request, pk, period_pk):
+        period = self._period(pk, period_pk)
+        if _refuse_ended_terms(request, period.lease):
+            return redirect("leases:lease-detail", pk=period.lease_id)
+
+        form = RentPeriodForm(request.POST)
+        if form.is_valid():
+            try:
+                lease_services.set_rent_period_amount(
+                    period,
+                    amount=form.cleaned_data["amount"],
+                    note=form.cleaned_data["note"],
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+            else:
+                messages.success(
+                    request, f"Rent from {period.effective_from} is now {period.amount}."
+                )
+                return redirect("leases:lease-detail", pk=period.lease_id)
+
+        return render(request, self.template_name, self._context(period, form))
+
+
+class NnnRateStageView(AdminRequiredMixin, View):
+    """Stage the NNN amount that applies from a date (E1, ADR-013)."""
+
+    template_name = "management/lease_nnn_form.html"
+
+    def _context(self, lease, form):
+        return {"lease": lease, "form": form, "rates": lease.nnn_rates_ordered}
+
+    def get(self, request, pk):
+        lease = _schedule_lease(pk)
+        if lease.template != LeaseTemplate.NNN:
+            messages.error(request, "Only a triple-net lease carries an NNN amount.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        initial = {"effective_from": lease_services.next_nnn_effective_date(lease)}
+        form = NnnRateForm(initial=initial)
+        return render(request, self.template_name, self._context(lease, form))
+
+    def post(self, request, pk):
+        lease = _schedule_lease(pk)
+        if lease.template != LeaseTemplate.NNN:
+            messages.error(request, "Only a triple-net lease carries an NNN amount.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        if _refuse_ended_terms(request, lease):
+            return redirect("leases:lease-detail", pk=lease.pk)
+
+        form = NnnRateForm(request.POST)
+        if form.is_valid():
+            try:
+                rate = lease_services.stage_nnn_rate(
+                    lease,
+                    effective_from=form.cleaned_data["effective_from"],
+                    monthly_amount=form.cleaned_data["monthly_amount"],
+                    note=form.cleaned_data["note"],
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+            else:
+                messages.success(
+                    request,
+                    f"NNN staged at {rate.monthly_amount} a month from {rate.effective_from}.",
+                )
+                return redirect("leases:lease-detail", pk=lease.pk)
+
+        return render(request, self.template_name, self._context(lease, form))
 
 
 class LeaseDeleteView(AdminRequiredMixin, DeleteView):

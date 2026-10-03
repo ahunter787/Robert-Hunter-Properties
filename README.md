@@ -16,7 +16,9 @@ created, edited, and taken out of service, and a lease ties a unit to its tenant
 deposit and due day. On top of that sits the ledger — rent charges, one-off charges, recorded payments,
 reversals and adjustments, and a balance derived from the entries rather than stored — and the tenant's
 own pages at `/account/`, `/lease/` and `/payments/` say what is due now, what is past due, and what is
-coming due.
+coming due. Extension **E1** adds RHP's own lease shapes — fixed, step up, and triple net — with a stepped
+term's rent worked out when the lease is activated and an NNN amount staged each year
+([`docs/extensions.md`](docs/extensions.md)).
 Properties carry a map pin and a banner photo; units are residential or commercial. Documents and
 maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 

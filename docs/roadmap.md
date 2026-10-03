@@ -23,6 +23,18 @@ see [`phase-guide.md`](phase-guide.md). This file is the terse checklist.
 | 11 | Payment integration | Blocked by design — requires explicit approval |
 | 12 | Production hardening | Not started |
 
+## Extensions (owner-approved additions)
+
+The specification models a lease as one monthly rent and a ledger of charges. RHP's real leases do more, so
+additions that are **not** phases are proposed, approved and tracked in
+[`extensions.md`](extensions.md), each with its own decision record and its own branch.
+
+| # | Extension | Status | Decision | Branch |
+| --- | --- | --- | --- | --- |
+| E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **Built, in review** | [ADR-013](decisions/ADR-013-lease-templates.md) | `rhp-lease-templates` |
+| E2 | Property responsibilities charged to the unit | Proposed | — | — |
+| E3 | Concessions (forgiveness and deferral) | Proposed, unchanged | — | — |
+
 ## Milestones
 
 | Milestone | Phases | Outcome |

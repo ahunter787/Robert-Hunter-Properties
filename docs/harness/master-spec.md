@@ -1178,3 +1178,16 @@ recorded so a later reader does not mistake it for drift:
 | `templates/tenant/`, `templates/management/` | Not created yet | Created with the phases that render them |
 | MAILERS not mentioned | `MAILERS` instead of `EMAIL_*` | Django 6.1 deprecated the old settings; Django 7.0 removes them |
 | Make targets listed | Same list plus `init`, `assets`, `check`, `check-deploy`, `health`, `psql`, `up-prod`, `down-prod`, `prod-logs` | Phase 0 needs a one-command first run and an explicit production path |
+
+## Owner-approved extensions
+
+The specification above is the contract, reproduced rather than rewritten. Additions that are not phases
+are proposed, approved and tracked in [`../extensions.md`](../extensions.md), each with its own decision
+record; this appendix lists the ones that have been approved, so a reader of this document can see what
+the contract now includes.
+
+| Extension | What changed | Why | Decision |
+| --- | --- | --- | --- |
+| **E1** — lease templates | A lease has a **template**: Fixed, Step Up or Triple Net. A step-up or triple-net lease's rent is worked out for the whole term when the lease is activated and stored as dated periods; a triple-net lease also carries an **NNN** amount re-staged each year. `monthly_rent` keeps its meaning — the rent at the start of the term, and the whole answer for a lease that has no periods. | RHP's real leases rise once a year, and some carry NNN on top of the rent. The single `monthly_rent` the specification models could express neither, so the office was re-typing rises and the tenant could not see how a month was worked out. | [ADR-013](../decisions/ADR-013-lease-templates.md) |
+
+Proposed but **not** approved: E2 (property responsibilities charged to the unit) and E3 (concessions).

@@ -22,6 +22,11 @@
     </div>
 
     <div class="rhp-card">
+      <p class="rhp-help mb-4">
+        The rent fields decide the whole term: a fixed lease charges the starting rent every month, and
+        a step-up or triple-net lease works its term out once the lease is activated. NNN amounts are
+        staged from the lease's own page, after it is active.
+      </p>
       {# multipart: the lease document is uploaded here #}
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}

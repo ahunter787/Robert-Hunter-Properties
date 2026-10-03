@@ -105,11 +105,11 @@
                   {% endif %}
                 </td>
                 <td class="py-3 pr-4 text-ink-muted">
-                  {% if row.next_charge %}
-                    {{ row.next_charge.date }} · {{ row.next_charge.left|money }}
-                  {% elif row.next_rent_date %}
-                    {{ row.next_rent_date }} · {{ row.next_rent_amount|money }} ·
-                    <span class="text-xs uppercase tracking-wide">not billed</span>
+                  {% if row.next_due_date %}
+                    {{ row.next_due_date }} · {{ row.next_due_total|money }}
+                    {% if not row.next_due_billed %}
+                      · <span class="text-xs uppercase tracking-wide">not billed</span>
+                    {% endif %}
                   {% else %}
                     —
                   {% endif %}

@@ -112,26 +112,29 @@ def _ledger_lease(pk) -> Lease:
 
 
 class GenerateRentChargesView(ManagerRequiredMixin, View):
-    """Fill in the missing monthly rent charges, up to the horizon."""
+    """Fill in the missing monthly charges — rent, and NNN on a triple-net lease."""
 
     def post(self, request, pk):
         lease = _ledger_lease(pk)
         horizon = services.generation_horizon(settings.RHP_RENT_CHARGE_HORIZON_MONTHS)
         try:
-            created = services.generate_rent_charges(lease, through=horizon, actor=request.user)
+            created = services.generate_charges(lease, through=horizon, actor=request.user)
         except ValidationError as exc:
             messages.error(request, _explain(exc))
             return redirect("ledger:lease-ledger", pk=lease.pk)
 
         if created:
-            logger.info("rent charges created lease=%s count=%s", lease.pk, len(created))
-            messages.success(
-                request,
-                f"{len(created)} rent charge{'' if len(created) == 1 else 's'} created "
-                f"through {horizon:%B %Y}.",
-            )
+            rent = sum(1 for charge in created if charge.kind == ChargeKind.RENT)
+            nnn = sum(1 for charge in created if charge.kind == ChargeKind.NNN)
+            parts = []
+            if rent:
+                parts.append(f"{rent} rent charge{'' if rent == 1 else 's'}")
+            if nnn:
+                parts.append(f"{nnn} NNN charge{'' if nnn == 1 else 's'}")
+            logger.info("charges created lease=%s count=%s", lease.pk, len(created))
+            messages.success(request, f"{' and '.join(parts)} created through {horizon:%B %Y}.")
         else:
-            messages.info(request, f"Rent is already charged through {horizon:%B %Y}.")
+            messages.info(request, f"Charges are already raised through {horizon:%B %Y}.")
         return redirect("ledger:lease-ledger", pk=lease.pk)
 
 

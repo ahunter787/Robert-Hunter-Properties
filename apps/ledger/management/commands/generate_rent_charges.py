@@ -1,8 +1,9 @@
-"""Create the missing monthly rent charges for active leases.
+"""Create the missing monthly rent and NNN charges for active leases.
 
 Idempotent: a month that has already been charged is left alone, so this can run
 on a schedule (Phase 12) as safely as it runs by hand. The management screen has
-the same action for one lease at a time.
+the same action for one lease at a time. The command keeps its name, which is what
+operators and cron entries already call.
 """
 
 import datetime as dt
@@ -11,12 +12,13 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.common.dates import due_date_in
-from apps.leases.models import Lease
+from apps.leases.models import Lease, LeaseTemplate
 from apps.ledger import services
+from apps.ledger.models import ChargeKind
 
 
 class Command(BaseCommand):
-    help = "Create the monthly rent charges that are missing for active leases."
+    help = "Create the monthly rent (and NNN) charges that are missing for active leases."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -53,28 +55,37 @@ class Command(BaseCommand):
                     for due in services.rent_due_dates(lease, through=through)
                     if due not in existing
                 ]
+                if lease.template == LeaseTemplate.NNN:
+                    staged = set(
+                        lease.charges.filter(kind=ChargeKind.NNN).values_list("due_date", flat=True)
+                    )
+                    missing += [
+                        due
+                        for due in services.rent_due_dates(lease, through=through)
+                        if due not in staged and lease.nnn_for(due) > 0
+                    ]
                 would_create += len(missing)
                 if missing:
                     self.stdout.write(f"{lease}: {len(missing)} charge(s) missing")
                 continue
 
-            created = services.generate_rent_charges(lease, through=through)
+            created = services.generate_charges(lease, through=through)
             created_total += len(created)
 
         horizon = f"{through:%B %Y}"
         if options["dry_run"]:
             self.stdout.write(
                 self.style.WARNING(
-                    f"Dry run: {would_create} rent charge(s) would be created through {horizon}."
+                    f"Dry run: {would_create} charge(s) would be created through {horizon}."
                 )
             )
             return
         if created_total:
             self.stdout.write(
-                self.style.SUCCESS(f"{created_total} rent charge(s) created through {horizon}.")
+                self.style.SUCCESS(f"{created_total} charge(s) created through {horizon}.")
             )
         else:
-            self.stdout.write(f"Nothing to do: rent is charged through {horizon}.")
+            self.stdout.write(f"Nothing to do: charges are raised through {horizon}.")
 
     def _horizon(self, options) -> dt.date:
         if options["through"]:

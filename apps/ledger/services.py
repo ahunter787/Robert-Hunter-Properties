@@ -18,7 +18,7 @@ from django.utils import timezone
 from apps.audit.models import AuditAction
 from apps.audit.services import record
 from apps.common.dates import due_date_in
-from apps.leases.models import Lease, LeaseStatus
+from apps.leases.models import Lease, LeaseStatus, LeaseTemplate
 from apps.ledger.models import (
     Charge,
     ChargeKind,
@@ -30,6 +30,11 @@ from apps.ledger.models import (
 )
 
 ZERO = Decimal("0.00")
+
+
+def _actor(actor):
+    """The signed-in person behind an act, or None for a system write."""
+    return actor if getattr(actor, "is_authenticated", False) else None
 
 
 # --- value objects --------------------------------------------------------
@@ -118,7 +123,11 @@ class StatementCharge:
     paid: Decimal
     left: Decimal
     pending: Decimal
+    #: The row type, so a template can branch on "charge" or "payment".
     kind: str = "charge"
+    #: What the charge is: rent, NNN, a manual charge or an adjustment, so a
+    #: screen can talk about rent without reading the description (E1).
+    charge_kind: str = ""
 
     @property
     def was_adjusted(self) -> bool:
@@ -277,9 +286,25 @@ class LeaseLedger:
 
     @property
     def next_charge(self) -> StatementCharge | None:
-        """The next obligation: the soonest charge due after today that still owes."""
+        """The next obligation of any kind: the desk's "coming due" line."""
+        return self._soonest_after_today()
+
+    @property
+    def next_rent_charge(self) -> StatementCharge | None:
+        """The next *rent* due after today, so NNN never stands in for the rent.
+
+        A triple-net month carries rent and NNN on the same date (E1); the rent
+        figure on a tenant's card has to stay the rent.
+        """
+        return self._soonest_after_today(kinds=(ChargeKind.RENT,))
+
+    def _soonest_after_today(self, *, kinds=None) -> StatementCharge | None:
         today = timezone.localdate()
-        upcoming = [row for row in self.statement_charges if row.date > today and row.left > ZERO]
+        upcoming = [
+            row
+            for row in self.statement_charges
+            if row.date > today and row.left > ZERO and (kinds is None or row.charge_kind in kinds)
+        ]
         return min(upcoming, key=lambda row: (row.date, row.title), default=None)
 
     @property
@@ -287,6 +312,71 @@ class LeaseLedger:
         """Billed, but not due yet — stated, never headlined."""
         today = timezone.localdate()
         return sum((row.left for row in self.statement_charges if row.date > today), ZERO)
+
+    # --- the next date a tenant has to pay, and what that month costs -------
+    # A month is rent plus NNN today, and responsibilities once E2 lands. The
+    # card states the whole figure, because a tenant who is told only the rent
+    # is being told a number smaller than the bill (E1, ADR-013).
+
+    @property
+    def next_due_date(self) -> dt.date | None:
+        """The next date anything falls due, billed or forecast from the lease."""
+        today = timezone.localdate()
+        upcoming = [
+            row.date for row in self.statement_charges if row.date > today and row.left > ZERO
+        ]
+        if upcoming:
+            return min(upcoming)
+        return upcoming_rent_date(self.lease)
+
+    def next_due_charges(self, on_date: dt.date) -> list[StatementCharge]:
+        """Every charge dated ``on_date`` that still owes something."""
+        return [row for row in self.statement_charges if row.date == on_date and row.left > ZERO]
+
+    @property
+    def next_due_rent(self) -> Decimal:
+        """The rent part of the next date due."""
+        date = self.next_due_date
+        if date is None:
+            return ZERO
+        raised = self.next_due_charges(date)
+        if raised:
+            return sum((row.left for row in raised if row.charge_kind == ChargeKind.RENT), ZERO)
+        return self.lease.rent_for(date)
+
+    @property
+    def next_due_nnn(self) -> Decimal:
+        """The NNN part of the next date due: billed, or the lease's staged rate."""
+        date = self.next_due_date
+        if date is None:
+            return ZERO
+        raised = self.next_due_charges(date)
+        if raised:
+            return sum((row.left for row in raised if row.charge_kind == ChargeKind.NNN), ZERO)
+        return self.lease.nnn_for(date)
+
+    @property
+    def next_due_total(self) -> Decimal:
+        """What the next date costs in total."""
+        date = self.next_due_date
+        if date is None:
+            return ZERO
+        raised = self.next_due_charges(date)
+        if raised:
+            return sum((row.left for row in raised), ZERO)
+        return self.lease.rent_for(date) + self.lease.nnn_for(date)
+
+    @property
+    def next_due_billed(self) -> bool:
+        """Whether a charge has actually been raised for the next date."""
+        date = self.next_due_date
+        return bool(date) and bool(self.next_due_charges(date))
+
+    @property
+    def next_due_pending(self) -> bool:
+        """Whether money is on its way for the next date."""
+        date = self.next_due_date
+        return bool(date) and any(row.pending > ZERO for row in self.next_due_charges(date))
 
     @property
     def next_rent_date(self) -> dt.date | None:
@@ -296,7 +386,7 @@ class LeaseLedger:
         exist as an entry; the lease still says when it is. A tenant should never
         see an empty card because nobody pressed a button.
         """
-        charge = self.next_charge
+        charge = self.next_rent_charge
         if charge is not None:
             return charge.date
         return upcoming_rent_date(self.lease)
@@ -304,7 +394,7 @@ class LeaseLedger:
     @property
     def next_rent_amount(self) -> Decimal:
         """What the next rent is: what is left on it, or what the lease says."""
-        charge = self.next_charge
+        charge = self.next_rent_charge
         if charge is not None:
             return charge.left
         date = upcoming_rent_date(self.lease)
@@ -389,6 +479,7 @@ class LeaseLedger:
                     paid=paid,
                     left=max(net - paid, ZERO),
                     pending=line.pending,
+                    charge_kind=charge.kind,
                 )
             )
 
@@ -548,8 +639,13 @@ def generation_horizon(months: int, *, today: dt.date | None = None) -> dt.date:
     return due_date_in(year, month, 31)
 
 
-def generate_rent_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Charge]:
-    """Create the missing monthly rent charges for a lease; never duplicates."""
+def generate_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Charge]:
+    """Create the missing rent — and NNN — charges for a lease; never duplicates.
+
+    The amount for each month comes from the lease, not from a field read here:
+    a stepped lease answers per period and a triple-net month carries both its
+    rent and its NNN (E1, ADR-013).
+    """
     if lease.status == LeaseStatus.DRAFT:
         raise ValidationError(
             "A draft lease has no ledger yet: its terms can still change. Activate the lease first."
@@ -557,31 +653,71 @@ def generate_rent_charges(lease: Lease, *, through: dt.date, actor=None) -> list
 
     created: list[Charge] = []
     for due in rent_due_dates(lease, through=through):
-        # get_or_create also absorbs a concurrent double submit: the unique
-        # constraint is one rent charge per lease per due date.
-        charge, was_created = Charge.objects.get_or_create(
-            lease=lease,
-            kind=ChargeKind.RENT,
-            due_date=due,
-            defaults={
-                "amount": lease.monthly_rent,
-                "description": f"Rent for {due:%B %Y}",
-                "created_by": actor if getattr(actor, "is_authenticated", False) else None,
-            },
-        )
-        if was_created:
-            record(
-                actor,
-                AuditAction.CHARGE_CREATED,
-                obj=charge,
-                lease=lease,
-                summary=f"Rent charge for {due:%B %Y} created ({charge.amount})",
-                amount=charge.amount,
-                due_date=due,
-                source="rent generation",
-            )
-            created.append(charge)
+        created.extend(_create_rent_charge(lease, due, actor=actor))
+        if lease.template == LeaseTemplate.NNN:
+            created.extend(_create_nnn_charge(lease, due, actor=actor))
     return created
+
+
+def _create_rent_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
+    # get_or_create also absorbs a concurrent double submit: the unique
+    # constraint is one rent charge per lease per due date.
+    charge, was_created = Charge.objects.get_or_create(
+        lease=lease,
+        kind=ChargeKind.RENT,
+        due_date=due,
+        defaults={
+            "amount": lease.rent_for(due),
+            "description": f"Rent for {due:%B %Y}",
+            "created_by": _actor(actor),
+        },
+    )
+    if not was_created:
+        return []
+    record(
+        actor,
+        AuditAction.CHARGE_CREATED,
+        obj=charge,
+        lease=lease,
+        summary=f"Rent charge for {due:%B %Y} created ({charge.amount})",
+        amount=charge.amount,
+        due_date=due,
+        source="rent generation",
+    )
+    return [charge]
+
+
+def _create_nnn_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
+    """A triple-net month's NNN, at the rate the lease stages for that date."""
+    amount = lease.nnn_for(due)
+    if amount <= ZERO:
+        # No rate has been staged for this month yet. Nothing is charged, and the
+        # lease's own screen says so rather than raising a silent zero.
+        return []
+
+    charge, was_created = Charge.objects.get_or_create(
+        lease=lease,
+        kind=ChargeKind.NNN,
+        due_date=due,
+        defaults={
+            "amount": amount,
+            "description": f"NNN for {due:%B %Y}",
+            "created_by": _actor(actor),
+        },
+    )
+    if not was_created:
+        return []
+    record(
+        actor,
+        AuditAction.CHARGE_CREATED,
+        obj=charge,
+        lease=lease,
+        summary=f"NNN charge for {due:%B %Y} created ({charge.amount})",
+        amount=charge.amount,
+        due_date=due,
+        source="NNN generation",
+    )
+    return [charge]
 
 
 # --- the actions that change the ledger -----------------------------------

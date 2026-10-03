@@ -115,7 +115,7 @@ def test_generating_rent_charges_records_one_event_each():
     # does not depend on which day of the month it happens to run.
     lease = make_lease(start_date=TODAY.replace(day=1), rent_due_day=1)
 
-    services.generate_rent_charges(lease, through=TODAY)
+    services.generate_charges(lease, through=TODAY)
 
     events = AuditEvent.objects.filter(action=AuditAction.CHARGE_CREATED)
     assert events.count() >= 1
@@ -125,7 +125,7 @@ def test_generating_rent_charges_records_one_event_each():
 def test_a_command_with_no_actor_still_records_the_change():
     lease = make_lease(start_date=TODAY.replace(day=1), rent_due_day=1)
 
-    services.generate_rent_charges(lease, through=TODAY, actor=None)
+    services.generate_charges(lease, through=TODAY, actor=None)
 
     event = AuditEvent.objects.filter(action=AuditAction.CHARGE_CREATED).first()
     assert event is not None

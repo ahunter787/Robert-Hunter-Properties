@@ -42,6 +42,17 @@ Two companion documents:
 | 11 | Payment integration | Needs your approval | — |
 | 12 | Production hardening | Not started | — |
 
+### Extensions (not phases)
+
+Three additions RHP asked for that the specification does not cover. They are proposed and approved in
+[`extensions.md`](extensions.md), built on their own branch, and recorded in their own decision record.
+
+| # | Extension | Status | What it is |
+| --- | --- | --- | --- |
+| E1 | Lease templates | **Built, in review** | Fixed, Step Up, and Triple Net: the term's rent is worked out when the lease is activated, and NNN is staged each year ([ADR-013](decisions/ADR-013-lease-templates.md)) |
+| E2 | Property responsibilities | Proposed | Utilities and maintenance billed to a property and charged to each unit's share |
+| E3 | Concessions | Proposed | A month forgiven, or moved to a later date, recorded as a decision |
+
 ---
 
 ## Phase 0 — Foundation
@@ -449,6 +460,57 @@ purpose — it is where the "works" becomes "safe to rely on".
 
 ---
 
+## Extension E1 — Lease templates (built, in review)
+
+**In one sentence:** RHP's three real lease shapes — Fixed, Step Up, and Triple Net — with a stepped term's
+rent worked out once when the lease is activated, and the NNN amount staged each year.
+
+**What exists now:** a lease has a **template**. A **Fixed** lease charges one rent for its term, exactly as
+before. A **Step Up** lease names the month its rent rises and by how much (a percentage or a fixed
+amount), and activating it works out the rent for every period of the term, stored as dated amounts. A
+**Triple Net** lease is a Step Up lease that also carries **NNN**: a monthly amount, dated, which an admin
+stages for the coming year each November while the rate in force keeps applying. On the lease's own page
+there is a **Rent** card: the term's periods with what already has been charged marked as such, and the NNN
+in force and staged. Rent and NNN are separate charges on the ledger, so a correction to one never touches
+the other, and the tenant's "next rent due" shows the month's whole figure with the NNN part named. The
+tenant's lease page explains how their rent is worked out.
+
+**What you can do today:** record which of the three templates a lease uses and its step-up rule; let
+activation work out the whole term; set a particular period's rent by hand when the lease states a figure;
+work the schedule out again after a change, with anything already charged left untouched; stage next year's
+NNN; and see all of it on the lease, the ledger and the tenant's pages.
+
+**Deliberate decisions worth knowing:**
+
+- **The term's rent is decided once and stored.** Seven percent a year is applied to the previous year's
+  figure, rounded to the cent, and then kept: RHP never re-derives money later, so a rounding change cannot
+  rewrite a month that has been billed.
+- **A month that has been charged is locked.** The schedule can be worked out again, but it will not touch a
+  period that has already been billed. A mistake there is corrected the ledger's way — an adjustment, so
+  both what was charged and what corrected it stay visible (ADR-008).
+- **A rise always starts on a rent due date**, never mid-month, and never outside the tenancy.
+- **NNN is staged, not overwritten.** Next year's figure is entered as its own dated amount, so the year in
+  force is legible in the record. A staged zero suspends NNN, and the screens say when nothing is staged
+  rather than quietly charging rent alone. If a year's NNN is staged late, the ledger's create-charges
+  action fills in the months it was missing — the tenant owed it either way, and the charges show their
+  dates.
+- **Every component is its own charge.** Base rent and NNN are separate entries on the same due date; the
+  responsibilities that join them in E2 will be separate entries too. The tenant's month is a reading of
+  those entries, not one large charge with a breakdown that has to stay consistent.
+- **Fixed leases are untouched.** A lease with no periods answers its stored rent for the whole term, so
+  every existing tenancy behaves exactly as it did (ADR-013).
+
+**What it deliberately does not do:** no late fees, interest or proration; no automatic letters when the
+rent rises; no index-linked rent; no responsibilities, utilities or CAM (that is E2); no expandable month
+card yet (E2 builds it, where the responsibilities make it necessary).
+
+**How to check it:** edit a lease and choose **Step up** (or **Triple net**), give the rise month and the
+percentage, and activate it. Open the lease: the Rent card should list every period of the term with the
+right amounts. Then open the ledger and create charges — the amounts should follow the periods. On a
+Triple Net lease, stage an NNN amount from the lease page and create charges again: each month should now
+carry rent and NNN. Sign in as the tenant to see the same figures on their dashboard, statement and lease
+page.
+
 ## Cross-phase change map
 
 Things that will be revisited, and by which phase. This is the quickest way to see where churn is
@@ -486,12 +548,11 @@ Collected on purpose, so nothing is forgotten and nothing is decided by accident
 
 - **Month-to-month leases** — the lease term currently needs both a start and an end date. If RHP takes
   on month-to-month tenancies, the end date becomes optional and the screens need a "no fixed end" state.
-- **Proration, late fees, rent escalation** — none of these are in the specification. Phase 4 decided the
-  interim: a tenancy starting mid-month is not prorated, and the desk records a one-off charge for the
-  part month. If RHP starts charging late fees or raising rent on a schedule, that is its own small phase
-  rather than a rule bolted onto the ledger. The one hook that exists is `Lease.rent_for(on_date)`, which
-  every caller asks instead of reading `monthly_rent` — a rent schedule answers there, and nothing else
-  changes (ADR-012).
+- **Proration, late fees, rent escalation** — rent escalation is **answered**: extension E1 added lease
+  templates and a stored rent schedule, and `Lease.rent_for(on_date)` is where every caller asks the lease
+  what a month costs (ADR-013). Proration and late fees are still not in the specification: a tenancy
+  starting mid-month is not prorated, and the desk records a one-off charge for the part month. Either
+  would be its own extension.
 - **Deposits** — decided in Phase 4: the deposit stays a field on the lease and is deliberately **not**
   on the ledger, because held money is not rent paid ahead. When deposit returns and deductions are
   needed, they get their own treatment (what was withheld, and why) rather than being folded into the

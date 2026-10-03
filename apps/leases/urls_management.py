@@ -20,4 +20,16 @@ urlpatterns = [
     path("leases/<int:pk>/end/", views.LeaseEndView.as_view(), name="lease-end"),
     path("leases/<int:pk>/delete/", views.LeaseDeleteView.as_view(), name="lease-delete"),
     path("leases/<int:pk>/document/", views.LeaseDocumentView.as_view(), name="lease-document"),
+    # E1: the rent schedule and the triple-net amount.
+    path(
+        "leases/<int:pk>/schedule/generate/",
+        views.RentScheduleGenerateView.as_view(),
+        name="rent-schedule-generate",
+    ),
+    path(
+        "leases/<int:pk>/rent-periods/<int:period_pk>/edit/",
+        views.RentPeriodUpdateView.as_view(),
+        name="rent-period-update",
+    ),
+    path("leases/<int:pk>/nnn/", views.NnnRateStageView.as_view(), name="nnn-stage"),
 ]

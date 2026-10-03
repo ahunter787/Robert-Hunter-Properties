@@ -173,6 +173,11 @@ cannot be probed.
   and what is coming due are four different questions asked of the same allocation. Each has its own
   property on `LeaseLedger` (`balance_due`, `due_now`, `arrears`, `next_charge` / `next_rent_date`), so no
   screen reuses one figure to answer another (ADR-012).
+- **A lease answers what it charges.** `Lease.rent_for(on_date)` and `Lease.nnn_for(on_date)` are the only
+  definitions of a month's base rent and NNN: a Fixed lease answers its stored rent for the whole term, a
+  step-up or triple-net lease answers from the periods generated when it was activated, and nothing edits a
+  period that has already been charged (extensions `docs/extensions.md`, ADR-013). Charges are separate
+  entries per component — rent, NNN, and from E2 each responsibility — so a correction touches one line.
 - **Derived facts are computed in one place.** Occupancy is defined once, by `LeaseQuerySet.current()`,
   and every screen reads it; there is no stored occupancy column (ADR-007). The same holds for money:
   `apps.ledger.services.build_ledger` is the only definition of a balance or a charge's state, and

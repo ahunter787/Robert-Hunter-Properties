@@ -1,5 +1,7 @@
 """Forms for the lease screens."""
 
+from decimal import Decimal
+
 from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -7,8 +9,8 @@ from django.db.models import Q
 from django.forms import inlineformset_factory
 
 from apps.accounts.models import Role, User
-from apps.common.forms import StyledModelForm
-from apps.leases.models import Lease, LeaseStatus, LeaseTenant
+from apps.common.forms import StyledForm, StyledModelForm
+from apps.leases.models import Lease, LeaseStatus, LeaseTenant, RentPeriod
 from apps.properties.models import Unit
 
 #: What a signed lease may be uploaded as.
@@ -23,6 +25,10 @@ class LeaseForm(StyledModelForm):
             "start_date",
             "end_date",
             "monthly_rent",
+            "template",
+            "step_up_month",
+            "step_up_percent",
+            "step_up_amount",
             "deposit",
             "rent_due_day",
             "lease_file",
@@ -32,9 +38,17 @@ class LeaseForm(StyledModelForm):
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
         }
-        labels = {"lease_file": "Lease document"}
+        labels = {
+            "lease_file": "Lease document",
+            "monthly_rent": "Rent at the start of the term",
+            "template": "Lease template",
+        }
         help_texts = {
             "lease_file": "The signed lease as a PDF, or a JPEG or PNG scan.",
+            "template": (
+                "Fixed is one rent for the term. Step up rises once a year. Triple net is a "
+                "step up with an NNN amount set each year."
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -152,3 +166,54 @@ LeaseTenantFormSet = inlineformset_factory(
     extra=1,
     can_delete=True,
 )
+
+
+# --- E1: the rent schedule and the NNN amount ------------------------------
+
+
+class RentPeriodForm(StyledModelForm):
+    """One period's rent, set by hand when the lease states a particular figure.
+
+    The date is not a field: it is what the period *is*, and changing it would
+    move money between months.
+    """
+
+    class Meta:
+        model = RentPeriod
+        fields = ["amount", "note"]
+        labels = {"amount": "Monthly rent", "note": "Why"}
+        help_texts = {"note": "For example: rent agreed at this figure in the renewal."}
+
+    def clean_amount(self):
+        amount = self.cleaned_data["amount"]
+        if amount < Decimal("0.01"):
+            raise ValidationError("A rent amount must be at least one cent.")
+        return amount
+
+
+class NnnRateForm(StyledForm):
+    """Stage the NNN amount that applies from a date.
+
+    Robert works the year's NNN out each November; entering the next year's figure
+    while this one is still running is the normal case, so the date defaults to the
+    next NNN year.
+    """
+
+    effective_from = forms.DateField(
+        label="Applies from",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="A date rent falls due on. Rent due on a different day is refused.",
+    )
+    monthly_amount = forms.DecimalField(
+        label="NNN a month",
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        help_text="Enter 0 to suspend NNN from that date.",
+    )
+    note = forms.CharField(
+        label="Note",
+        max_length=200,
+        required=False,
+        help_text="Where the figure came from: the November calculation, a reconciliation.",
+    )

@@ -14,7 +14,9 @@
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.identifier }}</h1>
         <p class="mt-2 text-sm text-ink-muted">
           {{ lease.tenant_names }} · {{ lease.start_date }} → {{ lease.end_date }} ·
-          rent {{ lease.monthly_rent|money }}, due {{ lease.due_day_label }}
+          {{ lease.get_template_display }} · rent now {{ lease.current_base_rent|money }}
+          {% if lease.template == "NNN" %} + NNN {{ lease.current_nnn|money }}{% endif %},
+          due {{ lease.due_day_label }}
         </p>
       </div>
       <div class="text-right">
@@ -37,14 +39,11 @@
           <p class="rhp-eyebrow">Balance</p>
           <p class="mt-1 text-3xl font-semibold text-ink-muted">Settled</p>
         {% endif %}
-        {% if ledger.next_charge %}
+        {% if ledger.next_due_date %}
           <p class="mt-2 text-sm text-ink-muted">
-            Coming due {{ ledger.next_charge.date }} · {{ ledger.next_charge.left|money }}
-          </p>
-        {% elif ledger.next_rent_date %}
-          <p class="mt-2 text-sm text-ink-muted">
-            Coming due {{ ledger.next_rent_date }} · {{ ledger.next_rent_amount|money }} ·
-            not billed
+            Coming due {{ ledger.next_due_date }} · {{ ledger.next_due_total|money }}
+            {% if ledger.next_due_nnn > 0 %} (rent + NNN){% endif %}
+            {% if not ledger.next_due_billed %} · not billed{% endif %}
           </p>
         {% endif %}
       </div>
@@ -66,9 +65,10 @@
           <form method="post" action="{% url 'ledger:rent-charges' lease.pk %}"
                 class="flex flex-wrap items-center gap-3">
             {% csrf_token %}
-            <button type="submit" class="rhp-btn rhp-btn-primary">Create rent charges</button>
+            <button type="submit" class="rhp-btn rhp-btn-primary">Create charges</button>
             <span class="text-sm text-ink-muted">
-              Fills in every missing month through {{ horizon }}. A month already charged is left alone.
+              Fills in every missing month's rent — and NNN on a triple-net lease — through {{ horizon }}.
+              A month already charged is left alone.
             </span>
           </form>
         </div>

@@ -432,7 +432,7 @@ def test_generating_rent_charges_creates_one_per_month():
         rent_due_day=1,
     )
 
-    created = services.generate_rent_charges(lease, through=dt.date(2026, 3, 31))
+    created = services.generate_charges(lease, through=dt.date(2026, 3, 31))
 
     assert len(created) == 3
     assert Charge.objects.filter(lease=lease).count() == 3
@@ -444,9 +444,9 @@ def test_generating_rent_charges_twice_changes_nothing():
     lease = make_lease(
         start_date=dt.date(2026, 1, 1), end_date=dt.date(2026, 12, 31), rent_due_day=1
     )
-    services.generate_rent_charges(lease, through=dt.date(2026, 3, 31))
+    services.generate_charges(lease, through=dt.date(2026, 3, 31))
 
-    again = services.generate_rent_charges(lease, through=dt.date(2026, 3, 31))
+    again = services.generate_charges(lease, through=dt.date(2026, 3, 31))
 
     assert again == []
     assert Charge.objects.filter(lease=lease).count() == 3
@@ -458,7 +458,7 @@ def test_generating_rent_charges_on_a_draft_is_refused():
     lease = make_lease(status=LeaseStatus.DRAFT)
 
     with pytest.raises(ValidationError, match="draft lease"):
-        services.generate_rent_charges(lease, through=TODAY)
+        services.generate_charges(lease, through=TODAY)
 
 
 def test_the_horizon_is_the_end_of_a_later_month():

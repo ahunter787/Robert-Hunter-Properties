@@ -27,10 +27,15 @@
   {% endif %}
 </div>
 
-{% if ledger.next_rent_date %}
+{% if ledger.next_due_date %}
   <p class="mt-4 text-sm">
-    Next rent due <span class="font-medium">{{ ledger.next_rent_date }}</span>:
-    <span class="font-medium">{{ ledger.next_rent_amount|money }}</span>.
+    Next rent due <span class="font-medium">{{ ledger.next_due_date }}</span>:
+    <span class="font-medium">{{ ledger.next_due_total|money }}</span>.
+    {% if ledger.next_due_nnn > 0 %}
+      <span class="text-ink-muted">
+        Rent {{ ledger.next_due_rent|money }} plus NNN {{ ledger.next_due_nnn|money }}.
+      </span>
+    {% endif %}
   </p>
 {% else %}
   <p class="mt-4 text-sm text-ink-muted">No further rent falls due on this lease.</p>
