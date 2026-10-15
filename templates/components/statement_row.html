@@ -12,7 +12,7 @@ reads what the thing costs them (ADR-011).
   <li class="flex flex-wrap items-start justify-between gap-3 py-3">
     <span class="min-w-0">
       <span class="font-medium">{{ row.title }}</span>
-      <span class="block text-ink-muted">{{ row.date }}</span>
+      <span class="block text-ink-muted">{{ row.date|date:"M j, Y" }}</span>
       {% if note %}<span class="block text-xs text-ink-muted">{{ note }}</span>{% endif %}
       {% if row.was_adjusted %}
         <span class="block text-xs text-ink-muted">
@@ -28,7 +28,7 @@ reads what the thing costs them (ADR-011).
       {% endif %}
       {% if row.credit > 0 %}
         <span class="block text-xs text-ink-muted">
-          {{ row.credit|money }} of this is in credit on your account
+          Credit balance from this charge: {{ row.credit|money }}
         </span>
       {% endif %}
     </span>
@@ -56,7 +56,7 @@ reads what the thing costs them (ADR-011).
     <span class="min-w-0">
       <span class="font-medium">{{ row.label }}</span>
       <span class="block text-ink-muted">
-        {{ row.date }} · {{ row.method }}{% if row.reference %} · {{ row.reference }}{% endif %}
+        {{ row.date|date:"M j, Y" }} · {{ row.method }}{% if row.reference %} · {{ row.reference }}{% endif %}
       </span>
     </span>
     <span class="text-right">

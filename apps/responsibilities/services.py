@@ -153,7 +153,8 @@ def propose_shares(cycle: ResponsibilityCycle) -> dict[int, Decimal]:
     """Each active unit's monthly share of a cycle, before the office edits it.
 
     A unit's recorded size gives its share; when no unit in the property records a
-    size, the bill is split evenly and the screen says so.
+    size, the bill is split evenly and the screen says so. The proposals add up to the
+    bill exactly, so the office never has to find a penny by hand.
     """
     units = list(cycle.responsibility.property.units.filter(is_active=True))
     if not units:
@@ -162,15 +163,62 @@ def propose_shares(cycle: ResponsibilityCycle) -> dict[int, Decimal]:
     monthly = cycle.monthly_total
     sized = [unit for unit in units if unit.share_of_property is not None]
     if len(sized) == len(units):
-        return {
+        amounts = {
             unit.pk: (monthly * unit.share_of_property / HUNDRED).quantize(
                 Decimal("0.01"), rounding=ROUND_HALF_UP
             )
             for unit in units
         }
+    else:
+        even = (monthly / len(units)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        amounts = {unit.pk: even for unit in units}
+    return _absorb_rounding(amounts, monthly)
 
-    even = (monthly / len(units)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    return {unit.pk: even for unit in units}
+
+def _absorb_rounding(amounts: dict[int, Decimal], cap: Decimal) -> dict[int, Decimal]:
+    """Make the proposals add up to ``cap`` exactly, the rounding riding the largest share.
+
+    Two units at 42.03% and 57.97% of 233.33 round to 98.07 and 135.26, which happens to be
+    exact; three units rarely are. A remainder left floating would make the office hunt for a
+    penny and make the ceiling check arbitrary, so the largest share carries it.
+    """
+    if not amounts:
+        return amounts
+    difference = cap - sum(amounts.values(), ZERO)
+    if difference == ZERO:
+        return amounts
+    largest = max(amounts, key=lambda unit_id: amounts[unit_id])
+    if amounts[largest] + difference < ZERO:
+        # Nothing sensible to absorb it: leave the proposals as they are and let the screen
+        # show the remainder.
+        return amounts
+    amounts[largest] += difference
+    return amounts
+
+
+#: What the office reads when the unit amounts add up to more than the bill.
+OVER_THE_BILL = (
+    "The unit amounts add up to {total} a month, and this bill is {cap} a month to divide. "
+    "Take {over} off the amounts."
+)
+
+
+def check_share_total(cycle: ResponsibilityCycle, amounts_by_unit) -> Decimal:
+    """Refuse unit amounts that add up to more than one month of the bill.
+
+    The bill is the ceiling: units divide what RHP was billed, so a division that adds up to
+    more would charge the tenants more than the property cost (E2, ADR-014). The remainder
+    may be *less* than the bill — a vacant unit's share, or a share nobody carries, stays
+    with the owner — which is why only the ceiling is enforced and the screen shows what is
+    left.
+    """
+    total = sum(
+        (Decimal(amount) for amount in amounts_by_unit.values() if amount is not None), ZERO
+    )
+    cap = cycle.monthly_total
+    if total > cap:
+        raise ValidationError(OVER_THE_BILL.format(total=total, cap=cap, over=total - cap))
+    return total
 
 
 @transaction.atomic
@@ -220,7 +268,7 @@ def stage_cycle(
         obj=cycle,
         lease=None,
         summary=(
-            f"{responsibility.label} cycle from {cycle.starts_on} staged at "
+            f"{responsibility.label} billing period from {cycle.starts_on} scheduled at "
             f"{cycle.total_amount} ({cycle.months} month"
             f"{'' if cycle.months == 1 else 's'})"
         ),
@@ -267,6 +315,8 @@ def _apply_shares(
     A zero takes a unit out of the cycle: the row is removed, so a screen does not
     have to explain a zero-dollar charge that will never be raised.
     """
+    # Before anything is written: the units may not divide more than the property was billed.
+    check_share_total(cycle, amounts_by_unit)
     property_id = cycle.responsibility.property_id
     valid_units = {unit.pk: unit for unit in Unit.objects.filter(property_id=property_id)}
     existing = {share.unit_id: share for share in cycle.shares.all()}
@@ -275,7 +325,7 @@ def _apply_shares(
     for unit_id, amount in amounts_by_unit.items():
         unit_pk = int(unit_id)
         if unit_pk not in valid_units:
-            raise ValidationError("That unit is not in the property this responsibility is on.")
+            raise ValidationError("That unit is not part of this expense recovery's property.")
         if amount is None:
             continue
         amount = Decimal(amount)

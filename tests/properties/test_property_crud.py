@@ -68,7 +68,7 @@ def test_detail_shows_the_address_and_units(signed_in):
     assert "12 Maple St, Springfield, IL 62704" in body
     assert "Unit A" not in body  # the table shows the bare identifier
     assert ">A<" in body
-    assert "Not tracked here yet" in body  # deferred panels are labeled, not faked
+    assert "Not tracked here yet" not in body
 
 
 def test_create_property(signed_in):

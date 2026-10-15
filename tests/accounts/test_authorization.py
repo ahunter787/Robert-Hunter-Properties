@@ -120,14 +120,13 @@ def test_maintenance_user_reaches_management_but_not_accounts(client):
     assert client.get(reverse("manage:account-create")).status_code == 403
 
 
-def test_manager_cannot_administer_accounts(client):
-    """Phase 2 widened *reading* tenant records to managers; changing them did not move."""
+def test_manager_administers_tenant_accounts_but_cannot_change_roles(client):
     tenant = make_tenant(username="manager-readonly-tenant")
     client.force_login(make_manager(username="manager-gate"))
 
     assert client.get(reverse("manage:home")).status_code == 200
-    assert client.get(reverse("manage:account-create")).status_code == 403
-    assert client.post(reverse("manage:account-toggle-active", args=[tenant.pk])).status_code == 403
+    assert client.get(reverse("manage:account-create")).status_code == 200
+    assert client.post(reverse("manage:account-toggle-active", args=[tenant.pk])).status_code == 302
     assert (
         client.post(
             reverse("manage:account-role", args=[tenant.pk]), {"role": Role.MANAGER}

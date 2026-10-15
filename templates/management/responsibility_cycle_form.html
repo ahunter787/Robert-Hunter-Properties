@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load rhp_format %}
 
-{% block title %}Stage a bill — {{ responsibility.label }} — RHP{% endblock %}
+{% block title %}Enter a bill — {{ responsibility.label }} — RHP{% endblock %}
 
 {% block content %}
   <div class="mx-auto w-full max-w-3xl space-y-6">
@@ -9,9 +9,9 @@
       <p class="rhp-eyebrow">
         <a href="{% url 'portfolio:property-detail' property.pk %}"
            class="underline-offset-2 hover:underline">{{ property.name }}</a>
-        · Responsibilities
+        · Expense recoveries
       </p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Stage a bill for {{ responsibility.label }}</h1>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Enter a bill for {{ responsibility.label }}</h1>
       <p class="mt-2 text-sm text-ink-muted">
         Enter what the property was billed and the months it covers. RHP divides it by those months and
         proposes each unit's share from the recorded sizes; type an amount where the division is not a
@@ -22,17 +22,17 @@
     <div class="rhp-card">
       <dl class="grid gap-3 text-sm sm:grid-cols-3">
         <div>
-          <dt class="text-ink-muted">In force now</dt>
+          <dt class="text-ink-muted">Current</dt>
           <dd class="font-medium">
             {% if current_cycle %}{{ current_cycle.total_amount|money }}
-              from {{ current_cycle.starts_on }}{% else %}—{% endif %}
+              from {{ current_cycle.starts_on|date:"M j, Y" }}{% else %}—{% endif %}
           </dd>
         </div>
         <div>
-          <dt class="text-ink-muted">Staged next</dt>
+          <dt class="text-ink-muted">Upcoming</dt>
           <dd class="font-medium">
             {% if next_cycle %}{{ next_cycle.total_amount|money }}
-              from {{ next_cycle.starts_on }}{% else %}—{% endif %}
+              from {{ next_cycle.starts_on|date:"M j, Y" }}{% else %}—{% endif %}
           </dd>
         </div>
         <div>
@@ -47,7 +47,7 @@
         {% csrf_token %}
         {% include "components/form.html" with form=form %}
         <div class="mt-6 flex items-center gap-3">
-          <button type="submit" class="rhp-btn rhp-btn-primary">Stage this bill</button>
+          <button type="submit" class="rhp-btn rhp-btn-primary">Schedule billing period</button>
           <a href="{% url 'portfolio:property-detail' property.pk %}"
              class="rhp-btn rhp-btn-secondary">Cancel</a>
         </div>
@@ -56,14 +56,14 @@
 
     {% if previous_cycle %}
       <p class="text-sm text-ink-muted">
-        The unit amounts start from the last bill staged ({{ previous_cycle.starts_on }}); clear one to
+        The unit amounts start from the previous bill ({{ previous_cycle.starts_on|date:"M j, Y" }}); clear one to
         let RHP propose it from the sizes again.
       </p>
     {% endif %}
 
     <p class="text-sm text-ink-muted">
-      Once a month's charge has been raised, its bill is history: the correction belongs on the ledger,
-      as an adjustment.
+      As soon as a month's charge has been posted, its bill becomes history: The correction belongs
+      on the ledger as an adjustment.
     </p>
   </div>
 {% endblock %}

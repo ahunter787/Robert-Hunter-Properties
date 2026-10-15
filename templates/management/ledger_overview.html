@@ -1,17 +1,16 @@
 {% extends "base.html" %}
 {% load rhp_format %}
 
-{% block title %}Accounting — RHP{% endblock %}
+{% block title %}Rent & Payments — RHP{% endblock %}
 
 {% block content %}
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">Accounting</p>
-        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Balances</h1>
+        <p class="rhp-eyebrow">Rent &amp; Payments</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Lease accounts</h1>
         <p class="mt-2 text-sm text-ink-muted">
-          Every balance here is worked out from the charges and payments on the lease — nothing is
-          stored, so the ledger and the balance cannot disagree.
+          Review what is due now, overdue, upcoming, or held as a credit.
         </p>
       </div>
       <a href="{% url 'leases:lease-list' %}" class="rhp-btn rhp-btn-secondary">Leases</a>
@@ -19,9 +18,10 @@
 
     <section class="grid gap-4 sm:grid-cols-3">
       <div class="rhp-card">
-        <p class="rhp-eyebrow">Outstanding</p>
+        <p class="rhp-eyebrow">Account balances</p>
         <p class="mt-2 text-3xl font-semibold">{{ totals.outstanding|money }}</p>
-        <p class="mt-1 text-sm text-ink-muted">owed across every live lease</p>
+        <p class="mt-1 text-sm text-ink-muted">Includes posted upcoming charges.</p>
+        <p class="mt-2 text-sm">Due now: {{ totals.due_now|money }}</p>
       </div>
       <div class="rhp-card">
         <p class="rhp-eyebrow">Past due</p>
@@ -33,7 +33,7 @@
         </p>
       </div>
       <div class="rhp-card">
-        <p class="rhp-eyebrow">In credit</p>
+        <p class="rhp-eyebrow">Credit balances</p>
         <p class="mt-2 text-3xl font-semibold">{{ totals.credits|money }}</p>
         <p class="mt-1 text-sm text-ink-muted">paid ahead on account</p>
       </div>
@@ -74,7 +74,8 @@
             <tr>
               <th scope="col" class="py-2 pr-4">Unit</th>
               <th scope="col" class="py-2 pr-4">Tenants</th>
-              <th scope="col" class="py-2 pr-4">Balance</th>
+              <th scope="col" class="py-2 pr-4">Due now</th>
+              <th scope="col" class="py-2 pr-4">Account balance</th>
               <th scope="col" class="py-2 pr-4">Past due</th>
               <th scope="col" class="py-2 pr-4">Coming due</th>
               <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
@@ -83,22 +84,30 @@
           <tbody class="divide-y divide-surface-muted">
             {% for row in rows %}
               <tr>
-                <td class="py-3 pr-4 font-medium">{{ row.lease.unit.identifier }}</td>
+                <td class="py-3 pr-4 font-medium">
+                  {{ row.lease.unit.identifier }}
+                  {% if row.lease.is_settled %}
+                    <span class="ml-1 rounded bg-surface-muted px-1.5 py-0.5 text-xs font-medium text-ink-muted">Settled</span>
+                  {% elif row.lease.is_ended %}
+                    <span class="ml-1 rounded bg-surface-muted px-1.5 py-0.5 text-xs font-medium text-ink-muted">Ended {{ row.lease.stopped_on|date:"M j, Y" }}</span>
+                  {% endif %}
+                </td>
                 <td class="py-3 pr-4 text-ink-muted">{{ row.lease.tenant_names }}</td>
+                <td class="py-3 pr-4 font-medium">{{ row.due_now|money }}</td>
                 <td class="py-3 pr-4 font-medium">
                   {% if row.balance_due > 0 %}
                     {{ row.balance_due|money }}
                   {% elif row.credit > 0 %}
                     <span class="text-success">{{ row.credit|money }} credit</span>
                   {% else %}
-                    <span class="text-ink-muted">Settled</span>
+                    <span class="text-ink-muted">Paid in full</span>
                   {% endif %}
                 </td>
                 <td class="py-3 pr-4 {% if row.has_arrears %}font-medium text-danger{% else %}text-ink-muted{% endif %}">
                   {% if row.has_arrears %}
                     {{ row.arrears|money }}
                     {% if row.arrears_oldest %}
-                      <span class="font-normal text-ink-muted">· oldest {{ row.arrears_oldest.date }}</span>
+                      <span class="font-normal text-ink-muted">· oldest {{ row.arrears_oldest.date|date:"M j, Y" }}</span>
                     {% endif %}
                   {% else %}
                     —
@@ -106,12 +115,35 @@
                 </td>
                 <td class="py-3 pr-4 text-ink-muted">
                   {% if row.next_due_date %}
-                    {{ row.next_due_date }} · {{ row.next_due_total|money }}
-                    {% if not row.next_due_billed %}
-                      · <span class="text-xs uppercase tracking-wide">not billed</span>
+                    {{ row.next_due_date|date:"M j, Y" }} · {{ row.next_due_total|money }}
+                    {% if not row.next_due_billed and not row.can_post_due_charges %}
+                      · <span class="text-xs uppercase tracking-wide">not posted yet</span>
                     {% endif %}
                   {% else %}
                     —
+                  {% endif %}
+                  {% if row.can_post_due_charges %}
+                    {# The office reads "not posted" here, so the act belongs here too. #}
+                    <form method="post" action="{% url 'ledger:rent-charges' row.lease.pk %}"
+                          class="mt-2">
+                      {% csrf_token %}
+                      <button type="submit" class="rhp-btn rhp-btn-secondary">Post due charges</button>
+                    </form>
+                    <span class="mt-1 block text-xs text-ink-muted">
+                      Due now and not posted — rent, NNN and expense recoveries.
+                    </span>
+                  {% elif row.lease.needs_onboarding %}
+                    <span class="mt-1 block text-xs font-medium text-warning">
+                      Prior lease activity has not been set up, so nothing can be posted.
+                    </span>
+                    <a href="{% url 'leases:onboard' row.lease.pk %}"
+                       class="mt-1 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
+                      Set up prior lease activity
+                    </a>
+                  {% elif row.lease.is_settled %}
+                    <span class="mt-1 block text-xs text-ink-muted">
+                      Account settled — reopen it to post or correct anything.
+                    </span>
                   {% endif %}
                 </td>
                 <td class="py-3 text-right">
@@ -127,7 +159,7 @@
           {% if search or arrears_only or property_id %}
             No lease balances match that filter.
           {% else %}
-            No lease can owe money yet. Activate a lease and create its rent charges.
+            No lease can owe money yet. Activate a lease and post its due rent charges.
           {% endif %}
         </p>
       {% endif %}

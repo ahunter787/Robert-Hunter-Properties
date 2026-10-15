@@ -20,8 +20,9 @@ integration is explicitly Phase 11.
   `OPENING`), `Direction`, `ChargeState`, `PaymentKind`, `PaymentStatus`, `PaymentMethod`.
 - **The one derivation** (`apps/ledger/services.py`): `build_ledger(lease) → LeaseLedger`, which allocates
   cleared and pending money oldest-first (`_allocate`), nets adjustments into the charge they correct
-  (`StatementCharge`), groups a month into a card (`StatementMonth`), and answers balance, what is due now,
-  what is past due and what is coming due. Nothing stores a balance; every screen and page reads this.
+  (`StatementCharge`), groups a month into a card (`StatementMonth`), answers balance, due now, past due,
+  and upcoming amounts, and projects one chronological staff transaction ledger with a running balance.
+  Nothing stores a balance; every screen and page reads this.
 - **Actions:** `generate_charges` (rent, NNN, responsibilities, opening), `create_charge`,
   `create_adjustment`, `record_payment`, `clear_payment`, `void_payment`, `reverse_payment`, plus
   `rent_due_dates` / `generation_horizon` for the charging window.
@@ -29,8 +30,8 @@ integration is explicitly Phase 11.
   its charges, payments, merged activity and a History panel built from the audit trail, and the forms for
   a charge, a payment, an adjustment, clearing, voiding and reversing. The tenant's `/payments/` is their
   statement.
-- **Settings:** `RHP_CHARGE_HORIZON_MONTHS` (default 1 month — charges are raised a month ahead) and
-  `RHP_LEDGER_ACTIVITY_LIMIT`.
+- **Settings:** `RHP_LEDGER_ACTIVITY_LIMIT`. There is no charging horizon: a charge falls due on its due
+  date and is raised then, never ahead of it (P4-Q7, [`apps/ledger/services.py`](../../apps/ledger/services.py)).
 - **Command:** `manage.py generate_rent_charges`, which Phase 12 can put on a schedule. Today charging is a
   deliberate act — activation, the ledger screen, or that command.
 
@@ -38,7 +39,7 @@ integration is explicitly Phase 11.
 
 | Record | What it settled |
 | --- | --- |
-| [ADR-008](../decisions/ADR-008-rent-ledger.md) | Two tables with explicit directions, derived balances and states, first-in-first-out allocation, corrections as new entries, idempotent generation bounded by the term, managers record and admins correct |
+| [ADR-008](../decisions/ADR-008-rent-ledger.md) | Two tables with explicit directions, derived balances and states, first-in-first-out allocation, corrections as new entries, idempotent generation bounded by the term, and managers performing operational money work |
 | [ADR-011](../decisions/ADR-011-tenant-statement.md) | The tenant's statement absorbs a correction into the charge it corrects, and shows paid and credited money separately |
 | [ADR-012](../decisions/ADR-012-owed-now-and-coming-due.md) | A tenant's headline is what is due now; what is billed but not yet due is stated in a sentence |
 | [ADR-014](../decisions/ADR-014-property-responsibilities.md) | P4-E2: responsibilities as a charge kind, with the tenant's month readable as rent, NNN and responsibilities |
@@ -88,40 +89,41 @@ makes them possible); deposit returns and deductions; any payment provider (Phas
 
 ## Known gaps and defects
 
-**A new charge can be raised on an ended lease.** Ending a lease changes nothing about its money: the
-`ledger_lease.html` Actions card is gated only on `DRAFT`, `generate_charges` refuses only a draft (and an
-unplaced retroactive tenancy), and `create_charge` refuses nothing at all. `ledger_rows` excludes only
-drafts, so an ended lease also sits in `/manage/ledger/` looking exactly as live as an active one.
+**Fixed in P4-E5** — *"a new charge can be raised on an ended lease"*, the defect that started this work.
+It was reproduced on 2026-10-06 (lease 14 ended at 22:00, charge #1081 created at 22:01) and is now
+impossible: `Lease.can_be_charged` is consulted by `generate_charges` and `create_charge`, the screens no
+longer offer the actions, and the tests refuse both paths including a direct POST. The tenancy-and-money
+case study, with the evidence, is [`workflows/tenancy-and-money.md`](../workflows/tenancy-and-money.md).
 
-Reproduced on 2026-10-06 against the dev database: lease 14 (1101 Hoodview / Austin/Ruiming) was ended at
-22:00, and charge `#1081` "Test Fee" for $1,000.00 was created against it at 22:01 — one minute later. Rent
-for November (`#53`) had already been raised, so the ended tenancy also carried a future obligation with
-nothing to close it out.
+What is still open here:
 
-This is **not only a bug**: the specification is silent on what ending a lease does to money, and the rule
-that does exist — `_refuse_ended_terms`: *"An ended tenancy is history: its money stays correctable, its
-terms do not"* — lives in the leases app and is enforced in neither. The full analysis, and the decisions it
-needs, are in [the tenancy-and-money case study](../workflows/tenancy-and-money.md) and
-[ADR-017](../decisions/ADR-017-charge-lifecycle.md), and the questions are P4-Q1 to P4-Q6 below. **The fix
-is scheduled, not built**, pending your answers.
-
-Also open, and smaller:
-
-- An ended lease's *future* charges (raised inside the term but after the end date) have no close-out act.
-- `RHP_CHARGE_HORIZON_MONTHS` is what puts charges into the future; with the default of one month, a tenancy
-  ended today usually has one month already raised.
+- **Post-tenancy charges with their just cause (E6) are blocked by Phase 6.** Reopening a financial
+  account does not restore occupancy or permit recurring rent; E6 will add the evidence-backed exception.
+- **Move-out settlement (E5) is only partially present**: an ended, zero-balance account can be settled,
+  but any nonzero recorded deposit blocks settlement until E5 records its complete disposition and final
+  statement.
+- **A unit's ledger history (E7)** — the office can see a unit's tenancies one at a time, not as a history.
 - The audit trail is written but has no browser until Phase 9.
+- Lease 14 still carries the November charge raised under the old horizon rule. It is left alone; a
+  close-out or an adjustment is how it goes away.
 
 ## Open questions for the owner
 
+**The working area is in Plane** — the parent item *"Charge lifecycle — working area (Phase 4)"*, labelled
+`charge-lifecycle`, with one child item per question below and a *DEFECT* item carrying the reproduction.
+Answer there (a comment, or the item's own "Your answer" line) or here; either way the answer is written
+into the table below and the implementation plan is written from it. The items are raised by hand, so the
+mirror never rewrites them and `verify` reports them as the owner's work rather than as drift.
+
 | # | Question | My recommendation | Your answer |
 | --- | --- | --- | --- |
-| P4-Q1 | What does "ending a lease" mean for money? | Ending freezes the **terms** and stops **new obligations**; money already charged stays and stays correctable. | *(awaiting)* |
-| P4-Q2 | What happens to rent already raised for months that will no longer happen? | Ending offers a **close-out**: each remaining charged month inside the term cancelled by a dated adjustment naming the reason ("tenancy ended 2026-10-06"). Append-only, visible, reversible — never a deletion. | *(awaiting)* |
-| P4-Q3 | Which money actions are allowed on an ended lease? | Payments yes; adjustments, reversals and voids yes; new charges — manual, generated rent, NNN, responsibility — no. | *(awaiting)* |
-| P4-Q4 | Where is that rule enforced? | In the services (`generate_charges`, `create_charge`), because the screens and the management command both pass through them; the screens then hide the actions and say why, in the words the leases app already uses. | *(awaiting)* |
-| P4-Q5 | Does an ended lease still sit in Accounting looking live? | Yes, but marked ended, with no charging actions and its final position stated. | *(awaiting)* |
-| P4-Q6 | Is there a move-out settlement — deposit, final statement, forwarding address? | Not in this phase: deposit returns and deductions are deliberately out of Phase 4. It wants its own extension, filed under whichever phase builds it. | *(awaiting)* |
+| P4-Q7 | Raise a month's rent on its due date, or a month ahead? | **On the due date** — the lease says what will be owed and the ledger records what is owed, so a future charge row buys nothing and creates the whole close-out problem. | **Yes, built.** Nothing is charged ahead of its due date; the horizon setting and `generation_horizon()` are gone. *"We'll address early notification systems like a '5 days until rent is due' system in Phase 8."* |
+| P4-Q1 | What does "ending a lease" mean for money? | Ending freezes the **terms** and stops **new obligations**; money already charged stays and stays correctable. | **Separate states and a citable reason.** Occupancy is draft/active/ended; the account is open/settled. Ending takes a reason code and note. Settlement closes only the financial account ([ADR-020](../decisions/ADR-020-tenancy-lifecycle.md)). |
+| P4-Q2 | What happens to rent already raised for months that will no longer happen? | Ending offers a **close-out**: each remaining charged month cancelled by a dated adjustment naming the reason. Append-only, visible, reversible — never a deletion. | **Yes, built as described.** *"We'll use your recommendation."* |
+| P4-Q3 | Which money actions are allowed on an ended lease? | Payments and corrections yes; **new charges no**. | **Recurring charges stop; remedial ones are wanted, with their just cause.** That evidence-backed exception is **E6, blocked by Phase 6**. Reopening a settled account enables payment and correction work but never restores occupancy or recurring rent. |
+| P4-Q4 | Where is that rule enforced? | In the **services** (`generate_charges`, `create_charge`), because the screens and the management command both pass through them; the screens then hide the actions and say why. | **As recommended.** *"Otherwise, we'll go with your recommendation."* |
+| P4-Q5 | Does an ended lease still sit in Rent & Payments looking live? | Yes, but marked ended, with no charging actions, its final position stated. | **Yes, keep it — marked**, and *"a new tenant should not see the previous tenants ledger"* — a test pins that now. The unit ledger history the owner wondered about is **E7**. |
+| P4-Q6 | Is there a move-out settlement — deposit, final statement, forwarding address? | Not in this phase: deposit returns and deductions are deliberately out of Phase 4. Its own extension, taken up after the guard lands. | **E5.** *"P4-E5 is good."* |
 
 ## How to verify it
 

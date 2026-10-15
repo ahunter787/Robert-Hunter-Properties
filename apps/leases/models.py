@@ -26,6 +26,8 @@ ZERO = Decimal("0.00")
 
 def lease_document_path(instance, filename: str) -> str:
     """Randomised storage path: never the client's filename (docs/security.md)."""
+    if not instance.lease_document_name:
+        instance.lease_document_name = Path(filename.replace("\\", "/")).name[:255]
     suffix = Path(filename).suffix.lower()
     if len(suffix) > 10 or not suffix.isascii():
         suffix = ""
@@ -33,9 +35,29 @@ def lease_document_path(instance, filename: str) -> str:
 
 
 class LeaseStatus(models.TextChoices):
+    """The occupancy lifecycle of a tenancy."""
+
     DRAFT = "DRAFT", "Draft"
     ACTIVE = "ACTIVE", "Active"
     ENDED = "ENDED", "Ended"
+
+
+class LeaseAccountStatus(models.TextChoices):
+    """Whether an ended tenancy's financial account can still change."""
+
+    OPEN = "OPEN", "Open"
+    SETTLED = "SETTLED", "Settled"
+
+
+class EndReason(models.TextChoices):
+    """Why a tenancy ended. A citable reason is required on every ending (P4-Q1)."""
+
+    TENANT_EARLY = "TENANT_EARLY", "Tenant ended early"
+    END_OF_TERM = "END_OF_TERM", "End of term, not renewed"
+    EVICTION = "EVICTION", "Eviction"
+    SALE = "SALE", "Property sold or transferred"
+    MUTUAL = "MUTUAL", "By mutual agreement"
+    OTHER = "OTHER", "Other"
 
 
 class LeaseTemplate(models.TextChoices):
@@ -57,7 +79,7 @@ class RentPeriodOrigin(models.TextChoices):
 
     BASE = "BASE", "Starting rent"
     STEP_UP = "STEP_UP", "Step up"
-    MANUAL = "MANUAL", "Set by hand"
+    MANUAL = "MANUAL", "Override amount"
 
 
 #: The templates that carry a once-a-year step up.
@@ -70,8 +92,8 @@ SCHEDULED_TEMPLATES = (LeaseTemplate.STEP_UP, LeaseTemplate.NNN, LeaseTemplate.S
 class OnboardingMethod(models.TextChoices):
     """How a live tenancy that began before RHP was brought in (E4)."""
 
-    HISTORY = "HISTORY", "Raise the history and record what was received"
-    POSITION = "POSITION", "Start at a date and state the opening position"
+    HISTORY = "HISTORY", "Recreate charges from the lease start"
+    POSITION = "POSITION", "Enter an opening balance"
 
 
 class LeaseQuerySet(models.QuerySet):
@@ -137,16 +159,15 @@ class Lease(models.Model):
         choices=LeaseTemplate.choices,
         default=LeaseTemplate.FIXED,
         help_text=(
-            "How the base rent is set: fixed, a once-a-year step up, triple net, or amounts "
-            "the lease states. Whether NNN applies is recorded separately."
+            "How the base rent is set: fixed, a once-a-year step up, triple-net (NNN), or "
+            "amounts stated in the lease."
         ),
     )
     carries_nnn = models.BooleanField(
         default=False,
         help_text=(
-            "The lease passes the property's operating costs to the tenant, on top of rent. "
-            "Independent of the rent template: a lease can state its own rent and still "
-            "carry NNN (E4)."
+            "The lease passes the property's operating costs to the tenant on top of rent. "
+            "This can apply to any rent template."
         ),
     )
     step_up_month = models.PositiveSmallIntegerField(
@@ -175,8 +196,7 @@ class Lease(models.Model):
         null=True,
         blank=True,
         help_text=(
-            "The first month RHP raises charges for. Blank bills from the start of the term, "
-            "which is what a lease that began in RHP should do (E4)."
+            "The first month RHP posts charges for. Leave blank to start with the lease term."
         ),
     )
     deposit = models.DecimalField(
@@ -198,11 +218,51 @@ class Lease(models.Model):
         db_index=True,
         help_text="Draft until staff activate it; ended is history and read-only.",
     )
+    account_status = models.CharField(
+        max_length=10,
+        choices=LeaseAccountStatus.choices,
+        default=LeaseAccountStatus.OPEN,
+        db_index=True,
+        help_text="Open while financial work remains; settled when the ended account is complete.",
+    )
+    settled_at = models.DateTimeField(null=True, blank=True)
+    settled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="settled_lease_accounts",
+    )
+    settlement_note = models.CharField(max_length=200, blank=True)
+    ended_on = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            "The day the tenancy actually stopped. `end_date` stays the term the agreement "
+            "was signed for, so ending early is recorded rather than rewritten (P4-Q1)."
+        ),
+    )
+    end_reason = models.CharField(
+        max_length=16,
+        choices=EndReason.choices,
+        blank=True,
+        help_text="Why the tenancy ended. Citable, so it is shown on the tenancy and in reports.",
+    )
+    end_reason_note = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text="The detail behind the reason: who asked, what was agreed, what was served.",
+    )
     lease_file = models.FileField(
         upload_to=lease_document_path,
         blank=True,
         null=True,
-        help_text="The signed lease, as a PDF or a scan. Later phases take over document handling.",
+        help_text="The signed lease as a PDF or scan.",
+    )
+    lease_document_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="A readable document name. Leave blank to use the uploaded filename.",
     )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -222,6 +282,17 @@ class Lease(models.Model):
             models.CheckConstraint(
                 condition=models.Q(end_date__gte=models.F("start_date")),
                 name="lease_ends_on_or_after_it_starts",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(account_status=LeaseAccountStatus.OPEN)
+                    | (
+                        models.Q(account_status=LeaseAccountStatus.SETTLED)
+                        & models.Q(status=LeaseStatus.ENDED)
+                        & models.Q(settled_at__isnull=False)
+                    )
+                ),
+                name="settled_account_requires_ended_lease",
             ),
         ]
         indexes = [models.Index(fields=["status", "end_date"], name="lease_status_end")]
@@ -244,6 +315,11 @@ class Lease(models.Model):
         return self.unit.label
 
     @property
+    def document_name(self) -> str:
+        """Display metadata independent of the private storage path."""
+        return self.lease_document_name or "Signed lease"
+
+    @property
     def is_current(self) -> bool:
         today = timezone.localdate()
         return self.status == LeaseStatus.ACTIVE and self.start_date <= today <= self.end_date
@@ -258,8 +334,44 @@ class Lease(models.Model):
 
     @property
     def is_editable(self) -> bool:
-        """Ended leases are history: kept, readable, and not rewritten."""
+        """An ended tenancy is history: kept, readable, and not rewritten."""
         return self.status != LeaseStatus.ENDED
+
+    @property
+    def is_ended(self) -> bool:
+        """Post-tenancy: the tenancy has stopped and its money is still open (P4-Q1)."""
+        return self.status == LeaseStatus.ENDED
+
+    @property
+    def is_settled(self) -> bool:
+        """The financial account is closed against further changes."""
+        return self.account_status == LeaseAccountStatus.SETTLED
+
+    @property
+    def stopped_on(self) -> dt.date:
+        """When the tenancy stopped: the day recorded, or the term it ran to.
+
+        A tenancy ended before RHP recorded end dates has only its term, and that is what the
+        screens show for it — `end_reason` being blank is how a reader can tell that nobody
+        wrote down why. Never `None`: every ended tenancy stopped on *some* day.
+        """
+        return self.ended_on or self.end_date
+
+    @property
+    def ended_early(self) -> bool:
+        """Whether the tenancy stopped before the term it was signed for."""
+        return bool(self.ended_on and self.ended_on < self.end_date)
+
+    @property
+    def can_be_charged(self) -> bool:
+        """Whether a new obligation may be raised on this tenancy.
+
+        Only a running tenancy takes charges (P4-Q1, P4-Q3). This is the single rule the
+        services consult — see `apps.ledger.services.generate_charges` — and the one place
+        the post-tenancy work (P4-E6) will relax, deliberately, once a charge can carry its
+        evidence from Phase 6.
+        """
+        return self.status == LeaseStatus.ACTIVE
 
     @property
     def due_day_label(self) -> str:
@@ -626,7 +738,7 @@ class LeaseOnboarding(models.Model):
             raise ValidationError({"received_total": "Say what the tenant had paid before RHP."})
         if self.method == OnboardingMethod.POSITION and self.opening_amount is None:
             raise ValidationError(
-                {"opening_amount": "Enter 0 if the tenancy was exactly square on that date."}
+                {"opening_amount": "Enter 0 if the account was paid in full on that date."}
             )
 
 

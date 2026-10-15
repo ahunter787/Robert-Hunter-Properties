@@ -101,7 +101,7 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
         # The bills this property carries and who is carrying them (E2).
         context["responsibilities"] = responsibility_services.property_overview(self.object)
-        context["can_manage_responsibilities"] = self.request.user.is_admin_or_above
+        context["can_manage_responsibilities"] = self.request.user.is_manager_or_above
         # Only meaningful when at least one unit records a size; the template hides
         # the line rather than showing "0 sq ft".
         context["total_square_feet"] = sum(unit.square_feet or 0 for unit in units) or None

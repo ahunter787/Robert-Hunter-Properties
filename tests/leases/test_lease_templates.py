@@ -14,10 +14,10 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.html import strip_tags
 
 from apps.audit.models import AuditAction, AuditEvent
+from apps.common.dates import due_date_in
 from apps.leases import services as lease_services
 from apps.leases.models import LeaseStatus, LeaseTemplate, RentPeriodOrigin
 from apps.ledger import services as ledger_services
@@ -631,8 +631,8 @@ def test_activating_works_out_the_term_and_raises_the_first_charges(signed_in):
     assert AuditEvent.objects.filter(action=AuditAction.LEASE_ACTIVATED, lease=lease).exists()
 
 
-def test_a_manager_reads_the_schedule_but_cannot_change_it(signed_in):
-    lease = stepped_lease()
+def test_a_manager_can_manage_the_rent_schedule_and_nnn(signed_in):
+    lease = nnn_lease()
     lease_services.generate_rent_schedule(lease)
     period = lease.rent_periods.order_by("effective_from").first()
 
@@ -640,17 +640,17 @@ def test_a_manager_reads_the_schedule_but_cannot_change_it(signed_in):
         signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
     )
     assert "Rent" in body and "2,084.00" in body
-    assert "Work the schedule out again" not in body, "regenerating is an admin's act"
-    assert "Set by hand" not in body
+    assert "Generate rent schedule" in body
+    assert "Override amount" in body
 
     assert (
-        signed_in.post(reverse("leases:rent-schedule-generate", args=[lease.pk])).status_code == 403
+        signed_in.post(reverse("leases:rent-schedule-generate", args=[lease.pk])).status_code == 302
     )
     assert (
         signed_in.get(reverse("leases:rent-period-update", args=[lease.pk, period.pk])).status_code
-        == 403
+        == 200
     )
-    assert signed_in.get(reverse("leases:nnn-stage", args=[lease.pk])).status_code == 403
+    assert signed_in.get(reverse("leases:nnn-stage", args=[lease.pk])).status_code == 200
 
 
 def test_an_admin_can_regenerate_and_stage_nnn(as_admin):
@@ -797,9 +797,9 @@ def test_the_lease_page_shows_the_schedule_and_the_staged_nnn(as_admin):
     )
 
     assert "Triple net (NNN)" in body
-    assert "In force now: $150.00 a month from" in " ".join(body.split())
-    assert "Stage the next NNN" in body
-    assert date_format(first) in body
+    assert "Current: $150.00 a month from" in " ".join(body.split())
+    assert "Schedule next NNN amount" in body
+    assert f"{first:%b} {first.day}, {first.year}" in body
 
 
 def test_the_tenant_lease_page_shows_how_the_rent_is_worked_out(client):
@@ -826,8 +826,10 @@ def test_the_tenant_summary_names_the_nnn_part(client):
 
     body = " ".join(strip_tags(client.get(reverse("payments:home")).content.decode()).split())
 
-    assert f"Next rent due {date_format(due)}: $1,150.00." in body
-    assert "Rent $1,000.00 plus NNN $150.00." in body
+    assert "Upcoming" in body and "$1,150.00" in body
+    assert f"Due {due:%b} {due.day}, {due.year}" in body
+    assert "Base rent" in body and "$1,000.00" in body
+    assert "NNN" in body and "$150.00" in body
 
 
 def test_the_desk_sees_the_month_total_in_the_overview(as_admin):
@@ -838,18 +840,23 @@ def test_the_desk_sees_the_month_total_in_the_overview(as_admin):
 
     body = " ".join(strip_tags(as_admin.get(reverse("ledger:overview")).content.decode()).split())
 
-    assert f"{date_format(due)} · $1,150.00" in body
+    assert f"{due.strftime('%b %-d, %Y')} · $1,150.00" in body
 
 
 def test_the_ledger_page_offers_to_create_rent_and_nnn(as_admin):
     lease = a_running_nnn_lease()
-    next_due = next_due_date()
+    today = timezone.localdate()
+    # The lease falls due on the 1st and started long ago, so the month's rent is due.
+    fallen_due = due_date_in(today.year, today.month, lease.rent_due_day)
 
     response = as_admin.post(reverse("ledger:rent-charges", args=[lease.pk]), follow=True)
 
     body = " ".join(strip_tags(response.content.decode()).split())
     assert "rent charge" in body and "NNN charge" in body
-    assert lease.charges.filter(kind=ChargeKind.NNN, due_date=next_due).exists()
+    assert lease.charges.filter(kind=ChargeKind.RENT, due_date=fallen_due).exists()
+    assert lease.charges.filter(kind=ChargeKind.NNN, due_date=fallen_due).exists()
+    # P4-Q7: nothing dated after today is raised, however often the button is pressed.
+    assert not lease.charges.filter(due_date__gt=today).exists()
 
 
 def test_nnn_can_be_staged_after_the_rent_has_been_charged():

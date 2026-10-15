@@ -7,4 +7,4 @@ class ResponsibilitiesConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.responsibilities"
     label = "responsibilities"
-    verbose_name = "Property responsibilities"
+    verbose_name = "Expense recoveries"

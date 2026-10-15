@@ -48,7 +48,7 @@ Things that will be revisited, and by which phase. This is the quickest way to s
 | Staff landing counters | Phases 2, 3, 4, 7 | Phase 9 | Replaced by the real admin dashboard (P9-Q2) |
 | Rent due day (stored) | Phase 3 | Phase 4 | Done: the month-end clamping rule lives in `apps.common.dates.due_date_in` |
 | Lease status changes | Phase 3 | Phase 4 | Done: they are written to the audit table, not only the log |
-| **Charging an ended lease** | Phase 4 | **This branch's successor** | **Ending a lease changes nothing about its money today** — a new charge can still be raised, and rent raised for months that will not happen has no close-out. The fix waits on P4-Q1…P4-Q6; see [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md) |
+| **Charging an ended lease** | Phase 4 | **Done — P4-E5** | Ending a tenancy is now two acts on one screen: a citable reason and a close-out by adjustment. New obligations stop with ended occupancy; every mutation stops on a settled account; nothing is posted ahead of its due date. Post-tenancy charges with evidence wait for Phase 6 (E6); the analysis is [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md) |
 | Structured security logs | Phases 1, 2 | Phase 4, 12 | Phase 4 added the audit table; Phase 12 decides retention and whether the append-only rules need database enforcement (P12-Q5) |
 | Banner photo | Phase 2 | Phase 6, 12 | Thumbnails and resizing; content-security policy for the map |
 | Map pin | Phase 2 | Phase 12 | The Google embed becomes an explicit security-policy entry |
@@ -70,12 +70,14 @@ Collected so nothing is forgotten and nothing is decided by accident. **Each one
 record** — the record carries the id, my recommendation and your answer, and this list is the cross-phase
 view of them.
 
-- **Charging an ended lease** — P4-Q1 (what ending means for money), P4-Q2 (what happens to rent already
-  raised for months that will not happen), P4-Q3 (which money actions an ended lease still allows), P4-Q4
-  (where the rule is enforced), P4-Q5 (how it reads in Accounting). The case study is
-  [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md).
-- **A lease ended by mistake** — P3-Q2: reopenable by a superadmin, audited? Today only a database edit
-  restores it.
+- **Charging an ended lease** — **answered 2026-10-07, amended 2026-10-14** (P4-Q1…P4-Q7). A charge falls due on its due
+  date and is posted then; occupancy is draft/active/ended and the financial account is open/settled;
+  ending takes a citable reason and closes out unused months by adjustment; only a running tenancy takes new
+  charges, and a remedial charge after the end waits for its evidence (E6, Phase 6). See
+  [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md), [ADR-017](decisions/ADR-017-charge-lifecycle.md)
+  and [ADR-020](decisions/ADR-020-tenancy-lifecycle.md).
+- **A financial account settled by mistake** — **answered**: reopenable by a manager, with a reason and an
+  audit event. Occupancy remains ended and recurring rent remains stopped.
 - **Does a lease expire by date, or only when a person ends it** — P3-Q1.
 - **Renewing a lease** — P3-Q3. There is still no "copy this lease forward" action, so a renewal is typed
   again from scratch; once real tenancies roll over this will be the most common repetitive job on the desk.

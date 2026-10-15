@@ -16,9 +16,10 @@ leak between tenants.
 
 ### Uploaded by staff, on the tenant's account page
 
-The photo is set by an **admin** on `/manage/accounts/<pk>/`, alongside the other account actions. This
-follows the rule Phase 1 already set: managers read accounts, administrators change them. It also means a
-photo is a record the office keeps, not a self-published avatar.
+The photo is set by **staff** on `/manage/accounts/<pk>/`, alongside the other account actions — a
+**manager** as well as an admin, since managing tenant accounts is operational work (ADR-021 amended the
+Phase 1 rule that had said managers only read them). It means a photo is a record the office keeps, not a
+self-published avatar.
 
 `TenantProfile.photo` is an `ImageField`, so it sits with the tenant's contact details rather than on
 `User` — staff accounts do not hold tenant profile data.

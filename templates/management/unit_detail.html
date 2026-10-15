@@ -122,7 +122,7 @@
             </div>
             <div>
               <dt class="text-ink-muted">Lease term</dt>
-              <dd class="font-medium">{{ lease.start_date }} → {{ lease.end_date }}</dd>
+              <dd class="font-medium">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</dd>
             </div>
             <div>
               <dt class="text-ink-muted">Rent</dt>
@@ -147,9 +147,6 @@
         {% endif %}
       {% endwith %}
 
-      <p class="rhp-help mt-4">
-        Rent charges and balances arrive with Phase 4; recent maintenance with Phase 7.
-      </p>
     </section>
   </div>
 {% endblock %}

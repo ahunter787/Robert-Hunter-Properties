@@ -9,7 +9,7 @@
         <p class="rhp-eyebrow">People</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">Tenant accounts</h1>
       </div>
-      {% if user.is_admin_or_above %}
+      {% if user.is_manager_or_above %}
         <a href="{% url 'manage:account-create' %}" class="rhp-btn rhp-btn-primary">New tenant</a>
       {% endif %}
     </div>

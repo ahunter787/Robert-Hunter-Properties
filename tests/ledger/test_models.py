@@ -16,7 +16,7 @@ from django.utils import timezone
 from apps.common.dates import due_date_in
 from apps.ledger import services
 from apps.ledger.models import Charge, ChargeKind, ChargeState, Direction, Payment, PaymentStatus
-from tests.factories import make_charge, make_lease, make_payment, make_unit
+from tests.factories import make_charge, make_lease, make_nnn_rate, make_payment, make_unit
 
 pytestmark = pytest.mark.django_db
 
@@ -52,6 +52,28 @@ def test_a_part_payment_leaves_the_rest_owing():
     assert state_of(ledger, charge) == ChargeState.PARTIAL
     assert ledger.charges[0].settled == Decimal("400.00")
     assert ledger.charges[0].outstanding == Decimal("600.00")
+
+
+def test_the_staff_transaction_projection_has_a_running_balance():
+    lease = make_lease()
+    charge = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
+    make_payment(lease, amount=Decimal("40.00"), payment_date=TODAY)
+    adjustment = services.create_adjustment(
+        charge,
+        direction=Direction.DECREASE,
+        amount=Decimal("10.00"),
+        reason="Correct the posted amount.",
+    )
+
+    rows = ledger_for(lease).transactions
+
+    assert [row.running_balance for row in rows] == [
+        Decimal("90.00"),
+        Decimal("50.00"),
+    ]
+    assert rows[0].charge_entry == charge
+    assert rows[0].adjustments == [adjustment]
+    assert rows[-1].running_balance == ledger_for(lease).balance_due
 
 
 def test_a_full_payment_settles_the_charge():
@@ -461,10 +483,17 @@ def test_generating_rent_charges_on_a_draft_is_refused():
         services.generate_charges(lease, through=TODAY)
 
 
-def test_the_horizon_is_the_end_of_a_later_month():
-    assert services.generation_horizon(0, today=dt.date(2026, 1, 15)) == dt.date(2026, 1, 31)
-    assert services.generation_horizon(1, today=dt.date(2026, 1, 15)) == dt.date(2026, 2, 28)
-    assert services.generation_horizon(2, today=dt.date(2026, 12, 5)) == dt.date(2027, 2, 28)
+def test_charges_are_raised_on_their_due_date_and_never_ahead_of_it():
+    """P4-Q7: the ledger records what is owed; the lease says what will be owed."""
+    assert services.charges_due(today=dt.date(2026, 1, 15)) == dt.date(2026, 1, 15)
+
+    lease = make_lease(start_date=dt.date(2026, 1, 1), rent_due_day=5)
+
+    # On the 4th, January's rent has not fallen due; on the 5th it has.
+    assert services.rent_due_dates(lease, through=dt.date(2026, 1, 4)) == []
+    assert services.rent_due_dates(lease, through=dt.date(2026, 1, 5)) == [dt.date(2026, 1, 5)]
+    # February's rent is never raised in January.
+    assert services.rent_due_dates(lease, through=dt.date(2026, 1, 31)) == [dt.date(2026, 1, 5)]
 
 
 def test_a_lease_with_nothing_on_it_has_a_settled_ledger():
@@ -664,3 +693,26 @@ def test_the_statement_costs_no_extra_queries(django_assert_num_queries):
         rows = ledger.statement
 
     assert len(rows) == 1
+
+
+def test_triple_net_is_spelled_out_in_the_month_a_tenant_opens_first():
+    """ADR-021: "Triple-net (NNN)" on first use — not in every month of every statement."""
+    lease = make_lease(
+        make_unit(),
+        carries_nnn=True,
+        start_date=TODAY.replace(day=1) - dt.timedelta(days=60),
+        end_date=TODAY + dt.timedelta(days=120),
+        rent_due_day=1,
+    )
+    make_nnn_rate(lease, monthly_amount=Decimal("120.00"))
+    services.generate_charges(lease, through=TODAY)
+
+    months = [
+        month
+        for month in services.build_ledger(lease).statement_months()
+        if isinstance(month, services.StatementMonth) and month.nnn_rows
+    ]
+
+    assert len(months) >= 2, "the fixture bills NNN over more than one month"
+    assert months[0].spells_out_nnn is True, "the month the tenant reads first spells it out"
+    assert all(month.spells_out_nnn is False for month in months[1:])

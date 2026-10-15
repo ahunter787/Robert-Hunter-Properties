@@ -71,10 +71,10 @@ def test_a_tenancy_from_before_this_month_cannot_be_charged_yet():
 
     assert lease.needs_onboarding is True
 
-    with pytest.raises(ValidationError, match="has not been brought into RHP yet"):
+    with pytest.raises(ValidationError, match="Set up prior lease activity"):
         ledger_services.generate_charges(lease, through=TODAY)
 
-    assert not lease.charges.exists(), "nothing was raised"
+    assert not lease.charges.exists(), "nothing was posted"
 
 
 def test_a_tenancy_that_began_this_month_is_charged_as_always():
@@ -167,7 +167,7 @@ def test_onboarding_refuses_a_lease_that_already_has_charges():
 def test_onboarding_refuses_a_tenancy_that_started_this_month():
     lease = make_lease(start_date=TODAY.replace(day=1), billing_start_date=None)
 
-    with pytest.raises(ValidationError, match="ordinary way"):
+    with pytest.raises(ValidationError, match="Post due rent charges"):
         lease_services.onboard_lease(
             lease, method=OnboardingMethod.HISTORY, as_of=TODAY, received_total=Decimal("0")
         )
@@ -388,8 +388,8 @@ def test_the_lease_page_asks_for_the_history_to_be_placed(as_admin):
         ).split()
     )
 
-    assert "Bring this tenancy into RHP" in body
-    assert "has not been brought into RHP" in body
+    assert "Set up prior lease activity" in body
+    assert "Its earlier charges and payments have not been entered" in body
 
 
 def test_an_admin_places_the_history_through_the_screen(as_admin):
@@ -428,16 +428,16 @@ def test_an_admin_states_a_rent_amount_through_the_screen(as_admin):
     assert period.origin == RentPeriodOrigin.MANUAL
 
 
-def test_a_manager_cannot_place_a_history_or_state_an_amount(as_manager):
+def test_a_manager_can_set_up_prior_activity_and_override_an_amount(as_manager):
     lease = a_live_tenancy(template=LeaseTemplate.STATED, billing_start_date=None)
 
-    assert as_manager.get(reverse("leases:onboard", args=[lease.pk])).status_code == 403
+    assert as_manager.get(reverse("leases:onboard", args=[lease.pk])).status_code == 200
     assert (
         as_manager.post(
             reverse("leases:rent-period-create", args=[lease.pk]),
             {"effective_from": "2022-06-01", "amount": "1450.00", "note": ""},
         ).status_code
-        == 403
+        == 302
     )
 
 
@@ -454,7 +454,7 @@ def test_the_ledger_says_why_it_will_not_charge(as_manager):
     response = as_manager.post(reverse("ledger:rent-charges", args=[lease.pk]), follow=True)
 
     body = " ".join(strip_tags(response.content.decode()).split())
-    assert "has not been brought into RHP yet" in body
+    assert "Set up prior lease activity" in body
     assert not lease.charges.exists()
 
 

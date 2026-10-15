@@ -70,7 +70,7 @@ def test_the_lease_page_shows_the_ledger_panel(signed_in):
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
     assert "Ledger" in body
-    assert "Settled" in body, "the panel states the derived balance"
+    assert "Paid in full" in body, "the panel states the derived balance"
     assert "Rent for October" in body, "recent activity is real"
     assert reverse("ledger:lease-ledger", args=[lease.pk]) in body
 
@@ -101,14 +101,14 @@ def test_a_maintenance_user_sees_no_accounting_navigation(client):
     assert "ledger" not in body.lower() or "Accounting" not in body
 
 
-def test_an_admin_sees_the_adjust_and_reverse_links(signed_in, client):
+def test_managers_and_admins_see_the_adjust_and_reverse_links(signed_in, client):
     lease = make_lease()
     charge = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
     payment = make_payment(lease, amount=Decimal("100.00"), payment_date=TODAY)
 
     manager_body = signed_in.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode()
-    assert reverse("ledger:charge-adjust", args=[charge.pk]) not in manager_body
-    assert reverse("ledger:payment-reverse", args=[payment.pk]) not in manager_body
+    assert reverse("ledger:charge-adjust", args=[charge.pk]) in manager_body
+    assert reverse("ledger:payment-reverse", args=[payment.pk]) in manager_body
 
     client.force_login(make_admin(username="panel-admin"))
     admin_body = client.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode()

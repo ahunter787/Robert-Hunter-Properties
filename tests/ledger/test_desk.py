@@ -6,7 +6,6 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.html import strip_tags
 
 from apps.ledger import services
@@ -62,7 +61,7 @@ def test_creating_rent_charges_twice_is_reported_as_nothing_to_do(signed_in):
     response = signed_in.post(reverse("ledger:rent-charges", args=[lease.pk]), follow=True)
 
     assert Charge.objects.count() == before
-    assert b"already charged" in response.content
+    assert b"No due charges were available to post" in response.content
 
 
 def test_rent_charges_cannot_be_created_for_a_draft(signed_in):
@@ -280,19 +279,19 @@ def test_an_adjustment_needs_a_reason_through_the_screen(as_admin):
     assert Charge.objects.count() == 1
 
 
-def test_a_manager_cannot_reverse_or_adjust(signed_in):
+def test_a_manager_can_reverse_and_adjust(signed_in):
     lease = make_lease()
     charge = make_charge(lease, amount=Decimal("1000.00"), due_date=TODAY)
     payment = make_payment(lease, amount=Decimal("1000.00"), payment_date=TODAY)
 
-    assert signed_in.get(reverse("ledger:payment-reverse", args=[payment.pk])).status_code == 403
+    assert signed_in.get(reverse("ledger:payment-reverse", args=[payment.pk])).status_code == 200
     assert (
         signed_in.post(
             reverse("ledger:payment-reverse", args=[payment.pk]), {"reason": "no"}
         ).status_code
-        == 403
+        == 302
     )
-    assert signed_in.get(reverse("ledger:charge-adjust", args=[charge.pk])).status_code == 403
+    assert signed_in.get(reverse("ledger:charge-adjust", args=[charge.pk])).status_code == 200
 
 
 # --- the screens ---------------------------------------------------------
@@ -317,8 +316,8 @@ def test_the_ledger_of_a_draft_says_there_is_no_ledger_yet(signed_in):
 
     body = signed_in.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode()
 
-    assert "No ledger yet" in body
-    assert "Create rent charges" not in body
+    assert "No financial account yet" in body
+    assert "Post due rent charges" not in body
 
 
 def test_the_overview_lists_balances_and_totals(signed_in):
@@ -327,7 +326,7 @@ def test_the_overview_lists_balances_and_totals(signed_in):
 
     body = signed_in.get(reverse("ledger:overview")).content.decode()
 
-    assert "Outstanding" in body
+    assert "Account balances" in body
     assert "1,850.00" in body
     assert lease.unit.identifier in body
 
@@ -357,8 +356,8 @@ def test_the_overview_separates_what_is_late_from_what_is_coming(signed_in):
     assert row.balance_due == Decimal("2084.00")
     assert "Past due" in body
     assert "Coming due" in body
-    assert date_format(row.next_rent_date) in body
-    assert "not billed" in body, "the desk sees the month the office has not raised yet"
+    assert row.next_rent_date.strftime("%b %-d, %Y") in body
+    assert "not posted" in body, "the desk sees the month the office has not posted yet"
 
 
 def test_the_lease_ledger_states_what_is_late_and_what_is_billed(signed_in):
@@ -371,9 +370,11 @@ def test_the_lease_ledger_states_what_is_late_and_what_is_billed(signed_in):
         signed_in.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode()
     )
 
-    assert "$2,084.00 past due" in " ".join(body.split())
-    assert "$2,084.00 billed, not yet due" in " ".join(body.split())
-    assert "Coming due" in body
+    compact = " ".join(body.split())
+    assert "Past due" in compact and "$2,084.00" in compact
+    assert "Account balance" in compact and "$4,168.00" in compact
+    assert "Includes upcoming charges." in compact
+    assert "Upcoming" in body
 
 
 def test_the_overview_searches_by_tenant_or_unit(signed_in):

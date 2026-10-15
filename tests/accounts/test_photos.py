@@ -78,7 +78,7 @@ def test_an_admin_adds_a_photo(as_admin, settings):
     assert (settings.MEDIA_ROOT / profile.photo.name).exists()
 
 
-def test_a_manager_may_see_a_photo_but_not_set_one(as_manager):
+def test_a_manager_may_see_and_set_a_tenant_photo(as_manager):
     tenant = make_tenant(username="ada")
     give_photo(tenant)
 
@@ -89,7 +89,7 @@ def test_a_manager_may_see_a_photo_but_not_set_one(as_manager):
         reverse("manage:account-photo-update", args=[tenant.pk]),
         {"photo": photo_upload()},
     )
-    assert refused.status_code == 403
+    assert refused.status_code == 302
 
     # Closing a response sends request_finished, so it goes last.
     served.close()
@@ -239,13 +239,14 @@ def test_the_account_page_shows_the_photo_and_the_upload_form(as_admin):
     assert "Replace photo" in body
 
 
-def test_a_manager_sees_the_photo_but_no_upload_form(as_manager):
+def test_a_manager_can_update_the_photo(as_manager):
     tenant = make_tenant(username="ada")
     give_photo(tenant)
 
     body = as_manager.get(reverse("manage:account-detail", args=[tenant.pk])).content.decode()
 
-    assert "Only administrators can add or change" in body
+    assert reverse("manage:account-photo", args=[tenant.pk]) in body
+    assert "Replace photo" in body
 
 
 def test_the_placeholder_is_drawn_when_there_is_no_photo(as_admin):

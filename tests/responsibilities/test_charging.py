@@ -11,6 +11,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
+from apps.common.dates import due_date_in
 from apps.leases import services as lease_services
 from apps.ledger import services as ledger_services
 from apps.ledger.models import Charge, ChargeKind
@@ -30,9 +31,9 @@ from tests.factories import (
 pytestmark = pytest.mark.django_db
 
 TODAY = timezone.localdate()
-#: The desk charges through the end of next month by default, so a cycle's months
-#: are covered the way the office covers them.
-HORIZON = ledger_services.generation_horizon(1)
+#: The application charges on the due date and never ahead of it (P4-Q7), so a test that
+#: wants a cycle's months covered has to bill deliberately: through the end of next month.
+BILLED_THROUGH = due_date_in(TODAY.year + (TODAY.month == 12), (TODAY.month % 12) + 1, 31)
 
 
 def a_billed_property(*, total="600.00", months=3, first_amount="152.00", second_amount="48.00"):
@@ -60,7 +61,7 @@ def test_a_units_share_is_charged_every_month_of_the_cycle():
     _property, first, _second, _responsibility, _cycle = a_billed_property()
     lease = a_lease_on(first)
 
-    created = ledger_services.generate_charges(lease, through=HORIZON)
+    created = ledger_services.generate_charges(lease, through=BILLED_THROUGH)
     charges = [charge for charge in created if charge.kind == ChargeKind.RESPONSIBILITY]
 
     assert [charge.amount for charge in charges] == [Decimal("152.00")] * 2, "this month and next"
@@ -89,9 +90,9 @@ def test_the_office_figure_is_what_is_charged_not_a_percentage():
 def test_generating_twice_creates_nothing_twice():
     _property, first, _second, _responsibility, _cycle = a_billed_property()
     lease = a_lease_on(first)
-    created = ledger_services.generate_charges(lease, through=HORIZON)
+    created = ledger_services.generate_charges(lease, through=BILLED_THROUGH)
 
-    again = ledger_services.generate_charges(lease, through=HORIZON)
+    again = ledger_services.generate_charges(lease, through=BILLED_THROUGH)
 
     assert created
     assert again == []
@@ -147,7 +148,7 @@ def test_rent_nnn_and_a_responsibility_can_share_a_due_date():
         monthly_amount=Decimal("200.00"),
     )
 
-    ledger_services.generate_charges(lease, through=HORIZON)
+    ledger_services.generate_charges(lease, through=BILLED_THROUGH)
 
     kinds = set(lease.charges.values_list("kind", flat=True))
     assert kinds == {ChargeKind.RENT, ChargeKind.NNN, ChargeKind.RESPONSIBILITY}
@@ -156,7 +157,7 @@ def test_rent_nnn_and_a_responsibility_can_share_a_due_date():
 def test_the_ledger_reads_the_new_charges_like_any_other():
     _property, first, _second, _responsibility, _cycle = a_billed_property()
     lease = a_lease_on(first)
-    ledger_services.generate_charges(lease, through=HORIZON)
+    ledger_services.generate_charges(lease, through=BILLED_THROUGH)
 
     ledger = ledger_services.build_ledger(lease)
 

@@ -18,6 +18,9 @@ urlpatterns = [
     path("leases/<int:pk>/edit/", views.LeaseUpdateView.as_view(), name="lease-update"),
     path("leases/<int:pk>/activate/", views.LeaseActivateView.as_view(), name="lease-activate"),
     path("leases/<int:pk>/end/", views.LeaseEndView.as_view(), name="lease-end"),
+    # P4-Q1: the money is closed in two steps — settled by an admin, reopened by a superadmin.
+    path("leases/<int:pk>/settle/", views.LeaseSettleView.as_view(), name="lease-settle"),
+    path("leases/<int:pk>/reopen/", views.LeaseReopenView.as_view(), name="lease-reopen"),
     path("leases/<int:pk>/delete/", views.LeaseDeleteView.as_view(), name="lease-delete"),
     path("leases/<int:pk>/document/", views.LeaseDocumentView.as_view(), name="lease-document"),
     # E1: the rent schedule and the triple-net amount.

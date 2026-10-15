@@ -1,5 +1,7 @@
 """Lease documents: validation, storage, serving, and cleanup."""
 
+from urllib.parse import quote
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -41,6 +43,7 @@ def test_uploading_a_lease_document_stores_a_randomised_name(as_manager, setting
     assert response.status_code == 302
     assert lease.lease_file.name.startswith("lease_documents/")
     assert "my scan" not in lease.lease_file.name
+    assert lease.document_name == "my scan.pdf"
     assert (settings.MEDIA_ROOT / lease.lease_file.name).exists()
 
 
@@ -153,6 +156,47 @@ def test_the_document_link_appears_on_the_lease_page(as_manager):
 
     assert reverse("leases:lease-document", args=[lease.pk]) in body
     assert "View lease" in body
+    assert "lease.pdf" in body
+    assert lease.lease_file.name not in body
+
+
+def test_document_title_is_displayed_and_used_for_downloads(as_manager):
+    lease = make_lease(lease_document_name="Signed lease – November 2024.pdf")
+    lease.lease_file.save("upload.pdf", document())
+
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    assert lease.document_name in body
+    edit_body = as_manager.get(reverse("leases:lease-update", args=[lease.pk])).content.decode()
+    assert lease.document_name in edit_body
+    assert lease.lease_file.name not in edit_body
+    response = as_manager.get(reverse("leases:lease-document", args=[lease.pk]))
+    disposition = response["Content-Disposition"]
+    assert quote(lease.document_name) in disposition, "the readable name is the download's name"
+    assert lease.lease_file.name not in disposition, "the private path is never shown"
+    response.close()
+
+
+def test_a_legacy_document_with_no_name_reads_as_the_signed_lease(as_manager):
+    """A document uploaded before the field existed has no name to show (database.md)."""
+    lease = make_lease()
+    lease.lease_file.save("scan.pdf", document())
+    # Simulate the legacy row: a file on disk that the name field never saw.
+    type(lease).objects.filter(pk=lease.pk).update(lease_document_name="")
+    lease.refresh_from_db()
+
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+
+    assert lease.document_name == "Signed lease"
+    assert "Signed lease" in body
+
+
+def test_an_upload_remembers_the_filename_it_arrived_with(as_manager):
+    lease = make_lease()
+    lease.lease_file.save("Michael Ortolano Lease (Nov 2024).pdf", document())
+
+    lease.refresh_from_db()
+    assert lease.lease_document_name == "Michael Ortolano Lease (Nov 2024).pdf"
+    assert lease.lease_file.name.startswith("lease_documents/"), "storage stays randomized"
 
 
 def test_a_document_only_reachable_through_the_view(as_manager):

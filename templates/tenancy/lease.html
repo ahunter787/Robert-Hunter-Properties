@@ -13,9 +13,20 @@
           - {{ lease.unit.property.name }} · {{ lease.unit.property.address_line }}
         </p>
 
-        {% if not lease_is_current %}
+        {% if lease.is_settled %}
           <div class="rhp-alert mt-4 border-warning/30 bg-warning/5 text-warning" role="status">
-            This lease ended on {{ lease.end_date }}. If that is not right, contact Robert Hunter
+            This tenancy ended on {{ lease.stopped_on|date:"M j, Y" }} and the account is settled — nothing is owed
+            and nothing is held. Your statements stay here to read.
+          </div>
+        {% elif lease.is_ended %}
+          <div class="rhp-alert mt-4 border-warning/30 bg-warning/5 text-warning" role="status">
+            This tenancy ended on {{ lease.stopped_on|date:"M j, Y" }}{% if lease.ended_early %} (the term ran to
+            {{ lease.end_date|date:"M j, Y" }}){% endif %}. Any balance stays payable here; if something does not
+            look right, contact Robert Hunter Properties.
+          </div>
+        {% elif not lease_is_current %}
+          <div class="rhp-alert mt-4 border-warning/30 bg-warning/5 text-warning" role="status">
+            This lease ended on {{ lease.end_date|date:"M j, Y" }}. If that is not right, contact Robert Hunter
             Properties.
           </div>
         {% endif %}
@@ -23,7 +34,7 @@
         <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt class="text-ink-muted">Lease term</dt>
-            <dd class="font-medium">{{ lease.start_date }} — {{ lease.end_date }}</dd>
+            <dd class="font-medium">{{ lease.start_date|date:"M j, Y" }} — {{ lease.end_date|date:"M j, Y" }}</dd>
           </div>
           <div>
             <dt class="text-ink-muted">Rent now</dt>
@@ -52,7 +63,7 @@
                     <span class="block text-xs text-ink-muted">
                       {{ lease.get_template_display }}: rises to
                       {{ lease.next_rent_change.amount|money }} on
-                      {{ lease.next_rent_change.effective_from }}
+                      {{ lease.next_rent_change.effective_from|date:"M j, Y" }}
                     </span>
                   {% endif %}
                 </span>
@@ -65,7 +76,7 @@
                     <span class="block text-xs text-ink-muted">
                       {% if lease.next_nnn_change %}
                         updates to {{ lease.next_nnn_change.monthly_amount|money }} on
-                        {{ lease.next_nnn_change.effective_from }}
+                        {{ lease.next_nnn_change.effective_from|date:"M j, Y" }}
                       {% else %}
                         updated each November
                       {% endif %}
@@ -105,6 +116,7 @@
                class="rhp-btn rhp-btn-secondary">View your lease</a>
           {% endif %}
         </div>
+        {% if lease.lease_file %}<p class="mt-2 text-sm text-ink-muted">{{ lease.document_name }}</p>{% endif %}
         {% if not lease.lease_file %}
           <p class="mt-2 text-sm text-ink-muted">
             No document has been shared with you yet.
@@ -131,8 +143,7 @@
         {% endif %}
 
         <p class="rhp-help mt-4">
-          Please contact Robert Hunter Properties if anything here does not look right — nothing on
-          this page is changed by paying through a third party.
+          Please contact Robert Hunter Properties if anything here does not look right.
         </p>
       </section>
     {% else %}

@@ -2,7 +2,9 @@
 
 **Status:** Complete
 **Milestone:** 2 — The real portfolio is modeled: properties, units, tenants, leases
-**Specification:** `docs/harness/master-spec.md`, `PHASE 3 — LEASE MANAGEMENT`
+**Specification:** `docs/harness/master-spec.md`, `PHASE 3 — LEASE MANAGEMENT` (amended 2026-10-14: the
+occupancy/account split, the citable end reason, `ended_on` against the signed term, settlement, and
+financial-account reopening)
 
 ## Scope as specified
 
@@ -15,15 +17,21 @@ is easy to distinguish.
 ## What exists today
 
 - **Models** (`apps/leases/models.py`): `Lease` (unit, term, monthly rent, template, step-up rule, billing
-  cutover, deposit, rent due day, status, lease file, notes), `LeaseTenant` (with exactly one primary
-  contact per lease), `RentPeriod` and `NnnRate` (from P3-E1), and `LeaseOnboarding` (from P4-E4).
+  cutover, deposit, rent due day, status, **`ended_on`**, **`end_reason`** and **`end_reason_note`**, lease
+  file, notes), `LeaseTenant` (with exactly one primary contact per lease), `RentPeriod` and `NnnRate`
+  (from P3-E1), and `LeaseOnboarding` (from P4-E4).
+- **Two lifecycles** (P4-E5, [ADR-020](../decisions/ADR-020-tenancy-lifecycle.md)): occupancy is `DRAFT`,
+  `ACTIVE`, or `ENDED`; the financial account is `OPEN` or `SETTLED`. Ending records a citable reason and
+  the day occupancy stopped while preserving the signed term. Managers may settle a zero-balance ended
+  account or reopen that account with a reason; reopening never restores occupancy.
 - **Database rules:** `one_active_lease_per_unit` (a `UniqueConstraint`, not a form rule), the term cannot
   end before it starts, and `PROTECT` on the unit and tenant links.
 - **Rules in code:** a lease is drafted, activated and ended by a person — never by the calendar; the unit
   is frozen once the lease leaves draft; an ended lease (`Lease.is_editable` false) keeps its terms as
   history and refuses term edits (`_refuse_ended_terms`).
-- **Staff screens** (`/manage/leases/`): list with search, detail, create, edit, activate, end, delete a
-  draft, the lease document, the rent schedule, the NNN rate, and (from P4-E4) onboarding.
+- **Staff screens** (`/manage/leases/`): list with search, detail, create, edit, activate, **end (a review
+  of what the money will do)**, **settle**, **reopen**, delete a draft, the lease document, the rent schedule,
+  the NNN rate, and (from P4-E4) onboarding.
 - **Tenant page** (`/lease/`): unit, term, rent, deposit, co-tenants, the lease document, and — since
   Phase 4/5 — the balance and activity. The document URL carries no id, so it cannot be pointed at
   somebody else's file.
@@ -35,6 +43,8 @@ is easy to distinguish.
 | [ADR-007](../decisions/ADR-007-lease-modeling.md) | One active lease per unit as a database constraint; explicit status; the unit frozen after draft; co-tenants with one primary contact; one lease file; one definition of occupancy |
 | [ADR-013](../decisions/ADR-013-lease-templates.md) | P3-E1: how a month's rent is decided — a stored schedule, not a rule re-derived each time; amended by E4 so NNN is a term of the lease rather than a template |
 | [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) | P4-E4: the billing cutover and the stated-amount template — this phase's terms, used by the ledger |
+| [ADR-020](../decisions/ADR-020-tenancy-lifecycle.md) | P4-E5: separate occupancy and account states, the citable end reason, settlement prerequisites, and financial-account reopening |
+| [ADR-017](../decisions/ADR-017-charge-lifecycle.md) | P4-E5: what each state may do with money — the rule this phase's states exist to carry |
 
 ## Extensions filed under this phase
 
@@ -69,9 +79,8 @@ lease that has already been charged.
 
 ## Known gaps and defects
 
-- **An ended lease cannot be reopened.** `LeaseEndView` sets `ENDED` and nothing sets it back, so a lease
-  ended by mistake can only be restored with a database edit. The money is fine — the ledger still accepts
-  corrections — but the tenancy record is stuck. This is P3-Q2 below.
+- **Financial reopening** — *fixed in P4-E5*: a manager can reopen a settled account with a reason and an
+  audit event. The tenancy remains ended, and the close-out and earlier settlement stay visible.
 - **No renewal action.** A renewal is typed from scratch, which will become the most common repetitive job
   on the desk. Tracked in the phase guide since Phase 3.
 - **No month-to-month state.** The term requires a start and an end date.
@@ -84,8 +93,8 @@ lease that has already been charged.
 
 | # | Question | My recommendation | Your answer |
 | --- | --- | --- | --- |
-| P3-Q1 | Does a lease expire by date, or only when a person ends it? | Keep "a person ends a lease, never the calendar" (ADR-007) and make the screens say loudly when the term has passed, with an "end this lease" action beside it. | *(awaiting)* |
-| P3-Q2 | Should a lease ended by mistake be reopenable, and by whom? | Yes — a superadmin act, audited, refused once money has been closed out against the tenancy. Today only a database edit can do it. | *(awaiting)* |
+| P3-Q1 | Does a lease expire by date, or only when a person ends it? | Keep "a person ends a lease, never the calendar" (ADR-007) and make the screens say loudly when the term has passed, with an "end this lease" action beside it. | *(awaiting)* — a lease whose term has passed still reads `ACTIVE`, and nothing in the ledger raises charges beyond the term, so this is presentation rather than money |
+| P3-Q2 | Should an account closed by mistake be reopenable, and by whom? | Yes — a manager act, audited, requiring a reason, without changing occupancy. | **Yes, built** in P4-E5: managers can reopen the financial account; the tenancy remains ended and prior settlement and close-out events stay visible. |
 | P3-Q3 | Do you want a "renew this lease" action that copies the term and tenants forward? | Yes, and as its own small piece of work rather than folded into another phase. | *(awaiting)* |
 | P3-Q4 | Should a month-to-month tenancy be representable (no end date)? | Only if RHP takes them on; it touches the lease term and every report. | *(awaiting)* |
 

@@ -119,16 +119,21 @@ month at all; the desk records a `MANUAL` charge for the part month. Proration i
 specification, and inventing a rule for it inside the ledger would make every later report argue about
 which months are "full" months.
 
-### Managers run the money; admins change what it means
+### Managers run the money
 
 - A **manager** may view every ledger, generate rent, add a manual charge, record a payment (cleared or
-  pending), and clear or void a pending payment.
-- An **admin** may additionally **adjust** a charge and **reverse** a payment.
+  pending), clear or void a pending payment, **adjust** a charge, **reverse** a payment, settle an ended
+  tenancy's financial account, and reopen one — every operational act on money, across every property.
+- A **superadmin** keeps the acts that change what the system *is*: roles, configuration, Django
+  administration and destructive deletion.
 - A **tenant** sees only their own balance and activity, on `/lease/`, with no id in the URL.
 - A **maintenance** user has no access to the accounting area at all.
 
-This follows the convention Phase 2 and 3 already set: routine desk work belongs to the manager,
-history-changing acts belong to the admin (the same split as "record" versus "delete").
+*Amended 2026-10-14 (ADR-021):* the earlier split put corrections with the admin, on the reasoning that
+changing history is not desk work. A correction is not a change of history — it is another entry, which is
+exactly what the ledger is for (ADR-008's own rule) — so the manager who knows why the money is wrong is the
+one who should correct it. Amending a record is still forbidden to everyone; adding the entry that corrects
+it is the desk's work.
 
 ### A tenant never sees a draft
 

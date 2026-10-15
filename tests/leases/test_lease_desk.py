@@ -148,13 +148,54 @@ def test_activating_reports_a_unit_that_is_already_let(signed_in):
 
 
 def test_an_active_lease_can_be_ended(signed_in):
+    """Ending is two steps: the paperwork, then a review of what the money does (P4-Q1)."""
     lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
+    today = timezone.localdate()
 
-    response = signed_in.post(reverse("leases:lease-end", args=[lease.pk]))
+    review = signed_in.post(
+        reverse("leases:lease-end", args=[lease.pk]),
+        {"ended_on": today.isoformat(), "reason": "END_OF_TERM", "note": "Term ran out."},
+    )
+
+    lease.refresh_from_db()
+    assert review.status_code == 200, "the first submit shows what it would cancel"
+    assert lease.status == LeaseStatus.ACTIVE, "nothing happens until it is confirmed"
+
+    response = signed_in.post(
+        reverse("leases:lease-end", args=[lease.pk]),
+        {
+            "ended_on": today.isoformat(),
+            "reason": "END_OF_TERM",
+            "note": "Term ran out.",
+            "stage": "confirm",
+        },
+    )
 
     lease.refresh_from_db()
     assert response.status_code == 302
     assert lease.status == LeaseStatus.ENDED
+    assert lease.ended_on == today
+    assert lease.end_reason == "END_OF_TERM"
+    assert lease.end_reason_note == "Term ran out."
+    assert (
+        lease.get_end_reason_display()
+        in signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    )
+
+
+def test_ending_without_a_reason_is_refused(signed_in):
+    lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
+    today = timezone.localdate()
+
+    response = signed_in.post(
+        reverse("leases:lease-end", args=[lease.pk]),
+        {"ended_on": today.isoformat(), "reason": "", "note": ""},
+    )
+
+    lease.refresh_from_db()
+    assert response.status_code == 200
+    assert lease.status == LeaseStatus.ACTIVE
+    assert b"Say why the tenancy is ending" in response.content
 
 
 def test_an_ended_lease_stays_readable(signed_in):
@@ -318,7 +359,7 @@ def test_the_detail_page_lists_the_tenants(signed_in):
     assert "1st of every month" in body
     # The ledger panel is real from Phase 4 on: this lease has nothing charged yet.
     assert "Ledger" in body
-    assert "Nothing has been charged on this lease yet" in body
+    assert "No transactions yet" in body
 
 
 def test_lease_tenants_are_protected_from_deletion():

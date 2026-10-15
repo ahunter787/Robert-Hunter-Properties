@@ -10,7 +10,6 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.html import strip_tags
 
 from apps.ledger import services
@@ -76,11 +75,12 @@ def test_a_tenancy_three_months_behind_reads_plainly(client, payments, in_early_
 
     body = " ".join(strip_tags(client.get(payments).content.decode()).split())
 
-    assert "Due now $4,588.00" in body, "what the tenant has to find, not the lease total"
-    assert f"$4,588.00 past due · since {date_format(dt.date(2026, 7, 5))}" in body
-    assert f"Next rent due {date_format(dt.date(2026, 10, 5))}: $2,084.00." in body
-    assert "$4,168.00 is billed but not yet due" in body
-    assert "8,756.00" not in body, "the rest of the term is not a tenant's headline"
+    assert "Due now" in body and "$4,588.00" in body, "what the tenant has to find"
+    assert "$4,588.00 past due" in body
+    assert "Upcoming" in body and "$2,084.00" in body
+    assert "Due Oct 5, 2026" in body
+    assert "Account balance" in body and "$8,756.00" in body
+    assert "Includes upcoming charges." in body
     assert "was $2,084.00, adjusted down by $2,084.00" in body, "the credited months read net"
 
 
@@ -102,7 +102,7 @@ def test_a_tenant_sees_what_they_were_charged_and_what_they_paid(client, payment
     assert "Paid" in body
     assert "Payment received" in body
     assert "ACH-77" in body
-    assert "Nothing due" in body
+    assert "Due now" in body and "$0.00" in body
 
 
 def test_the_due_now_and_next_rent_match_the_ledger(client, payments):
@@ -118,7 +118,7 @@ def test_the_due_now_and_next_rent_match_the_ledger(client, payments):
     assert ledger.balance_due == Decimal("750.00")
     assert ledger.due_now == Decimal("750.00")
     assert "750.00" in body
-    assert "Next rent due" in body
+    assert "Upcoming" in body
 
 
 def test_a_partly_paid_charge_says_so(client, payments):

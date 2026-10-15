@@ -23,7 +23,7 @@ lives. For the long-horizon view — which later phase will change something tha
 | 8 | Communications (announcements) | Not started |
 | 9 | Admin dashboard | Not started |
 | 10 | Reporting and search | Not started |
-| 11 | Payment integration | Blocked by design — requires explicit approval |
+| 11 | Payment integration | Not started — approved, optional for 2027 |
 | 12 | Production hardening | Not started |
 
 ## Extensions (owner-approved additions)
@@ -37,7 +37,13 @@ additions that are **not** phases are proposed, approved and tracked in
 | E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
 | E2 | Property responsibilities charged to the unit | **In `main`** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | folded |
 | E4 | Retroactive onboarding, and a stated rent schedule | **Built, in review** | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | `rhp-e4-onboarding` |
-| E3 | Concessions (forgiveness and deferral) | Proposed, unchanged | — | — |
+| E5 | Move-out settlement — the deposit, deductions, a final statement | Proposed | — | — |
+| E6 | Post-tenancy charges with their evidence | **Blocked by Phase 6** | — | — |
+| E7 | A unit's ledger history | Proposed | — | — |
+| E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |
+| E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
+| E9 | Plain-language interface — product vocabulary and account-first design | **Built, in review** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | `rhp-charge-lifecycle` |
+| E10 | RHP property accounting — general-ledger style books | Future | — | — |
 
 ## Milestones
 
@@ -49,7 +55,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | 4 | 6 + 7 | Documents and maintenance requests work end to end |
 | 5 | 8 + 9 | Communication and an operational dashboard for the RHP team |
 | 6 | 10 + 12 | Reporting, search, and production hardening |
-| later | 11 | Online payments (separate approval; the ledger must be trustworthy first) |
+| 2027 optional | 11 | One-time ACH and ACH autopay after ledger approval |
 
 ## Phase 0 — Foundation (complete)
 
@@ -272,10 +278,11 @@ Search across tenants, properties, units, and leases; reports for rent roll, bal
 history, lease expirations, maintenance aging, and occupancy; CSV export first, PDF only where it
 earns its keep.
 
-## Phase 11 — Payment integration (not approved)
+## Phase 11 — Payment integration (approved, optional for 2027)
 
-Architecture leaves room for ACH/card providers, but nothing is chosen or integrated until explicitly
-approved. Provider-hosted/tokenised flows only; no card numbers or bank credentials in RHP.
+The owner approved one-time ACH and ACH autopay as desirable but not a launch blocker. Provider-hosted or
+tokenized bank linking only; no card numbers, bank credentials, or raw account numbers in RHP. Provider
+selection and implementation remain Phase 11 work.
 
 ## Phase 12 — Production hardening
 

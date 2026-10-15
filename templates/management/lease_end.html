@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}End tenancy — {{ lease.unit.label }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl">
+    <div class="rhp-card">
+      <p class="rhp-eyebrow">End a tenancy</p>
+      <h1 class="mt-1 text-xl font-semibold tracking-tight">{{ lease.unit.label }}</h1>
+      <dl class="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Term the lease was signed for</dt>
+          <dd class="font-medium">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Position today</dt>
+          <dd class="font-medium">{{ ledger.balance_due|money }} owed{% if ledger.credit %} · {{ ledger.credit|money }} held{% endif %}</dd>
+        </div>
+      </dl>
+
+      <form method="post" class="mt-6">
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+
+        {% if reviewed %}
+          {# Second step: the date is settled, so show exactly what it cancels. #}
+          <input type="hidden" name="stage" value="confirm">
+          <div class="mt-6 rounded-card border border-line p-4">
+            <h2 class="text-sm font-semibold">The money</h2>
+            {% if candidates %}
+              <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+                These months were posted before today and fall after the day you gave. Each one
+                checked here is <span class="font-medium">canceled by an adjustment</span> naming
+                the reason — nothing is deleted, and the tenant's statement shows the charge and
+                what corrected it. Untick one the tenant still owes.
+              </p>
+              <ul class="mt-3 space-y-2 text-sm">
+                {% for charge in candidates %}
+                  <li class="flex items-start gap-3">
+                    <input type="checkbox" name="cancel" value="{{ charge.pk }}" id="cancel-{{ charge.pk }}"
+                           class="mt-1" checked>
+                    <label for="cancel-{{ charge.pk }}" class="flex-1">
+                      <span class="font-medium">{{ charge.description }}</span>
+                      <span class="text-ink-muted">· {{ charge.due_date|date:"M j, Y" }} · {{ charge.amount|money }} · {{ charge.get_kind_display }}</span>
+                    </label>
+                  </li>
+                {% endfor %}
+              </ul>
+              <p class="mt-3 text-sm text-ink-muted">
+                Checked = canceled. The rent already posted for a month partly used is dated before the
+                end date and is left alone. If the final amount should differ, record an adjustment
+                on the lease account.
+              </p>
+            {% else %}
+              <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+                No charges were posted beyond that day, so there is nothing to cancel. The tenancy
+                simply stops.
+              </p>
+            {% endif %}
+          </div>
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="submit" class="rhp-btn rhp-btn-primary">End the tenancy</button>
+            <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+          </div>
+        {% else %}
+          <input type="hidden" name="stage" value="review">
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button type="submit" class="rhp-btn rhp-btn-primary">Review what this cancels</button>
+            <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+          </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+{% endblock %}

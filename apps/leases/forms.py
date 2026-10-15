@@ -7,11 +7,14 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import inlineformset_factory
+from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.models import Role, User
 from apps.common.forms import StyledForm, StyledModelForm
 from apps.leases.models import (
     STEPPING_TEMPLATES,
+    EndReason,
     Lease,
     LeaseStatus,
     LeaseTemplate,
@@ -23,6 +26,19 @@ from apps.properties.models import Unit
 
 #: What a signed lease may be uploaded as.
 LEASE_DOCUMENT_TYPES = frozenset({"application/pdf", "image/jpeg", "image/png"})
+
+
+class LeaseDocumentInput(forms.ClearableFileInput):
+    template_name = "components/lease_document_input.html"
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        if value and value.instance.pk:
+            context["widget"]["document_name"] = value.instance.document_name
+            context["widget"]["document_url"] = reverse(
+                "leases:lease-document", args=[value.instance.pk]
+            )
+        return context
 
 
 class LeaseForm(StyledModelForm):
@@ -41,14 +57,17 @@ class LeaseForm(StyledModelForm):
             "deposit",
             "rent_due_day",
             "lease_file",
+            "lease_document_name",
             "notes",
         ]
         widgets = {
+            "lease_file": LeaseDocumentInput(),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
         }
         labels = {
             "lease_file": "Lease document",
+            "lease_document_name": "Document name",
             "monthly_rent": "Rent at the start of the term",
             "template": "Lease template",
             "carries_nnn": "The tenant pays NNN on top of rent",
@@ -279,10 +298,10 @@ class OnboardingForm(StyledForm):
     method = forms.ChoiceField(
         choices=OnboardingMethod.choices,
         initial=OnboardingMethod.HISTORY,
-        label="How to bring it in",
+        label="How to record prior activity",
         help_text=(
-            "Raise the months the term charged and record what the tenant had paid, or start "
-            "billing at a date and state where the tenancy stood."
+            "Recreate charges from the lease start and record payments already received, or "
+            "start from a date and enter an opening balance."
         ),
     )
     as_of = forms.DateField(
@@ -299,17 +318,19 @@ class OnboardingForm(StyledForm):
         help_text="Everything the tenant has paid to date. It settles the oldest months first.",
     )
     opening_amount = forms.DecimalField(
-        label="Balance brought forward",
+        label="Opening balance",
         max_digits=12,
         decimal_places=2,
         required=False,
-        help_text="Positive if the tenant owes, negative if they are paid ahead, 0 if square.",
+        help_text=(
+            "Positive if the tenant owes, negative for a credit balance, or 0 if paid in full."
+        ),
     )
     billing_start_date = forms.DateField(
         label="Bill from",
         widget=forms.DateInput(attrs={"type": "date"}),
         required=False,
-        help_text="The first month RHP charges for. Leave blank to bill the whole term.",
+        help_text="The first month RHP posts charges for. Leave blank to use the whole term.",
     )
     note = forms.CharField(max_length=200, required=False, help_text="Where the figures came from.")
 
@@ -322,7 +343,67 @@ class OnboardingForm(StyledForm):
             )
         if method == OnboardingMethod.POSITION:
             if cleaned.get("opening_amount") is None:
-                self.add_error("opening_amount", "Enter 0 if the tenancy was square.")
+                self.add_error("opening_amount", "Enter 0 if the account was paid in full.")
             if not cleaned.get("billing_start_date"):
                 self.add_error("billing_start_date", "Say which month RHP starts billing from.")
         return cleaned
+
+
+# --- ending a tenancy (P4-Q1, P4-Q2) ---------------------------------------
+
+
+class LeaseEndForm(StyledForm):
+    """End a tenancy: when it stops, why, and what the close-out should cancel.
+
+    The reason and its detail are required. Ending a tenancy is a decision somebody has to be
+    able to cite later, and the office is the only place that knowledge exists.
+    """
+
+    ended_on = forms.DateField(
+        label="Tenancy ends",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        error_messages={"required": "Say which day the tenancy stops."},
+        help_text=(
+            "The day the tenancy actually stops. The term the lease was signed for is kept "
+            "as it is, so ending early is recorded rather than rewritten."
+        ),
+    )
+    reason = forms.ChoiceField(
+        choices=EndReason.choices,
+        label="Why it is ending",
+        error_messages={"required": "Say why the tenancy is ending."},
+        help_text="Citable: this appears on the tenancy, in its history and in reports.",
+    )
+    note = forms.CharField(
+        max_length=200,
+        label="The detail",
+        error_messages={"required": "Add the detail behind the reason."},
+        help_text="Who asked, what was agreed, what was served. Two or three sentences.",
+    )
+
+    def __init__(self, *args, lease=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lease = lease
+        if lease is not None and not self.is_bound:
+            self.fields["ended_on"].initial = timezone.localdate()
+
+
+class LeaseSettleForm(StyledForm):
+    """Close a tenancy's money for good. A note for the record, nothing else."""
+
+    note = forms.CharField(
+        max_length=200,
+        required=False,
+        label="For the record",
+        help_text="Optional: how the last of it was dealt with.",
+    )
+
+
+class LeaseReopenForm(StyledForm):
+    """Put an ended tenancy back on, so a debt found later can be billed honestly."""
+
+    reason = forms.CharField(
+        max_length=200,
+        label="Why it is being reopened",
+        help_text="What was found after the tenancy ended, and why it has to be billed now.",
+    )

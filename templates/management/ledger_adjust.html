@@ -25,7 +25,7 @@
           <dd class="font-medium">{{ charge.amount|money }}</dd>
         </div>
         <div>
-          <dt class="text-ink-muted">Settled</dt>
+          <dt class="text-ink-muted">Paid or credited</dt>
           <dd class="font-medium">{{ line.settled|money }}</dd>
         </div>
         <div>
@@ -34,7 +34,7 @@
         </div>
         <div>
           <dt class="text-ink-muted">Due</dt>
-          <dd class="font-medium">{{ charge.due_date }}</dd>
+          <dd class="font-medium">{{ charge.due_date|date:"M j, Y" }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Type</dt>

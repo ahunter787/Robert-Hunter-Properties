@@ -39,7 +39,7 @@ def test_a_tenant_sees_what_is_due_the_next_rent_and_activity(client):
 
     assert "Due now" in body
     assert "1,350.00" in body, "what is shown is the derived figure"
-    assert "Next rent due" in body
+    assert "Upcoming" in body
     assert "Rent for this month" in body, "the activity list is real"
     assert "Payment received" in body
 
@@ -53,11 +53,11 @@ def test_a_tenant_paid_ahead_is_told_they_are_in_credit(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "in credit" in body
+    assert "credit" in body
     assert "200.00" in body
 
 
-def test_a_settled_tenancy_says_nothing_is_owing(client):
+def test_a_zero_balance_tenancy_says_it_is_paid_in_full(client):
     tenant = make_tenant(username="ada")
     lease = make_lease(tenants=[tenant])
     make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
@@ -66,8 +66,8 @@ def test_a_settled_tenancy_says_nothing_is_owing(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "Nothing due" in body
-    assert "nothing is owing" in body
+    assert "Due now" in body and "$0.00" in body
+    assert "Account balance" in body
 
 
 def test_a_tenant_is_never_shown_another_tenancy_s_figures(client):

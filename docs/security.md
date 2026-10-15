@@ -53,6 +53,11 @@ the caller is on.
 
 ## Uploads
 
+Lease documents have a readable display name independent of their randomized storage path. New uploads
+retain their original filename as display metadata unless staff supply a title; legacy uploads use
+"Signed lease" until staff name them. Templates escape these names, and viewing or downloading still
+passes through the permission-checked document view. A friendly name never grants access to a file.
+
 In force since Phase 2's banner photos, extended in Phase 3 by lease documents; the general document
 work arrives in Phase 6 and maintenance photos in Phase 7:
 
@@ -70,7 +75,7 @@ work arrives in Phase 6 and maintenance photos in Phase 7:
   (the tenant on that lease); each checks its permission first (ADR-006, ADR-007).
 - Downloads carry `Cache-Control: private` and `X-Content-Type-Options: nosniff`, so a shared cache
   never holds a tenant document or photo and a browser never sniffs one into a different type.
-- **A tenant photo is personal data** (ADR-009). It is uploaded by an administrator on the tenant's
+- **A tenant photo is personal data** (ADR-009). It is uploaded by staff on the tenant's
   account page, served only through `TenantPhotoView` (staff) or `OwnPhotoView` (the tenant, whose URL
   carries no id), and never shown to another tenant — there is no tenant-facing directory.
 - Keep uploaded files outside the web root (`media_data` volume, mounted privately).
@@ -204,12 +209,16 @@ balance is a wrong entry, not a wrong number (ADR-008).
   rolled back. `AuditEvent` itself refuses updates and deletions.
 - **Money that only exists as a promise is modeled as such.** A `PENDING` payment moves no balance;
   only cleared, unreversed money does. Voiding and reversing are separate acts, each recorded.
-- **Who may do what:** managers may view ledgers, generate rent, add a manual charge, record a payment
-  and clear or void a pending one; **adjustments and reversals are admin-only**, because they change
-  what history means. A maintenance user has no access to the accounting area.
-- **No card or bank credential is ever stored** — not a number, not a token. A payment records an
+- **Who may do what:** managers perform portfolio operations, including charges, payments, adjustments,
+  reversals, tenant invitations and activation, settlement, and financial reopening. Administrators retain
+  role changes, Django administration, site configuration, and destructive deletion. A maintenance user has
+  no access to the financial area.
+- **A settled account is locked in services.** Posting charges, recording/clearing/voiding/reversing a
+  payment, and creating an adjustment all refuse until a manager explicitly reopens the financial account
+  with a reason. Reopening never restores occupancy.
+- **No card or bank credential is ever stored by RHP.** A payment records an
   amount, a date, a method label and a free-text reference. Phase 11 integrates a provider; when it
-  does, the credential belongs to the provider, never to this database.
+  does, bank linking and tokens belong to the provider, never to this database.
 
 ## Dependencies and updates
 
@@ -240,7 +249,7 @@ original untouched, overdue is only ever money still owed past its due date, and
 cannot be edited, deleted, reversed twice, or written on a draft. `tests/audit/` asserts the trail: an
 actor and an action per change, amounts recorded without floating point, and events that refuse to be
 changed or removed. `tests/ledger/test_authorization.py` walks every accounting route for each role,
-including that a manager cannot reverse or adjust.
+including that managers may reverse and adjust while destructive deletion and role changes remain restricted.
 
 ## Reporting a problem
 

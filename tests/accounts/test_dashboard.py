@@ -11,7 +11,6 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 
 from apps.leases.models import LeaseStatus
 from apps.ledger.models import PaymentStatus
@@ -86,10 +85,10 @@ def test_the_three_cards_carry_the_derived_figures(client, dashboard):
     assert "Due now" in body
     assert "1,350.00" in body, "the figure is derived, and part-paid is shown as such"
     assert "past due" in body, "the card says how much of it is late"
-    assert "Next rent due" in body
+    assert "Upcoming" in body
     assert "Lease ends" in body
     # Dates render in the US format the rest of the portal uses.
-    assert date_format(lease.end_date) in body
+    assert lease.end_date.strftime("%b %-d, %Y") in body
     assert "1,850.00" in body
 
 
@@ -102,9 +101,9 @@ def test_a_tenant_paid_ahead_sees_credit_not_debt(client, dashboard):
 
     body = client.get(dashboard).content.decode()
 
-    assert "in credit" in body
+    assert "credit" in body
     assert "11,000.00" in body, "the year's prepayment shows as credit, not as a debt"
-    assert "$0.00" not in body, "a settled month is never dressed up as a demand"
+    assert "Due now" in body and "$0.00" in body
 
 
 def test_a_settled_tenancy_says_nothing_is_owing(client, dashboard):
@@ -116,8 +115,8 @@ def test_a_settled_tenancy_says_nothing_is_owing(client, dashboard):
 
     body = client.get(dashboard).content.decode()
 
-    assert "Nothing due" in body
-    assert "nothing is owing" in body
+    assert "Due now" in body and "$0.00" in body
+    assert "Nothing is due today" in body
 
 
 def test_the_recent_activity_nets_an_adjustment(client, dashboard):
@@ -154,16 +153,15 @@ def test_the_recent_activity_and_quick_actions_are_real(client, dashboard):
     assert reverse("accounts:profile") in body
 
 
-def test_the_two_later_panels_are_labelled_not_faked(client, dashboard):
+def test_the_dashboard_has_no_development_placeholders(client, dashboard):
     tenant = make_tenant(username="ada")
     make_lease(tenants=[tenant])
     client.force_login(tenant)
 
     body = client.get(dashboard).content.decode()
 
-    assert "Maintenance" in body and "Phase 7" in body
-    assert "Announcements" in body and "Phase 8" in body
-    assert "Maintenance Request" not in body, "no button that goes nowhere"
+    assert "Phase 7" not in body and "Phase 8" not in body
+    assert "Maintenance Request" not in body
 
 
 def test_a_tenant_with_no_lease_is_told_so(client, dashboard):
@@ -281,7 +279,7 @@ def test_the_dashboard_is_built_for_a_phone(client, dashboard):
 
     body = client.get(dashboard).content.decode()
 
-    assert "grid gap-4 sm:grid-cols-2 lg:grid-cols-3" in body, "single column on a phone"
+    assert "grid gap-4 sm:grid-cols-2 xl:grid-cols-4" in body, "single column on a phone"
     assert "w-full sm:w-auto" in body, "full-width buttons to tap"
     assert "<table" not in body, "no wide table in the tenant's path"
     assert 'name="viewport"' in body

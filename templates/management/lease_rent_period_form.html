@@ -10,7 +10,7 @@
         <a href="{% url 'leases:lease-detail' lease.pk %}" class="underline-offset-2 hover:underline">Lease</a>
         · {{ lease.unit.identifier }}
       </p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Set the rent from {{ period.effective_from }}</h1>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Set the rent from {{ period.effective_from|date:"M j, Y" }}</h1>
       <p class="mt-2 text-sm text-ink-muted">
         The schedule works this period out from the lease's template. Set it here when the lease states
         a particular figure for this year instead.
@@ -21,7 +21,7 @@
       <dl class="grid gap-3 text-sm sm:grid-cols-2">
         <div>
           <dt class="text-ink-muted">Period starts</dt>
-          <dd class="font-medium">{{ period.effective_from }}</dd>
+          <dd class="font-medium">{{ period.effective_from|date:"M j, Y" }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Rent now</dt>

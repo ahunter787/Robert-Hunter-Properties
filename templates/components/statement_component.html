@@ -21,7 +21,7 @@ Optionally override the label: ... with row=row label="Water"
     {% endif %}
     {% if row.component.credit > 0 %}
       <span class="block text-xs text-ink-muted">
-        {{ row.component.credit|money }} of this is in credit on your account
+        Credit balance from this charge: {{ row.component.credit|money }}
       </span>
     {% endif %}
   </span>

@@ -114,13 +114,13 @@ may use a left navigation; the tenant portal keeps a short navigation
 while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permission mixin from
 `apps/accounts/permissions.py`; nothing relies on hidden navigation.
 
-| Role | `/manage/` | Portfolio | Leases | Accounting | `/manage/accounts/` | Delete | Role changes | Tenant data |
+| Role | `/manage/` | Portfolio | Leases | Rent & Payments | `/manage/accounts/` | Delete | Role changes | Tenant data |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `SUPERADMIN` | yes | yes | yes | yes | yes | yes | yes | all |
 | `ADMIN` | yes | yes | yes | yes | yes | yes | no | all |
-| `MANAGER` | yes | yes | yes | yes, but no reversals or adjustments (403) | read only | no (403) | no | all |
+| `MANAGER` | yes | yes | yes | yes, including corrections, settlement, and reopening | operational, including invitations and activation | no (403) | no | all |
 | `MAINTENANCE` | yes | no (403) | no (403) | no (403) | no (403) | no | no | assigned work only (Phase 7) |
-| `TENANT` | no (403) | no (403) | own tenancy (`/lease/`) | own balance on that page only | no (403) | no | no | own tenancy only |
+| `TENANT` | no (403) | no (403) | own tenancy (`/lease/`) | own statement (`/payments/`) | no (403) | no | no | own tenancy only |
 
 | URL | Surface |
 | --- | --- |
@@ -137,13 +137,13 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/manage/units/…` | units the same way, attached to a property |
 | `/manage/leases/…` | lease desk: list, create, detail, edit, activate/end (POST), delete a draft (admin) |
 | `/manage/leases/<pk>/document/` | the signed lease, served by a permission-checked view |
-| `/manage/ledger/` | accounting: each live lease's balance, what is past due and what is coming due, with totals and a past-due filter |
-| `/manage/ledger/leases/<pk>/` | one tenancy's ledger: charges, payments, activity and its recorded history |
+| `/manage/ledger/` | Rent & Payments: due now, account balance, past due and upcoming amounts, with a past-due filter |
+| `/manage/ledger/leases/<pk>/` | one lease account: identity and states, financial summary, actions, chronological transactions with running balance, and audit history |
 | `/manage/ledger/leases/<pk>/rent-charges/` | generate the missing monthly rent charges (POST, idempotent) |
 | `/manage/ledger/leases/<pk>/charges/new/`, `…/payments/new/` | add a charge, record a payment |
-| `/manage/ledger/charges/<pk>/adjust/`, `…/payments/<pk>/reverse/` | corrections (admin only) |
+| `/manage/ledger/charges/<pk>/adjust/`, `…/payments/<pk>/reverse/` | audited corrections (manager and above) |
 | `/manage/ledger/payments/<pk>/clear/`, `…/void/` | move a pending payment to cleared or void (POST) |
-| `/manage/accounts/…` | tenant accounts: read for managers, create/invite/deactivate/role/photo for admins |
+| `/manage/accounts/…` | tenant accounts: managers create/invite/activate and maintain profiles; role changes remain superadmin-only |
 | `/manage/accounts/<pk>/photo/`, `/account/photo/` | a tenant photo, served by a permission-checked view — the tenant's own URL carries **no id** |
 | `/lease/`, `/lease/document/` | the tenant's own lease and its document — tenant-only, scoped, and the document URL carries **no id** |
 | `/payments/` | the tenant's own statement — tenant-only, no id in the URL, one paginated list of list rows rather than tables |
@@ -167,6 +167,9 @@ account, which is exactly how the owner found it.
 - **Server-rendered templates first.** Add HTMX for interaction; no SPA.
 - **Authorization in the view or queryset**, never in the template alone.
 - **Money is `Decimal`**; financial history is corrected by reversal or adjustment, never edited.
+- Staff transactions show corrections inline beneath the original charge and calculate running balances
+  from corrected charge amounts. Every mutation and account settlement locks the lease row, so a stale
+  lease object cannot bypass financial-account closure.
 - **Timestamps are timezone-aware UTC**; rent due dates are plain dates.
 - **Logging** goes to stdout (console handler), level from `DJANGO_LOG_LEVEL`; no secrets or tenant
   PII in log messages.
@@ -228,7 +231,7 @@ Four changes landed on top of Phase 4 while the branch was open, all in earlier 
   (retire, don't delete) rather than a fixed choice list.
 - **`/manage/units/` is grouped by property** and pages by property (25 per page), so a building's units
   are never split across pages; the old Type column is now Square footage.
-- **Tenant photos** (ADR-009): uploaded by an administrator on the account page, served only through
+- **Tenant photos** (ADR-009): uploaded by staff on the account page, served only through
   permission-checked views, with an inline placeholder when there is none.
 
 ## What Phase 4 changed in earlier work

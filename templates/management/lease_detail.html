@@ -27,10 +27,9 @@
             <a href="{% url 'leases:lease-delete' lease.pk %}" class="rhp-btn rhp-btn-secondary">Delete draft</a>
           {% endif %}
         {% elif lease.status == "ACTIVE" %}
-          <form method="post" action="{% url 'leases:lease-end' lease.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="rhp-btn rhp-btn-secondary">End lease</button>
-          </form>
+          <a href="{% url 'leases:lease-end' lease.pk %}" class="rhp-btn rhp-btn-secondary">End this tenancy</a>
+        {% elif lease.status == "ENDED" %}
+          {% if lease.is_settled %}<a href="{% url 'leases:lease-reopen' lease.pk %}" class="rhp-btn rhp-btn-secondary">Reopen financial account</a>{% else %}<a href="{% url 'leases:lease-settle' lease.pk %}" class="rhp-btn rhp-btn-secondary">Settle financial account</a>{% endif %}
         {% endif %}
       </div>
     </div>
@@ -46,10 +45,29 @@
           <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Ended</span>
         {% endif %}
       </div>
+
+      {% if lease.ended_on or lease.status == "ENDED" %}
+        <div class="mt-4 rounded-card bg-surface-muted p-4 text-sm">
+          <p>
+            <span class="font-medium">Ended {{ lease.stopped_on|date:"M j, Y" }}</span>
+            · {{ lease.get_end_reason_display }}
+            {% if lease.ended_early %}<span class="text-ink-muted">(early: the term ran to {{ lease.end_date|date:"M j, Y" }})</span>{% endif %}
+          </p>
+          {% if lease.end_reason_note %}<p class="mt-1 text-ink-muted">{{ lease.end_reason_note }}</p>{% endif %}
+          {% if lease.is_settled %}
+            <p class="mt-1 text-ink-muted">The financial account is settled and locked. Reopen it before recording a payment or correction.</p>
+          {% else %}
+            <p class="mt-1 text-ink-muted">
+              The tenancy has ended, but its money is still open: payments and corrections are
+              recorded as normal, and nothing new can be charged on it.
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
       <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
         <div>
           <dt class="text-ink-muted">Term</dt>
-          <dd class="font-medium">{{ lease.start_date }} → {{ lease.end_date }}</dd>
+          <dd class="font-medium">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Lease template</dt>
@@ -82,30 +100,27 @@
 
     {% if lease.needs_onboarding %}
       <section class="rhp-card border-warning/30 bg-warning/5">
-        <h2 class="text-sm font-semibold">Bring this tenancy into RHP</h2>
+        <h2 class="text-sm font-semibold">Set up prior lease activity</h2>
         <p class="mt-2 text-sm leading-relaxed">
-          This lease began on {{ lease.start_date }} — before this month — and has not been brought
-          into RHP, so <span class="font-medium">no charges can be raised on it</span>. Placing it
-          either raises the whole term's months and records what the tenant had paid, or starts
-          billing at a date you name and states the position.
+          This lease began on {{ lease.start_date|date:"M j, Y" }}. Its earlier charges and payments
+          have not been entered. Recreate charges from the lease start and record prior payments,
+          or enter an opening balance from a date you choose.
         </p>
-        {% if user.is_admin_or_above %}
+        {% if user.is_manager_or_above %}
           <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-primary mt-4">
-            Place the history
+            Set up prior activity
           </a>
-        {% else %}
-          <p class="mt-3 text-sm text-ink-muted">An administrator brings a tenancy in.</p>
         {% endif %}
       </section>
     {% elif lease.has_onboarding %}
       {% with record=lease.onboarding_record %}
         <section class="rhp-card">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-sm font-semibold">Brought into RHP</h2>
-            <span class="text-sm text-ink-muted">charges from {{ lease.bill_from }}</span>
+            <h2 class="text-sm font-semibold">Prior lease activity</h2>
+            <span class="text-sm text-ink-muted">charges from {{ lease.bill_from|date:"M j, Y" }}</span>
           </div>
           <p class="mt-2 text-sm leading-relaxed">
-            {{ record.get_method_display }} as of {{ record.as_of }}
+            {{ record.get_method_display }} as of {{ record.as_of|date:"M j, Y" }}
             {% if record.received_total is not None %}· {{ record.received_total|money }} received before RHP{% endif %}
             {% if record.opening_amount is not None %}· {{ record.opening_amount|money }} brought forward{% endif %}
             {% if record.note %}· {{ record.note }}{% endif %}
@@ -149,7 +164,7 @@
             <tbody class="divide-y divide-surface-muted">
               {% for row in rent_schedule %}
                 <tr>
-                  <td class="py-3 pr-4 text-ink-muted">{{ row.period.effective_from }}</td>
+                  <td class="py-3 pr-4 text-ink-muted">{{ row.period.effective_from|date:"M j, Y" }}</td>
                   <td class="py-3 pr-4 font-medium">{{ row.period.amount|money }}</td>
                   <td class="py-3 pr-4 text-ink-muted">
                     {{ row.period.get_origin_display }}
@@ -160,10 +175,10 @@
                       <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
                         Charged
                       </span>
-                    {% elif user.is_admin_or_above and lease.is_editable %}
+                    {% elif user.is_manager_or_above and lease.is_editable %}
                       <span class="flex flex-wrap items-center justify-end gap-3">
                         <a href="{% url 'leases:rent-period-update' lease.pk row.period.pk %}"
-                           class="font-medium text-primary underline-offset-2 hover:underline">Set by hand</a>
+                           class="font-medium text-primary underline-offset-2 hover:underline">Override amount</a>
                         {% if row.period.origin == "MANUAL" %}
                           <form method="post"
                                 action="{% url 'leases:rent-period-remove' lease.pk row.period.pk %}">
@@ -193,40 +208,39 @@
             <h3 class="text-sm font-semibold">NNN</h3>
             {% if lease.current_nnn_rate %}
               <p class="mt-2 text-sm">
-                In force now: <span class="font-medium">{{ lease.current_nnn_rate.monthly_amount|money }}</span>
-                a month from {{ lease.current_nnn_rate.effective_from }}.
+                Current: <span class="font-medium">{{ lease.current_nnn_rate.monthly_amount|money }}</span>
+                a month from {{ lease.current_nnn_rate.effective_from|date:"M j, Y" }}.
               </p>
             {% endif %}
             {% if lease.next_nnn_change %}
               <p class="mt-1 text-sm text-ink-muted">
-                Staged from {{ lease.next_nnn_change.effective_from }}:
+                Upcoming from {{ lease.next_nnn_change.effective_from|date:"M j, Y" }}:
                 <span class="font-medium">{{ lease.next_nnn_change.monthly_amount|money }}</span> a month.
               </p>
             {% elif not lease.current_nnn_rate %}
               <p class="mt-2 text-sm text-warning" role="status">
-                No NNN is staged yet, so rent is being charged without it. Robert works the year's NNN
-                out each November — stage it here when it is calculated.
+                No triple-net (NNN) amount is scheduled, so rent is currently posted without it.
               </p>
             {% endif %}
             {% if nnn_history %}
               <ul class="mt-3 space-y-1 text-sm text-ink-muted">
                 {% for rate in nnn_history %}
                   <li>
-                    {{ rate.effective_from }} · {{ rate.monthly_amount|money }} a month
+                    {{ rate.effective_from|date:"M j, Y" }} · {{ rate.monthly_amount|money }} a month
                     {% if rate.note %}· {{ rate.note }}{% endif %}
                   </li>
                 {% endfor %}
               </ul>
             {% endif %}
-            {% if user.is_admin_or_above and lease.is_editable %}
+            {% if user.is_manager_or_above and lease.is_editable %}
               <a href="{% url 'leases:nnn-stage' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">
-                Stage the next NNN
+                Schedule next NNN amount
               </a>
             {% endif %}
           </div>
         {% endif %}
 
-        {% if user.is_admin_or_above and lease.is_editable %}
+        {% if user.is_manager_or_above and lease.is_editable %}
           <div class="mt-4 flex flex-wrap items-center gap-3">
             <a href="{% url 'leases:rent-period-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">
               Add a rent amount
@@ -234,7 +248,7 @@
             {% if not lease.is_stated %}
               <form method="post" action="{% url 'leases:rent-schedule-generate' lease.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="rhp-btn rhp-btn-secondary">Work the schedule out again</button>
+                <button type="submit" class="rhp-btn rhp-btn-secondary">Generate rent schedule</button>
               </form>
             {% endif %}
             <span class="text-sm text-ink-muted">
@@ -284,7 +298,7 @@
       </div>
       {% if lease.lease_file %}
         <p class="mt-2 text-sm text-ink-muted">
-          {{ lease.lease_file.name|cut:"lease_documents/" }} is attached and readable by the tenants
+          {{ lease.document_name }} is attached and readable by the tenants
           on this lease.
         </p>
       {% else %}
@@ -301,47 +315,22 @@
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Ledger</h2>
-        {% if lease.status != "DRAFT" %}
-          <div class="text-right">
-            {% if ledger.balance_due > 0 %}
-              <span class="text-lg font-semibold">{{ ledger.balance_due|money }}</span>
-              <span class="text-sm text-ink-muted">outstanding</span>
-              {% if ledger.has_arrears %}
-                <span class="ml-2 rounded bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                  {{ ledger.arrears|money }} past due
-                </span>
-              {% endif %}
-            {% elif ledger.credit > 0 %}
-              <span class="text-lg font-semibold text-success">{{ ledger.credit|money }}</span>
-              <span class="text-sm text-ink-muted">in credit</span>
-            {% else %}
-              <span class="text-lg font-semibold text-ink-muted">Settled</span>
-            {% endif %}
-          </div>
-        {% endif %}
       </div>
 
       {% if lease.status == "DRAFT" %}
         <p class="mt-2 text-sm leading-relaxed text-ink-muted">
           A draft lease has no ledger: its rent and term can still change. Activate the lease and its
-          rent charges can be created.
+          due rent charges can be posted.
         </p>
       {% else %}
-        {% if ledger.next_due_date %}
-          <p class="mt-2 text-sm text-ink-muted">
-            Coming due {{ ledger.next_due_date }} — {{ ledger.next_due_total|money }}
-            {% if ledger.next_due_nnn > 0 %}
-              (rent {{ ledger.next_due_rent|money }} + NNN {{ ledger.next_due_nnn|money }})
-            {% endif %}
-            {% if not ledger.next_due_billed %}· not billed yet{% endif %}.
-          </p>
-        {% endif %}
+        <div class="mt-4">{% include "components/amounts_due.html" %}</div>
+        {% if ledger.balance_due == 0 %}<p class="mt-2 text-sm text-success">Paid in full</p>{% endif %}
         {% if ledger.activity %}
           <ul class="mt-4 divide-y divide-surface-muted text-sm">
             {% for row in ledger.activity|slice:":5" %}
               <li class="flex items-center justify-between gap-4 py-2">
                 <span>
-                  <span class="text-ink-muted">{{ row.date }}</span>
+                  <span class="text-ink-muted">{{ row.date|date:"M j, Y" }}</span>
                   <span class="ml-2">{{ row.label }}</span>
                 </span>
                 <span class="font-medium">
@@ -352,7 +341,8 @@
           </ul>
         {% else %}
           <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-            Nothing has been charged on this lease yet. Create its rent charges on the ledger.
+            No transactions yet. {% if lease.needs_onboarding %}Set up prior lease activity to begin
+            tracking this account.{% else %}Open the ledger to post due charges or record a payment.{% endif %}
           </p>
         {% endif %}
         <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">

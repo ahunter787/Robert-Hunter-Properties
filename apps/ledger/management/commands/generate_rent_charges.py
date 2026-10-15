@@ -8,7 +8,6 @@ operators and cron entries already call.
 
 import datetime as dt
 
-from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.common.dates import due_date_in
@@ -22,18 +21,12 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--months",
-            type=int,
-            default=None,
-            help=(
-                "Charge through this many months beyond the current month "
-                "(default: RHP_CHARGE_HORIZON_MONTHS)."
-            ),
-        )
-        parser.add_argument(
             "--through",
             metavar="YYYY-MM",
-            help="Charge through the end of this month instead of a month count.",
+            help=(
+                "Charge through the end of this month, as a deliberate act of backfill. "
+                "By default nothing dated after today is charged (P4-Q7)."
+            ),
         )
         parser.add_argument(
             "--dry-run",
@@ -42,7 +35,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        through = self._horizon(options)
+        through = self._through(options)
         leases = Lease.objects.active().select_related("unit__property")
 
         created_total = 0
@@ -59,23 +52,23 @@ class Command(BaseCommand):
             created = services.generate_charges(lease, through=through)
             created_total += len(created)
 
-        horizon = f"{through:%B %Y}"
+        label = f"{through:%d %B %Y}"
         if options["dry_run"]:
             self.stdout.write(
                 self.style.WARNING(
-                    f"Dry run: {would_create} charge(s) would be created through {horizon}."
+                    f"Dry run: {would_create} charge(s) would be created, the latest due {label}."
                 )
             )
             return
         if created_total:
             self.stdout.write(
-                self.style.SUCCESS(f"{created_total} charge(s) created through {horizon}.")
+                self.style.SUCCESS(f"{created_total} charge(s) created, the latest due {label}.")
             )
         else:
-            self.stdout.write(f"Nothing to do: charges are raised through {horizon}.")
+            self.stdout.write(f"Nothing to do: nothing has fallen due since {label}.")
 
     def _missing(self, lease, due_dates) -> int:
-        """How many charges of any kind this lease is missing through the horizon."""
+        """How many charges of any kind this lease is missing through ``due_dates``."""
         rent = set(lease.charges.rent().values_list("due_date", flat=True))
         nnn = set(lease.charges.filter(kind=ChargeKind.NNN).values_list("due_date", flat=True))
         shared = set(
@@ -92,14 +85,11 @@ class Command(BaseCommand):
                     missing += 1
         return missing
 
-    def _horizon(self, options) -> dt.date:
+    def _through(self, options) -> dt.date:
         if options["through"]:
             try:
                 year, month = (int(part) for part in options["through"].split("-"))
                 return due_date_in(year, month, 31)
             except (ValueError, TypeError) as exc:
                 raise CommandError("--through takes a month, as YYYY-MM.") from exc
-        months = options["months"]
-        if months is None:
-            months = settings.RHP_CHARGE_HORIZON_MONTHS
-        return services.generation_horizon(months)
+        return services.charges_due()

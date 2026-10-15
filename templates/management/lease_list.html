@@ -57,15 +57,26 @@
               <tr>
                 <td class="py-3 pr-4 font-medium">{{ lease.unit.identifier }}</td>
                 <td class="py-3 pr-4">{{ lease.tenant_names }}</td>
-                <td class="py-3 pr-4 text-ink-muted">{{ lease.start_date }} → {{ lease.end_date }}</td>
+                <td class="py-3 pr-4 text-ink-muted">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</td>
                 <td class="py-3 pr-4">{{ lease.monthly_rent|money }}</td>
                 <td class="py-3 pr-4">
                   {% if lease.status == "ACTIVE" %}
                     <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Active</span>
                   {% elif lease.status == "DRAFT" %}
                     <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Draft</span>
+                  {% elif lease.is_settled %}
+                    <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
+                      Ended · settled account
+                    </span>
                   {% else %}
-                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Ended</span>
+                    <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                      Ended {{ lease.stopped_on|date:"M j, Y" }}
+                    </span>
+                  {% endif %}
+                  {% if lease.status == "ACTIVE" and lease.needs_onboarding %}
+                    <span class="mt-1 block rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
+                      Needs setup
+                    </span>
                   {% endif %}
                 </td>
                 <td class="py-3 text-right">

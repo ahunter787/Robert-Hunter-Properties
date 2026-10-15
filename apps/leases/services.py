@@ -13,7 +13,6 @@ import datetime as dt
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -24,6 +23,7 @@ from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
     Lease,
+    LeaseAccountStatus,
     LeaseOnboarding,
     LeaseStatus,
     NnnRate,
@@ -35,6 +35,11 @@ from apps.ledger.models import ChargeKind, PaymentMethod
 
 #: The smallest amount a rent period or an NNN rate may carry.
 MINIMUM_AMOUNT = Decimal("0.01")
+
+
+def _date_label(value: dt.date) -> str:
+    """Portal date style for human-readable audit summaries."""
+    return f"{value:%b} {value.day}, {value.year}"
 
 
 @dataclass
@@ -311,7 +316,7 @@ def set_rent_period_amount(
         AuditAction.RENT_PERIOD_CHANGED,
         obj=period,
         lease=period.lease,
-        summary=f"Rent from {period.effective_from} set to {amount} (was {previous})",
+        summary=f"Rent from {_date_label(period.effective_from)} set to {amount} (was {previous})",
         amount=amount,
         previous=previous,
         effective_from=period.effective_from,
@@ -380,7 +385,7 @@ def stage_nnn_rate(
         AuditAction.NNN_RATE_SET,
         obj=rate,
         lease=lease,
-        summary=f"NNN set to {monthly_amount} a month from {effective_from}",
+        summary=f"NNN set to {monthly_amount} a month from {_date_label(effective_from)}",
         amount=monthly_amount,
         effective_from=effective_from,
     )
@@ -423,7 +428,7 @@ def add_rent_period(
         AuditAction.RENT_PERIOD_CHANGED,
         obj=period,
         lease=lease,
-        summary=f"Rent from {period.effective_from} set to {amount}",
+        summary=f"Rent from {_date_label(period.effective_from)} set to {amount}",
         amount=amount,
         effective_from=period.effective_from,
     )
@@ -447,7 +452,7 @@ def remove_rent_period(period: RentPeriod, *, actor=None) -> None:
         AuditAction.RENT_PERIOD_CHANGED,
         obj=lease,
         lease=lease,
-        summary=f"Rent from {effective_from} removed",
+        summary=f"Rent from {_date_label(effective_from)} removed",
         effective_from=effective_from,
     )
 
@@ -495,8 +500,7 @@ def onboard_lease(
         )
     if not lease.is_retroactive:
         raise ValidationError(
-            "This tenancy begins in the current month or later: raise its charges in the "
-            "ordinary way."
+            "This tenancy begins in the current month or later. Use Post due rent charges."
         )
 
     if method == OnboardingMethod.HISTORY:
@@ -504,10 +508,11 @@ def onboard_lease(
             raise ValidationError(
                 {"received_total": "Say what the tenant had paid before RHP (0 if nothing)."}
             )
-        # The whole term is billed from its start; the payment settles it oldest-first.
+        # The whole term is billed from its start, up to today: nothing is charged ahead
+        # of the day it falls due (P4-Q7). The payment settles it oldest-first.
         lease.billing_start_date = billing_start_date or lease.start_date
         lease.save(update_fields=["billing_start_date", "updated_at"])
-        through = through or ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
+        through = through or ledger_services.charges_due()
         ledger_services.generate_charges(lease, through=through, actor=actor)
         if received_total > ZERO:
             ledger_services.record_payment(
@@ -515,8 +520,8 @@ def onboard_lease(
                 amount=received_total,
                 payment_date=as_of,
                 method=PaymentMethod.OTHER,
-                external_reference="Opening position",
-                notes="Everything received before RHP was brought in (E4).",
+                external_reference="Opening balance",
+                notes="Payments received before RHP began tracking this lease.",
                 actor=actor,
             )
     else:
@@ -526,7 +531,7 @@ def onboard_lease(
                 {"billing_start_date": "The first month billed has to fall inside the term."}
             )
         if opening_amount is None:
-            raise ValidationError({"opening_amount": "Enter 0 if the tenancy was square."})
+            raise ValidationError({"opening_amount": "Enter 0 if the account was paid in full."})
         lease.billing_start_date = cutover
         lease.save(update_fields=["billing_start_date", "updated_at"])
         if opening_amount > ZERO:
@@ -545,7 +550,7 @@ def onboard_lease(
                 amount=-opening_amount,
                 payment_date=as_of,
                 method=PaymentMethod.OTHER,
-                external_reference="Opening position",
+                external_reference="Opening balance",
                 notes="Credit brought forward from before RHP (E4).",
                 actor=actor,
             )
@@ -568,8 +573,8 @@ def onboard_lease(
         obj=lease,
         lease=lease,
         summary=(
-            f"{lease.unit.label} brought into RHP by "
-            f"{onboarding.get_method_display().lower()} as of {as_of}"
+            f"Prior activity for {lease.unit.label} set up using "
+            f"{onboarding.get_method_display().lower()} as of {_date_label(as_of)}"
         ),
         method=method,
         as_of=as_of,
@@ -578,3 +583,189 @@ def onboard_lease(
         billing_start_date=lease.billing_start_date,
     )
     return onboarding
+
+
+# --- ending a tenancy, and closing its money (P4-Q1, P4-Q2, P4-Q3) ---------
+
+
+def _set_status(lease: Lease, status: str, *, fields: list[str] | None = None) -> None:
+    lease.status = status
+    lease.save(update_fields=["status", *(fields or []), "updated_at"])
+
+
+@transaction.atomic
+def end_lease(
+    lease: Lease,
+    *,
+    ended_on: dt.date,
+    reason: str,
+    note: str,
+    keep=(),
+    actor=None,
+) -> list:
+    """End a running tenancy: the paperwork, then the money (P4-Q1, P4-Q2).
+
+    The reason and its detail are required, because ending a tenancy is a decision somebody
+    has to be able to cite later — in a dispute, in a report, or in a conversation with the
+    tenant. The close-out then cancels the months the tenancy will not use, by adjustment,
+    and leaves the ones the office ticked to keep. Nothing is deleted.
+    """
+    if lease.status != LeaseStatus.ACTIVE:
+        raise ValidationError(
+            "Only a running tenancy can be ended. A settled tenancy is closed, and a draft "
+            "has not started."
+        )
+    if ended_on is None:
+        raise ValidationError({"ended_on": "Say which day the tenancy stops."})
+    if ended_on < lease.start_date:
+        raise ValidationError({"ended_on": "A tenancy cannot end before it starts."})
+    if not reason:
+        raise ValidationError({"reason": "Say why the tenancy is ending."})
+    if not note.strip():
+        raise ValidationError({"note": "Add the detail behind the reason."})
+
+    # Imported here: the ledger imports this module for the E4 onboarding seam, so a
+    # module-level import would close the circle.
+    from apps.ledger import services as ledger_services
+
+    lease.ended_on = ended_on
+    lease.end_reason = reason
+    lease.end_reason_note = note.strip()
+    _set_status(
+        lease,
+        LeaseStatus.ENDED,
+        fields=["ended_on", "end_reason", "end_reason_note"],
+    )
+    adjustments = ledger_services.close_out_lease(
+        lease,
+        on=ended_on,
+        keep=keep,
+        reason=f"Tenancy ended {_date_label(ended_on)}",
+        actor=actor,
+    )
+    _forget_cached(lease)
+
+    record(
+        _actor(actor),
+        AuditAction.LEASE_ENDED,
+        obj=lease,
+        lease=lease,
+        summary=(
+            f"{lease.unit.label} ended {_date_label(ended_on)}: "
+            f"{lease.get_end_reason_display().lower()} — {lease.end_reason_note}"
+        ),
+        ended_on=ended_on,
+        end_reason=reason,
+        end_reason_note=lease.end_reason_note,
+        closed_out=len(adjustments),
+        kept=len(list(keep)),
+    )
+    return adjustments
+
+
+@transaction.atomic
+def settle_account(lease: Lease, *, note: str = "", actor=None) -> Lease:
+    """Settle an ended tenancy's financial account when nothing remains unresolved.
+
+    An act, not a state that happens: a person decides the financial relationship is over,
+    so the record says who and when. Refused while anything is owed or held — a write-off is
+    an adjustment the office makes first, and a credit is money RHP is holding.
+    """
+    # Imported here for the same reason as above.
+    from apps.ledger import services as ledger_services
+    from apps.ledger.models import PaymentStatus
+
+    Lease.objects.select_for_update().get(pk=lease.pk)
+    lease.refresh_from_db()
+
+    if lease.status != LeaseStatus.ENDED:
+        raise ValidationError(
+            "Only a tenancy that has ended can be settled. End it first, so the record says "
+            "when the tenancy stopped."
+        )
+    if lease.account_status == LeaseAccountStatus.SETTLED:
+        raise ValidationError("This financial account is already settled.")
+    ledger = ledger_services.build_ledger(lease)
+    if ledger.balance_due > ZERO:
+        raise ValidationError(
+            f"{ledger.balance_due} is still owed on this tenancy. Correct or write it off on "
+            "the ledger first, then settle it."
+        )
+    if ledger.credit > ZERO:
+        raise ValidationError(
+            f"{ledger.credit} is still held for this tenant. Return it or apply it first, then "
+            "settle the account."
+        )
+    if lease.payments.filter(status=PaymentStatus.PENDING).exists():
+        raise ValidationError(
+            "A payment is still pending. Clear or void it before settling the account."
+        )
+    if lease.deposit > ZERO:
+        raise ValidationError(
+            "The recorded security deposit must be fully disposed of before this account can "
+            "be settled. Deposit disposition will be recorded by the move-out workflow."
+        )
+
+    lease.account_status = LeaseAccountStatus.SETTLED
+    lease.settled_at = timezone.now()
+    lease.settled_by = _actor(actor)
+    lease.settlement_note = note.strip()
+    lease.save(
+        update_fields=[
+            "account_status",
+            "settled_at",
+            "settled_by",
+            "settlement_note",
+            "updated_at",
+        ]
+    )
+    _forget_cached(lease)
+    record(
+        _actor(actor),
+        AuditAction.LEASE_SETTLED,
+        obj=lease,
+        lease=lease,
+        summary=f"{lease.unit.label} account settled: nothing owed and nothing held"
+        + (f" — {note.strip()}" if note.strip() else ""),
+        note=note.strip(),
+    )
+    return lease
+
+
+@transaction.atomic
+def reopen_account(lease: Lease, *, reason: str, actor=None) -> Lease:
+    """Reopen only the financial account; occupancy always remains ended."""
+    Lease.objects.select_for_update().get(pk=lease.pk)
+    lease.refresh_from_db()
+    if lease.status != LeaseStatus.ENDED:
+        raise ValidationError("Only an ended tenancy's financial account can be reopened.")
+    if lease.account_status != LeaseAccountStatus.SETTLED:
+        raise ValidationError("Only a settled financial account can be reopened.")
+    if not reason.strip():
+        raise ValidationError({"reason": "Say why the tenancy is being reopened."})
+
+    settled_at_before = lease.settled_at
+    lease.account_status = LeaseAccountStatus.OPEN
+    lease.settled_at = None
+    lease.settled_by = None
+    lease.settlement_note = ""
+    lease.save(
+        update_fields=[
+            "account_status",
+            "settled_at",
+            "settled_by",
+            "settlement_note",
+            "updated_at",
+        ]
+    )
+    _forget_cached(lease)
+    record(
+        _actor(actor),
+        AuditAction.LEASE_REOPENED,
+        obj=lease,
+        lease=lease,
+        summary=f"{lease.unit.label} financial account reopened: {reason.strip()}",
+        reason=reason.strip(),
+        settled_at_before=settled_at_before,
+    )
+    return lease

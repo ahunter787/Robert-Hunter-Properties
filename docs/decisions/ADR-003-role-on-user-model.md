@@ -39,8 +39,10 @@ checks) plus a groups/permissions system.
    403-ing them (ADR-010), so this removes an inconsistency rather than adding one. Nothing is
    disclosed either way, and the 403 rule stands everywhere else — a tenant reaching `/manage/` is
    still refused.
-5. **Role changes require `SUPERADMIN`**; account administration (list, create, deactivate,
-   re-invite) requires `ADMIN` or above; `MANAGER` and `MAINTENANCE` reach `/manage/` only.
+5. **Role changes require `SUPERADMIN`**. `MANAGER` is the ordinary portfolio-wide operating role and may
+   manage properties, units, leases, schedules, expense recoveries, tenant invitations and activation,
+   settlements, reopenings, and financial corrections. `ADMIN`/`SUPERADMIN` additionally control Django
+   administration, site configuration, and destructive deletion. Per-property assignments are deferred.
 6. Tenant-owned rows are read through `tenant_scope(user, queryset, owner_field)`, which returns the
    full queryset for staff and the owner-filtered queryset for a tenant. Phase 2+ reuses it for
    leases, charges, documents, and maintenance requests.

@@ -7,6 +7,7 @@ the session so there is no id in a tenant-facing URL to enumerate.
 
 import datetime as dt
 import logging
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
@@ -36,7 +37,10 @@ from apps.audit.models import AuditAction
 from apps.audit.services import record
 from apps.leases import services as lease_services
 from apps.leases.forms import (
+    LeaseEndForm,
     LeaseForm,
+    LeaseReopenForm,
+    LeaseSettleForm,
     LeaseTenantFormSet,
     NnnRateForm,
     OnboardingForm,
@@ -55,10 +59,12 @@ from apps.properties.models import Unit
 logger = logging.getLogger("apps.leases")
 
 
-def document_response(field_file) -> FileResponse:
+def document_response(field_file, *, filename="") -> FileResponse:
     """Serve an uploaded document from the application, never from the proxy."""
     field_file.open("rb")
-    response = FileResponse(field_file)
+    if filename and not filename.lower().endswith(Path(field_file.name).suffix.lower()):
+        filename += Path(field_file.name).suffix
+    response = FileResponse(field_file, filename=filename)
     response["Cache-Control"] = "private, max-age=300"
     response["X-Content-Type-Options"] = "nosniff"
     return response
@@ -246,14 +252,14 @@ class LeaseActivateView(ManagerRequiredMixin, View):
             messages.error(request, "Add at least one tenant before activating this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
 
-        horizon = ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
+        through = ledger_services.charges_due()
         try:
             with transaction.atomic():
                 lease.status = LeaseStatus.ACTIVE
                 lease.save(update_fields=["status", "updated_at"])
                 schedule = lease_services.generate_rent_schedule(lease, actor=request.user)
                 created = ledger_services.generate_charges(
-                    lease, through=horizon, actor=request.user
+                    lease, through=through, actor=request.user
                 )
                 record(
                     request.user,
@@ -281,10 +287,11 @@ class LeaseActivateView(ManagerRequiredMixin, View):
         if created:
             count = len(created)
             details.append(
-                f"{count} charge{'' if count == 1 else 's'} raised through {horizon:%B %Y}."
+                f"{count} charge{'' if count == 1 else 's'} posted, the latest due "
+                f"{through:%d %B %Y}."
             )
         else:
-            details.append(f"No charge falls due through {horizon:%B %Y}.")
+            details.append(f"No charge has fallen due yet ({through:%d %B %Y}).")
         logger.info("lease activated pk=%s by=%s", lease.pk, request.user.pk)
         messages.success(
             request, f"{lease.unit.label} now has an active lease. " + " ".join(details)
@@ -293,31 +300,195 @@ class LeaseActivateView(ManagerRequiredMixin, View):
 
 
 class LeaseEndView(ManagerRequiredMixin, View):
-    """Active → ended. Ended leases stay readable and stop being editable."""
+    """End a tenancy: two acts on one screen — the paperwork and the money (P4-Q1, P4-Q2).
 
-    http_method_names = ["post"]
+    A GET shows the form with today's date and what the close-out would cancel. The first
+    submit *reviews* that list for the date actually entered; the second ends the tenancy. Two
+    steps rather than one, because changing the end date changes which months are being
+    canceled, and the office should see that before it happens.
+    """
+
+    template_name = "management/lease_end.html"
+
+    def _lease(self, pk) -> Lease:
+        return get_object_or_404(
+            Lease.objects.select_related("unit__property").prefetch_related("charges"), pk=pk
+        )
+
+    def _context(self, lease, form, *, candidates=None, reviewed=False):
+        return {
+            "lease": lease,
+            "form": form,
+            "candidates": candidates if candidates is not None else [],
+            "reviewed": reviewed,
+            "ledger": ledger_services.build_ledger(lease),
+        }
+
+    def get(self, request, pk):
+        lease = self._lease(pk)
+        if lease.status != LeaseStatus.ACTIVE:
+            messages.error(request, "Only a running tenancy can be ended.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        form = LeaseEndForm(lease=lease)
+        through = form.fields["ended_on"].initial
+        return render(
+            request,
+            self.template_name,
+            self._context(
+                lease,
+                form,
+                candidates=ledger_services.close_out_candidates(lease, on=through),
+            ),
+        )
 
     def post(self, request, pk):
-        lease = get_object_or_404(Lease, pk=pk)
+        lease = self._lease(pk)
         if lease.status != LeaseStatus.ACTIVE:
-            messages.error(request, "Only an active lease can be ended.")
+            messages.error(request, "Only a running tenancy can be ended.")
             return redirect("leases:lease-detail", pk=lease.pk)
 
-        lease.status = LeaseStatus.ENDED
-        lease.save(update_fields=["status", "updated_at"])
-        record(
-            request.user,
-            AuditAction.LEASE_ENDED,
-            obj=lease,
-            lease=lease,
-            summary=f"Lease for {lease.unit.label} ended",
-            end_date=lease.end_date,
+        form = LeaseEndForm(request.POST, lease=lease)
+        if not form.is_valid():
+            return render(request, self.template_name, self._context(lease, form))
+
+        ended_on = form.cleaned_data["ended_on"]
+        candidates = list(ledger_services.close_out_candidates(lease, on=ended_on))
+
+        if request.POST.get("stage") != "confirm":
+            # First submit: show what this date actually cancels, and ask again.
+            return render(
+                request,
+                self.template_name,
+                self._context(lease, form, candidates=candidates, reviewed=True),
+            )
+
+        # The screen ticks what to cancel; the service is told what to keep.
+        to_cancel = {int(pk) for pk in request.POST.getlist("cancel")}
+        keep = [charge.pk for charge in candidates if charge.pk not in to_cancel]
+        try:
+            adjustments = lease_services.end_lease(
+                lease,
+                ended_on=ended_on,
+                reason=form.cleaned_data["reason"],
+                note=form.cleaned_data["note"],
+                keep=keep,
+                actor=request.user,
+            )
+        except ValidationError as exc:
+            for field, errors in getattr(exc, "message_dict", {}).items():
+                for error in errors:
+                    form.add_error(field if field in form.fields else None, error)
+            if not getattr(exc, "message_dict", None):
+                form.add_error(None, exc.messages[0])
+            return render(request, self.template_name, self._context(lease, form))
+
+        logger.info("tenancy ended pk=%s by=%s", lease.pk, request.user.pk)
+        canceled_label = (
+            f"{len(adjustments)} charge(s) closed out" if adjustments else "nothing to close out"
         )
-        logger.info("lease ended pk=%s by=%s", lease.pk, request.user.pk)
         messages.success(
-            request, f"The lease for {lease.unit.label} was ended and kept as history."
+            request,
+            f"The tenancy for {lease.unit.label} ended "
+            f"{ended_on:%b} {ended_on.day}, {ended_on.year} — {canceled_label}. "
+            "Its money can still be paid and corrected.",
         )
         return redirect("leases:lease-detail", pk=lease.pk)
+
+
+class LeaseSettleView(ManagerRequiredMixin, View):
+    """Close a tenancy's money for good: nothing owed, nothing held (P4-Q1)."""
+
+    template_name = "management/lease_settle.html"
+
+    def _lease(self, pk) -> Lease:
+        return get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
+
+    def get(self, request, pk):
+        lease = self._lease(pk)
+        refusal = _refuse_settling(request, lease)
+        if refusal:
+            return redirect("leases:lease-detail", pk=lease.pk)
+        return render(
+            request,
+            self.template_name,
+            {
+                "lease": lease,
+                "form": LeaseSettleForm(),
+                "ledger": ledger_services.build_ledger(lease),
+            },
+        )
+
+    def post(self, request, pk):
+        lease = self._lease(pk)
+        if _refuse_settling(request, lease):
+            return redirect("leases:lease-detail", pk=lease.pk)
+        form = LeaseSettleForm(request.POST)
+        if form.is_valid():
+            try:
+                lease_services.settle_account(
+                    lease, note=form.cleaned_data["note"], actor=request.user
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+                return render(
+                    request,
+                    self.template_name,
+                    {
+                        "lease": lease,
+                        "form": form,
+                        "ledger": ledger_services.build_ledger(lease),
+                    },
+                )
+            messages.success(request, f"The financial account for {lease.unit.label} was settled.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        return render(
+            request,
+            self.template_name,
+            {"lease": lease, "form": form, "ledger": ledger_services.build_ledger(lease)},
+        )
+
+
+class LeaseReopenView(ManagerRequiredMixin, View):
+    """Reopen an ended tenancy's financial account without restoring occupancy."""
+
+    template_name = "management/lease_reopen.html"
+
+    def _lease(self, pk) -> Lease:
+        return get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
+
+    def get(self, request, pk):
+        lease = self._lease(pk)
+        if not lease.is_settled:
+            messages.error(request, "Only a settled financial account can be reopened.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        return render(request, self.template_name, {"lease": lease, "form": LeaseReopenForm()})
+
+    def post(self, request, pk):
+        lease = self._lease(pk)
+        form = LeaseReopenForm(request.POST)
+        if form.is_valid():
+            try:
+                lease_services.reopen_account(
+                    lease, reason=form.cleaned_data["reason"], actor=request.user
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+                return render(request, self.template_name, {"lease": lease, "form": form})
+            messages.success(
+                request,
+                f"The financial account for {lease.unit.label} was reopened. The tenancy "
+                "remains ended.",
+            )
+            return redirect("leases:lease-detail", pk=lease.pk)
+        return render(request, self.template_name, {"lease": lease, "form": form})
+
+
+def _refuse_settling(request, lease) -> bool:
+    """Settling is for a tenancy that has ended; anything else is refused out loud."""
+    if lease.status == LeaseStatus.ENDED:
+        return False
+    messages.error(request, "Only a tenancy that has ended can be settled.")
+    return True
 
 
 # --- E1: the rent schedule and the NNN amount ------------------------------
@@ -345,7 +516,7 @@ def _refuse_ended_terms(request, lease) -> bool:
     return True
 
 
-class RentScheduleGenerateView(AdminRequiredMixin, View):
+class RentScheduleGenerateView(ManagerRequiredMixin, View):
     """Work the term's rent periods out again, leaving charged periods alone."""
 
     http_method_names = ["post"]
@@ -370,7 +541,7 @@ class RentScheduleGenerateView(AdminRequiredMixin, View):
         return redirect("leases:lease-detail", pk=lease.pk)
 
 
-class RentPeriodUpdateView(AdminRequiredMixin, View):
+class RentPeriodUpdateView(ManagerRequiredMixin, View):
     """Set one period's rent by hand — an agreed figure rather than a formula."""
 
     template_name = "management/lease_rent_period_form.html"
@@ -421,7 +592,7 @@ class RentPeriodUpdateView(AdminRequiredMixin, View):
         return render(request, self.template_name, self._context(period, form))
 
 
-class NnnRateStageView(AdminRequiredMixin, View):
+class NnnRateStageView(ManagerRequiredMixin, View):
     """Stage the NNN amount that applies from a date (E1, ADR-013)."""
 
     template_name = "management/lease_nnn_form.html"
@@ -461,14 +632,16 @@ class NnnRateStageView(AdminRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f"NNN staged at {rate.monthly_amount} a month from {rate.effective_from}.",
+                    f"Triple-net (NNN) amount set to ${rate.monthly_amount:,.2f} a month from "
+                    f"{rate.effective_from:%b} {rate.effective_from.day}, "
+                    f"{rate.effective_from.year}.",
                 )
                 return redirect("leases:lease-detail", pk=lease.pk)
 
         return render(request, self.template_name, self._context(lease, form))
 
 
-class RentPeriodCreateView(AdminRequiredMixin, View):
+class RentPeriodCreateView(ManagerRequiredMixin, View):
     """Add a dated rent amount the lease states — a mid-term step, an extra space (E4)."""
 
     template_name = "management/lease_rent_period_new.html"
@@ -514,7 +687,7 @@ class RentPeriodCreateView(AdminRequiredMixin, View):
         return render(request, self.template_name, self._context(lease, form))
 
 
-class RentPeriodRemoveView(AdminRequiredMixin, View):
+class RentPeriodRemoveView(ManagerRequiredMixin, View):
     """Remove a dated amount the office added, while nothing has been charged for it."""
 
     http_method_names = ["post"]
@@ -534,7 +707,7 @@ class RentPeriodRemoveView(AdminRequiredMixin, View):
         return redirect("leases:lease-detail", pk=period.lease_id)
 
 
-class LeaseOnboardView(AdminRequiredMixin, View):
+class LeaseOnboardView(ManagerRequiredMixin, View):
     """Bring a tenancy that began before RHP into it, without inventing a debt (E4)."""
 
     template_name = "management/lease_onboard.html"
@@ -543,7 +716,7 @@ class LeaseOnboardView(AdminRequiredMixin, View):
         return {
             "lease": lease,
             "form": form,
-            "horizon": ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS),
+            "charges_through": ledger_services.charges_due(),
             "rent_periods": lease.rent_periods_ordered,
             "nnn_rates": lease.nnn_rates_ordered,
             "expected_months": _months_between(lease.bill_from, timezone.localdate()),
@@ -552,7 +725,7 @@ class LeaseOnboardView(AdminRequiredMixin, View):
     def get(self, request, pk):
         lease = _schedule_lease(pk)
         if not lease.needs_onboarding:
-            messages.info(request, "This tenancy has already been brought into RHP.")
+            messages.info(request, "Prior activity has already been set up for this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
         form = OnboardingForm(
             initial={
@@ -566,7 +739,7 @@ class LeaseOnboardView(AdminRequiredMixin, View):
     def post(self, request, pk):
         lease = _schedule_lease(pk)
         if not lease.needs_onboarding:
-            messages.info(request, "This tenancy has already been brought into RHP.")
+            messages.info(request, "Prior activity has already been set up for this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
 
         form = OnboardingForm(request.POST)
@@ -594,9 +767,9 @@ class LeaseOnboardView(AdminRequiredMixin, View):
                 )
                 messages.success(
                     request,
-                    f"{lease.unit.label} was brought into RHP by "
-                    f"{onboarding.get_method_display().lower()}. Charges are raised from "
-                    f"{lease.bill_from} onward.",
+                    f"Prior activity for {lease.unit.label} was set up using "
+                    f"{onboarding.get_method_display().lower()}. Charges are posted from "
+                    f"{lease.bill_from:%b} {lease.bill_from.day}, {lease.bill_from.year} onward.",
                 )
                 return redirect("leases:lease-detail", pk=lease.pk)
         return render(request, self.template_name, self._context(lease, form))
@@ -650,7 +823,7 @@ class LeaseDocumentView(ManagerRequiredMixin, View):
         lease = get_object_or_404(Lease, pk=pk)
         if not lease.lease_file:
             raise Http404("This lease has no document attached.")
-        return document_response(lease.lease_file)
+        return document_response(lease.lease_file, filename=lease.document_name)
 
 
 # --- The tenant's own lease ------------------------------------------------
@@ -694,4 +867,4 @@ class TenantLeaseDocumentView(TenantAreaMixin, View):
         lease = visible_lease_for(request.user)
         if lease is None or not lease.lease_file:
             raise Http404("There is no lease document on your account.")
-        return document_response(lease.lease_file)
+        return document_response(lease.lease_file, filename=lease.document_name)

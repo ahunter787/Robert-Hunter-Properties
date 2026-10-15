@@ -38,6 +38,17 @@ class ChargeKind(models.TextChoices):
     ADJUSTMENT = "ADJUSTMENT", "Adjustment"
 
 
+#: The kinds a tenancy raises from its own schedule — one per month, from the lease. These
+#: are what a close-out cancels when a tenancy ends (P4-Q2). A one-off charge, a brought-
+#: forward balance or a correction is a decision somebody made; it is left for a person to
+#: correct rather than swept up with the months the tenancy will not use.
+SCHEDULED_KINDS = (
+    ChargeKind.RENT,
+    ChargeKind.NNN,
+    ChargeKind.RESPONSIBILITY,
+)
+
+
 class Direction(models.TextChoices):
     """Which way an entry moves the balance."""
 

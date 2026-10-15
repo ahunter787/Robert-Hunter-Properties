@@ -1,9 +1,4 @@
-"""The ledger role matrix, route by route.
-
-Routine desk work is for managers; anything that changes what history means —
-a reversal, an adjustment — is for admins. Maintenance users and tenants have no
-business in the accounting area at all.
-"""
+"""The ledger role matrix: managers perform every portfolio operation."""
 
 import datetime as dt
 from decimal import Decimal
@@ -107,14 +102,14 @@ def test_anonymous_visitors_are_sent_to_sign_in(client):
         assert reverse("accounts:login") in response["Location"]
 
 
-def test_a_manager_runs_the_desk_but_cannot_undo_anything(client):
+def test_a_manager_runs_the_desk_and_can_make_audited_corrections(client):
     world = ledger_world()
     client.force_login(make_manager(username="ledger-manager"))
 
     for url in world["gets"]:
         assert client.get(url).status_code == 200, f"{url} should be reachable"
     for url in world["admin_gets"]:
-        assert client.get(url).status_code == 403, f"{url} is an admin action"
+        assert client.get(url).status_code == 200, f"{url} is an operational action"
 
     assert client.post(reverse("ledger:rent-charges", args=[world["lease"].pk])).status_code == 302
 

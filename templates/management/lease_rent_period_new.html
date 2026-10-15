@@ -23,7 +23,7 @@
         <ul class="mt-3 space-y-1 text-sm">
           {% for period in lease.rent_periods_ordered %}
             <li>
-              <span class="text-ink-muted">{{ period.effective_from }}</span>
+              <span class="text-ink-muted">{{ period.effective_from|date:"M j, Y" }}</span>
               <span class="ml-2 font-medium">{{ period.amount|money }}</span>
               <span class="ml-2 text-xs text-ink-muted">{{ period.get_origin_display }}</span>
             </li>

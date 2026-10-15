@@ -9,7 +9,6 @@ and every queryset is filtered by it.
 import logging
 from decimal import Decimal
 
-from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
@@ -18,12 +17,11 @@ from django.views import View
 from django.views.generic import DetailView, TemplateView
 
 from apps.accounts.permissions import (
-    AdminRequiredMixin,
     ManagerRequiredMixin,
     TenantAreaMixin,
 )
 from apps.audit.services import events_for_lease
-from apps.leases.models import Lease, LeaseStatus
+from apps.leases.models import Lease
 from apps.ledger import services
 from apps.ledger.forms import (
     AdjustmentForm,
@@ -99,14 +97,11 @@ class LeaseLedgerView(ManagerRequiredMixin, DetailView):
         context["ledger"] = services.build_ledger(self.object)
         context["history"] = events_for_lease(self.object, limit=25)
         context["is_admin"] = self.request.user.is_admin_or_above
-        context["charge_form"] = kwargs.get("charge_form") or ChargeForm()
-        context["payment_form"] = kwargs.get("payment_form") or PaymentForm()
-        context["horizon_months"] = settings.RHP_CHARGE_HORIZON_MONTHS
-        context["horizon"] = services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
-        context["rent_dates"] = (
-            services.rent_due_dates(self.object, through=context["horizon"])
-            if self.object.status != LeaseStatus.DRAFT
-            else []
+        # The screen links to the charge and payment screens rather than rendering forms of
+        # its own, so the only thing it asks the service is whether there is anything to post
+        # — through the service's own eligibility rule, not a copy of it.
+        context["can_post_due_charges"] = services.has_due_charges_to_post(
+            self.object, through=services.charges_due()
         )
         return context
 
@@ -124,9 +119,9 @@ class GenerateRentChargesView(ManagerRequiredMixin, View):
 
     def post(self, request, pk):
         lease = _ledger_lease(pk)
-        horizon = services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
+        through = services.charges_due()
         try:
-            created = services.generate_charges(lease, through=horizon, actor=request.user)
+            created = services.generate_charges(lease, through=through, actor=request.user)
         except ValidationError as exc:
             messages.error(request, _explain(exc))
             return redirect("ledger:lease-ledger", pk=lease.pk)
@@ -135,13 +130,13 @@ class GenerateRentChargesView(ManagerRequiredMixin, View):
             parts = [
                 _charge_count(created, ChargeKind.RENT, "rent charge"),
                 _charge_count(created, ChargeKind.NNN, "NNN charge"),
-                _charge_count(created, ChargeKind.RESPONSIBILITY, "responsibility charge"),
+                _charge_count(created, ChargeKind.RESPONSIBILITY, "property charge"),
             ]
             parts = [part for part in parts if part]
             logger.info("charges created lease=%s count=%s", lease.pk, len(created))
-            messages.success(request, f"{', '.join(parts)} created through {horizon:%B %Y}.")
+            messages.success(request, f"{', '.join(parts)} posted for {lease.unit.label}.")
         else:
-            messages.info(request, f"Charges are already raised through {horizon:%B %Y}.")
+            messages.info(request, f"No due charges were available to post for {lease.unit.label}.")
         return redirect("ledger:lease-ledger", pk=lease.pk)
 
 
@@ -175,7 +170,10 @@ class ChargeCreateView(ManagerRequiredMixin, View):
             return render(request, self.template_name, {"lease": lease, "form": form})
 
         logger.info("charge created pk=%s lease=%s by=%s", charge.pk, lease.pk, request.user.pk)
-        messages.success(request, "The charge was added.")
+        messages.success(
+            request,
+            f"One-time charge of ${charge.amount:,.2f} posted for {lease.unit.label}.",
+        )
         return redirect("ledger:lease-ledger", pk=lease.pk)
 
 
@@ -211,7 +209,10 @@ class PaymentCreateView(ManagerRequiredMixin, View):
             return render(request, self.template_name, {"lease": lease, "form": form})
 
         logger.info("payment recorded pk=%s lease=%s by=%s", payment.pk, lease.pk, request.user.pk)
-        messages.success(request, "The payment was recorded.")
+        messages.success(
+            request,
+            f"Payment of ${payment.amount:,.2f} recorded for {lease.unit.label}.",
+        )
         return redirect("ledger:lease-ledger", pk=lease.pk)
 
 
@@ -222,7 +223,10 @@ class PaymentClearView(ManagerRequiredMixin, View):
         payment = get_object_or_404(Payment.objects.select_related("lease"), pk=pk)
         try:
             services.clear_payment(payment, actor=request.user)
-            messages.success(request, "The payment is marked as cleared.")
+            messages.success(
+                request,
+                f"Payment of ${payment.amount:,.2f} cleared for {payment.lease.unit.label}.",
+            )
         except ValidationError as exc:
             messages.error(request, _explain(exc))
         return redirect("ledger:lease-ledger", pk=payment.lease_id)
@@ -241,13 +245,16 @@ class PaymentVoidView(ManagerRequiredMixin, View):
             services.void_payment(
                 payment, actor=request.user, reason=form.cleaned_data.get("reason", "")
             )
-            messages.success(request, "The pending payment was voided.")
+            messages.success(
+                request,
+                f"Pending payment of ${payment.amount:,.2f} voided for {payment.lease.unit.label}.",
+            )
         except ValidationError as exc:
             messages.error(request, _explain(exc))
         return redirect("ledger:lease-ledger", pk=payment.lease_id)
 
 
-class PaymentReverseView(AdminRequiredMixin, View):
+class PaymentReverseView(ManagerRequiredMixin, View):
     """Undo a cleared payment, by adding the offsetting entry."""
 
     template_name = "management/ledger_reverse.html"
@@ -291,11 +298,15 @@ class PaymentReverseView(AdminRequiredMixin, View):
             reversal.pk,
             request.user.pk,
         )
-        messages.success(request, "The payment was reversed; the original entry stays visible.")
+        messages.success(
+            request,
+            f"Payment of ${payment.amount:,.2f} reversed for {payment.lease.unit.label}; "
+            "the original entry remains visible.",
+        )
         return redirect("ledger:lease-ledger", pk=payment.lease_id)
 
 
-class ChargeAdjustView(AdminRequiredMixin, View):
+class ChargeAdjustView(ManagerRequiredMixin, View):
     """Correct a charge, by adding an entry that says what was wrong.
 
     The amount arrives holding what is **still owed** on the charge, so the
@@ -307,8 +318,13 @@ class ChargeAdjustView(AdminRequiredMixin, View):
     template_name = "management/ledger_adjust.html"
 
     def _charge(self, pk):
+        # A correction cannot be corrected: the lookup refuses one, so a hand-made POST to
+        # this URL cannot hide money the way adjusting an adjustment used to (404, not 500).
         return get_object_or_404(
-            Charge.objects.select_related("lease", "lease__unit__property"), pk=pk
+            Charge.objects.select_related("lease", "lease__unit__property").exclude(
+                kind=ChargeKind.ADJUSTMENT
+            ),
+            pk=pk,
         )
 
     def _line(self, charge):
@@ -365,7 +381,11 @@ class ChargeAdjustView(AdminRequiredMixin, View):
             form.add_error(None, _explain(exc))
             return render(request, self.template_name, self._context(charge, line, form))
 
-        messages.success(request, "The adjustment was added.")
+        messages.success(
+            request,
+            f"Adjustment of ${form.cleaned_data['amount']:,.2f} added to "
+            f"{charge.description} for {charge.lease.unit.label}.",
+        )
         return redirect("ledger:lease-ledger", pk=charge.lease_id)
 
 

@@ -23,7 +23,8 @@ to later phases and are labelled rather than faked.
   `Lease.unit` without reshaping anything.
 - **Media:** the property banner photo and the tenant photo are both stored under randomised names and
   served through permission-checked views, never by the web server or the proxy.
-- **Tenant records:** created and changed by admins; managers have read access (`/manage/accounts/`).
+- **Tenant records:** managers and administrators create, invite, activate, and maintain tenant records
+  (`/manage/accounts/`). Role changes remain superadmin-only; destructive deletion remains admin-only.
 
 ## Decisions that govern it
 

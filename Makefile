@@ -102,6 +102,19 @@ check: ## Run Django system checks (development settings)
 		echo "$$unreadable"; exit 1; \
 	fi
 	$(UV) run python manage.py check
+	@# A migration that was written but never applied fails in the browser, not here, unless
+	@# this says so: the development stack's container only migrates when it starts, and a
+	@# container that has been up for days predates the migration. Skipped, not failed, when
+	@# the stack is down — there is nothing to check against.
+	@if $(UV) run python -c "import os, django; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development'); django.setup(); from django.db import connection; connection.ensure_connection()" >/dev/null 2>&1; then \
+		$(UV) run python manage.py migrate --check >/dev/null 2>&1 \
+			|| { echo "The development database is behind this code — run 'make migrate'."; $(UV) run python manage.py migrate --check; exit 1; }; \
+	else \
+		echo "  (the development database is not reachable: the migration check is skipped)"; \
+	fi
+
+migrate-check: ## Fail when the development database is behind this code
+	$(UV) run python manage.py migrate --check
 
 perms: ## Make every checkout file readable by the containers
 	@find . -path ./.git -prune -o -path ./.venv -prune -o -path ./.uv-cache -prune \

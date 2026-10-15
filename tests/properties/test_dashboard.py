@@ -46,15 +46,15 @@ def test_a_manager_sees_the_active_tenant_count(client):
     assert "active accounts" in response.content.decode()
 
 
-def test_a_manager_does_not_see_invitation_administration(client):
+def test_a_manager_sees_invitation_administration(client):
     make_tenant(username="plain-tenant")
 
     response = board(client, make_manager(username="plain-manager"))
     body = response.content.decode()
 
-    assert "tenant_invited_count" not in response.context
-    assert "Invitations" not in body
-    assert "Invite a tenant" not in body
+    assert "tenant_invited_count" in response.context
+    assert "Invitations" in body
+    assert "Invite a tenant" in body
 
 
 def test_an_admin_sees_the_invitation_count(client):
@@ -78,10 +78,9 @@ def test_a_maintenance_user_sees_neither_board(client):
     assert "Your access" in body
 
 
-def test_the_board_says_what_is_not_counted_yet(client):
+def test_the_board_contains_no_development_placeholders(client):
     body = board(client, make_manager(username="honest-manager")).content.decode()
 
-    assert "Not counted yet" in body
-    # Money is real from Phase 4 on; maintenance counters are still to come.
-    assert "Phase 7" in body
+    assert "Not counted yet" not in body
+    assert "Phase 7" not in body
     assert "Phase 4" not in body

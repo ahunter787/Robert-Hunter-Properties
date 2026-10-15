@@ -74,7 +74,9 @@ class PropertyResponsibility(models.Model):
     is_active = models.BooleanField(
         default=True,
         db_index=True,
-        help_text="An inactive responsibility raises no new charges; its history stays.",
+        help_text=(
+            "An inactive expense recovery posts no new charges; its history remains available."
+        ),
     )
     note = models.CharField(max_length=200, blank=True)
     created_by = models.ForeignKey(

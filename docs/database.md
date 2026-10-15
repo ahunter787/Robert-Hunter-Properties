@@ -71,7 +71,7 @@ requires Pillow, which is why it is a runtime dependency (ADR-006, ADR-009).
 
 | Table | Purpose | Notes |
 | --- | --- | --- |
-| `leases_lease` | one tenancy of one unit | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)` — `lease_ends_on_or_after_it_starts`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. `monthly_rent` and `deposit` are `Decimal(12,2)`; `rent_due_day` is 1–31; `lease_file` holds `lease_documents/<uuid><ext>` |
+| `leases_lease` | one tenancy of one unit and its financial-account state | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)`; `CheckConstraint(account_status='OPEN' OR (account_status='SETTLED' AND status='ENDED' AND settled_at IS NOT NULL))`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. Occupancy is `DRAFT`/`ACTIVE`/`ENDED`; `account_status` is `OPEN`/`SETTLED`; current settlement metadata is `settled_at`, `settled_by`, and `settlement_note`. `monthly_rent` and `deposit` are `Decimal(12,2)`; `lease_file` holds `lease_documents/<uuid><ext>` |
 | `leases_leasetenant` | the people on a lease | `UniqueConstraint(lease, tenant)` and `UniqueConstraint(lease, condition=is_primary=True)` — one primary contact per lease; `lease` is **`CASCADE`**, `tenant` is **`PROTECT`**, so a person with tenancy history cannot be deleted |
 
 **Occupancy is derived, never stored.** There is no `is_occupied` column: a unit is occupied while an
@@ -82,7 +82,9 @@ A unit that is out of service is a third state — neither occupied nor vacant.
 **Uploads.** A lease document lives in `MEDIA_ROOT` (the `media_data` volume) under a randomised
 filename in `lease_documents/`, is validated for size and type, and is served only by a
 permission-checked view (`LeaseDocumentView` for staff, `TenantLeaseDocumentView` for the tenant on that
-lease). Replacing it, or deleting the lease, deletes the stored file.
+lease). `Lease.lease_document_name` separately stores the readable title or original uploaded filename;
+legacy files without display metadata read "Signed lease" until staff name them. Replacing it, or
+deleting the lease, deletes the stored file.
 
 ## Ledger and audit tables (Phase 4)
 

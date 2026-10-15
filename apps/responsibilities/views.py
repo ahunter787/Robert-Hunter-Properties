@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
-from apps.accounts.permissions import AdminRequiredMixin
+from apps.accounts.permissions import ManagerRequiredMixin
 from apps.properties.models import Property
 from apps.responsibilities import services
 from apps.responsibilities.forms import CycleForm, ResponsibilityForm, SharesForm
@@ -59,7 +59,7 @@ def _refuse_locked(request, cycle) -> bool:
     return True
 
 
-class ResponsibilityCreateView(AdminRequiredMixin, View):
+class ResponsibilityCreateView(ManagerRequiredMixin, View):
     """Add a responsibility to a property."""
 
     template_name = "management/responsibility_form.html"
@@ -93,8 +93,8 @@ class ResponsibilityCreateView(AdminRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f"{responsibility.label} added to {property_obj.name}. Stage its first bill "
-                    "to charge it.",
+                    f"{responsibility.label} added to {property_obj.name}. Enter its first bill "
+                    "when the amount is known.",
                 )
                 return redirect("portfolio:property-detail", pk=property_obj.pk)
 
@@ -105,7 +105,7 @@ class ResponsibilityCreateView(AdminRequiredMixin, View):
         )
 
 
-class ResponsibilityUpdateView(AdminRequiredMixin, View):
+class ResponsibilityUpdateView(ManagerRequiredMixin, View):
     """Rename a responsibility, change its cycle length, or stop it."""
 
     template_name = "management/responsibility_form.html"
@@ -153,8 +153,8 @@ class ResponsibilityUpdateView(AdminRequiredMixin, View):
         )
 
 
-class CycleStageView(AdminRequiredMixin, View):
-    """Stage a property bill: its total, its months, and the units' shares."""
+class CycleStageView(ManagerRequiredMixin, View):
+    """Enter a property bill: its total, billing period, and unit allocations."""
 
     template_name = "management/responsibility_cycle_form.html"
 
@@ -179,6 +179,7 @@ class CycleStageView(AdminRequiredMixin, View):
             amounts = {share.unit_id: share.monthly_amount for share in previous[-1].shares.all()}
         form = CycleForm(
             units=units,
+            responsibility=responsibility,
             initial={
                 "starts_on": services.next_cycle_start(responsibility),
                 "months": responsibility.cycle_months,
@@ -190,7 +191,7 @@ class CycleStageView(AdminRequiredMixin, View):
     def post(self, request, pk):
         responsibility = _responsibility(pk)
         units = _units(responsibility.property)
-        form = CycleForm(request.POST, units=units)
+        form = CycleForm(request.POST, units=units, responsibility=responsibility)
         if form.is_valid():
             try:
                 cycle = services.stage_cycle(
@@ -208,27 +209,32 @@ class CycleStageView(AdminRequiredMixin, View):
                 logger.info("responsibility cycle staged pk=%s by=%s", cycle.pk, request.user.pk)
                 messages.success(
                     request,
-                    f"{responsibility.label} staged for {cycle.months} month"
+                    f"{responsibility.label} billing period scheduled for {cycle.months} month"
                     f"{'' if cycle.months == 1 else 's'} from {cycle.starts_on}. "
-                    "Create charges on each tenancy's ledger to bill it.",
+                    "Post charges on each lease account to bill it.",
                 )
                 return redirect("portfolio:property-detail", pk=responsibility.property_id)
 
         return render(request, self.template_name, self._context(responsibility, form, units))
 
 
-class CycleSharesView(AdminRequiredMixin, View):
+class CycleSharesView(ManagerRequiredMixin, View):
     """Correct the units' monthly amounts on a cycle already staged."""
 
     template_name = "management/responsibility_shares_form.html"
 
     def _context(self, cycle, form, units):
+        cap = cycle.monthly_total
+        assigned = cycle.share_total
         return {
             "cycle": cycle,
             "responsibility": cycle.responsibility,
             "property": cycle.responsibility.property,
             "form": form,
             "units": units,
+            "monthly_cap": cap,
+            "monthly_assigned": assigned,
+            "monthly_left": cap - assigned,
         }
 
     def get(self, request, pk):
@@ -238,15 +244,17 @@ class CycleSharesView(AdminRequiredMixin, View):
         return render(
             request,
             self.template_name,
-            self._context(cycle, SharesForm(units=units, initial_amounts=amounts), units),
+            self._context(
+                cycle, SharesForm(cycle=cycle, units=units, initial_amounts=amounts), units
+            ),
         )
 
     def post(self, request, pk):
         cycle = _cycle(pk)
         units = _units(cycle.responsibility.property)
-        form = SharesForm(request.POST, units=units)
+        form = SharesForm(request.POST, cycle=cycle, units=units)
         if form.is_valid():
-            # A blank field leaves that unit's amount as it is; a typed figure —
+            # A blank field is the share RHP proposes from the sizes; a typed figure —
             # including a zero, which takes the unit out — is what changes (ADR-014).
             amounts = {share.unit_id: share.monthly_amount for share in cycle.shares.all()}
             amounts.update(form.amounts(units))
@@ -258,7 +266,9 @@ class CycleSharesView(AdminRequiredMixin, View):
                 form.add_error(None, _explain(exc))
             else:
                 messages.success(
-                    request, f"{cycle.responsibility.label} from {cycle.starts_on} updated."
+                    request,
+                    f"{cycle.responsibility.label} from {cycle.starts_on:%b} "
+                    f"{cycle.starts_on.day}, {cycle.starts_on.year} updated.",
                 )
                 return redirect("portfolio:property-detail", pk=cycle.responsibility.property_id)
 

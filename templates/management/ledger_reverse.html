@@ -22,7 +22,7 @@
         </div>
         <div>
           <dt class="text-ink-muted">Date received</dt>
-          <dd class="font-medium">{{ payment.payment_date }}</dd>
+          <dd class="font-medium">{{ payment.payment_date|date:"M j, Y" }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Method</dt>
@@ -45,8 +45,8 @@
         </div>
       </form>
       <p class="rhp-help mt-4">
-        The original payment stays on the ledger and a reversal entry is added, so the correction is
-        part of the record rather than a number quietly changing.
+        Reversing this payment adds {{ payment.amount|money }} back to {{ lease.unit.label }}'s account
+        balance. The original payment stays on the ledger and a reversal entry records the correction.
       </p>
     </div>
   </div>

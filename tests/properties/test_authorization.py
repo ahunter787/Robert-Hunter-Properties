@@ -111,15 +111,15 @@ def test_an_admin_may_reach_every_portfolio_page(client, records):
         assert client.get(routes[name][0]).status_code == 405
 
 
-def test_a_manager_can_read_tenants_but_not_administer_them(client, records):
+def test_a_manager_can_administer_tenant_accounts_but_not_roles(client, records):
     tenant = make_tenant(username="visible-tenant")
     client.force_login(make_manager(username="tenant-reading-manager"))
 
     assert client.get(reverse("manage:account-list")).status_code == 200
     assert client.get(reverse("manage:account-detail", args=[tenant.pk])).status_code == 200
 
-    assert client.get(reverse("manage:account-create")).status_code == 403
-    assert client.post(reverse("manage:account-toggle-active", args=[tenant.pk])).status_code == 403
+    assert client.get(reverse("manage:account-create")).status_code == 200
+    assert client.post(reverse("manage:account-toggle-active", args=[tenant.pk])).status_code == 302
     assert (
         client.post(
             reverse("manage:account-role", args=[tenant.pk]), {"role": "MANAGER"}
@@ -128,9 +128,9 @@ def test_a_manager_can_read_tenants_but_not_administer_them(client, records):
     )
 
 
-def test_tenant_list_hides_the_invite_button_from_managers(client):
+def test_tenant_list_offers_the_invite_button_to_managers(client):
     client.force_login(make_manager(username="no-invite-manager"))
 
     body = client.get(reverse("manage:account-list")).content.decode()
 
-    assert "New tenant" not in body
+    assert "New tenant" in body

@@ -17,7 +17,7 @@
     </section>
 
     {% if lease %}
-      <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rhp-card">
           <p class="rhp-eyebrow">Due now</p>
           {% if ledger.due_now > 0 %}
@@ -25,32 +25,26 @@
             {% if ledger.arrears > 0 %}
               <p class="mt-1 text-sm font-medium text-danger">
                 {{ ledger.arrears|money }} past due
-                {% if ledger.arrears_oldest %}· since {{ ledger.arrears_oldest.date }}{% endif %}
+                {% if ledger.arrears_oldest %}· since {{ ledger.arrears_oldest.date|date:"M j, Y" }}{% endif %}
               </p>
             {% else %}
               <p class="mt-1 text-sm text-ink-muted">due today</p>
             {% endif %}
-          {% elif ledger.credit > 0 %}
-            <p class="mt-2 text-3xl font-semibold text-success">{{ ledger.credit|money }}</p>
-            <p class="mt-1 text-sm text-ink-muted">in credit</p>
-          {% else %}
-            <p class="mt-2 text-3xl font-semibold text-ink-muted">Nothing due</p>
-            <p class="mt-1 text-sm text-ink-muted">nothing is owing at the moment</p>
-          {% endif %}
+          {% else %}<p class="mt-2 text-3xl font-semibold">$0.00</p><p class="mt-1 text-sm text-ink-muted">Nothing is due today.</p>{% endif %}
         </div>
 
         <div class="rhp-card">
-          <p class="rhp-eyebrow">Next rent due</p>
+          <p class="rhp-eyebrow">Upcoming</p>
           {% if ledger.next_due_date %}
             <p class="mt-2 text-3xl font-semibold">{{ ledger.next_due_total|money }}</p>
             <p class="mt-1 text-sm text-ink-muted">
-              on {{ ledger.next_due_date }}
+              Due {{ ledger.next_due_date|date:"M j, Y" }}
               {% if ledger.next_due_nnn > 0 %}
-                · rent {{ ledger.next_due_rent|money }} + NNN {{ ledger.next_due_nnn|money }}
+                · rent {{ ledger.next_due_rent|money }} + triple-net (NNN) {{ ledger.next_due_nnn|money }}
               {% elif ledger.next_due_pending %}
                 · payment pending
               {% elif not ledger.next_due_billed %}
-                · not yet billed
+                · not yet posted
               {% endif %}
             </p>
           {% else %}
@@ -60,8 +54,13 @@
         </div>
 
         <div class="rhp-card">
+          <p class="rhp-eyebrow">Account balance</p>
+          {% if ledger.credit > 0 %}<p class="mt-2 text-3xl font-semibold text-success">{{ ledger.credit|money }} credit</p>{% else %}<p class="mt-2 text-3xl font-semibold">{{ ledger.balance_due|money }}</p>{% if ledger.not_yet_due > 0 %}<p class="mt-1 text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}{% endif %}
+        </div>
+
+        <div class="rhp-card">
           <p class="rhp-eyebrow">Lease ends</p>
-          <p class="mt-2 text-3xl font-semibold">{{ lease.end_date }}</p>
+          <p class="mt-2 text-3xl font-semibold">{{ lease.end_date|date:"M j, Y" }}</p>
           <p class="mt-1 text-sm text-ink-muted">
             {% if lease_days_remaining < 0 %}
               this lease has ended
@@ -78,7 +77,7 @@
 
       {% if ledger.not_yet_due > 0 %}
         <p class="text-sm text-ink-muted">
-          {{ ledger.not_yet_due|money }} is billed but not yet due. Your statement shows it month by
+          {{ ledger.not_yet_due|money }} is posted but not yet due. Your statement shows it month by
           month.
         </p>
       {% endif %}
@@ -134,21 +133,5 @@
       </section>
     {% endif %}
 
-    <div class="grid gap-4 lg:grid-cols-2">
-      <section class="rhp-card">
-        <h2 class="text-sm font-semibold">Maintenance</h2>
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Reporting a repair and following its progress arrives with Phase 7. Until then, please
-          contact Robert Hunter Properties the way you always have.
-        </p>
-      </section>
-      <section class="rhp-card">
-        <h2 class="text-sm font-semibold">Announcements</h2>
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Messages from management arrive with Phase 8. Until then, anything important will reach you
-          by email or post.
-        </p>
-      </section>
-    </div>
   </div>
 {% endblock %}

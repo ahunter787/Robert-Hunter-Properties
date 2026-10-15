@@ -1,103 +1,126 @@
-# ADR-017 — What ending a lease does to money
+# ADR-017 — What ending a tenancy does to money
 
-**Status:** Proposed — awaiting the owner's answers to P4-Q1 … P4-Q6
-**Date:** 2026-10-06
-**Supersedes:** nothing. Amends no earlier record, but fills a gap they left.
+**Status:** **Accepted** (owner-decided, 2026-10-07) — the answers to P4-Q1 … P4-Q7 are recorded below
+**Date:** 2026-10-06, decided 2026-10-07
 **Related:** [ADR-007](ADR-007-lease-modeling.md) (lease lifecycle), [ADR-008](ADR-008-rent-ledger.md)
 (append-only ledger, corrections as entries), [ADR-011](ADR-011-tenant-statement.md) (corrections absorbed),
-[the case study](../workflows/tenancy-and-money.md), [Phase 4 record](../phases/phase-04-rent-ledger.md)
+[ADR-020](ADR-020-tenancy-lifecycle.md) (the states themselves), [the case study](../workflows/tenancy-and-money.md),
+[Phase 4 record](../phases/phase-04-rent-ledger.md)
 
 ## Context
 
-`lease.status` is `DRAFT`, `ACTIVE` or `ENDED`, and ending a lease is a deliberate act by a person
-(ADR-007). The ledger is append-only: charges are raised, money is recorded, and mistakes are corrected by
-an adjustment or a reversal rather than an edit (ADR-008).
+Ending a tenancy did nothing to its money. The specification defined the states and listed the ledger's
+actions without connecting them, so:
 
-Nothing connects the two. The specification says nothing about what ending a lease does to money, so:
-
-- a charge can be raised on an ended lease — `create_charge` validates nothing about the lease, and
-  `generate_charges` refuses only a draft and an unplaced retroactive tenancy;
-- an ended lease is listed in `/manage/ledger/` with the same actions as a live one, because `ledger_rows`
+- a charge could be raised on an ended tenancy — `create_charge` validated nothing about the lease, and
+  `generate_charges` refused only a draft and an unplaced retroactive tenancy;
+- an ended tenancy sat in `/manage/ledger/` with the same actions as a live one, because `ledger_rows`
   excludes only drafts;
-- rent already raised for months that will no longer happen has no close-out, so ending a tenancy leaves
-  obligations standing for a term that is over;
-- a lease whose term has passed but which nobody ended stays `ACTIVE`.
-
-The leases app already holds the intended rule — `_refuse_ended_terms`: *"An ended tenancy is history: its
-money stays correctable, its terms do not."* It guards the rent schedule, the NNN rates, onboarding and the
-lease form. The ledger never asks it.
+- rent already raised for months that would no longer happen had no close-out;
+- and a month's rent was raised a month *before* it fell due, so every tenancy that ended left an obligation
+  to unwind.
 
 Evidence: on 2026-10-06, lease 14 was ended at 22:00 and a $1,000 manual charge (#1081) was created against
-it at 22:01, with November's rent already raised. Full timeline in the case study.
+it at 22:01, with November's rent already raised. Repaired the same day by adjustment, nothing deleted.
 
-## Decision — to be recorded when answered
+The answers were worked in Plane, one work item per decision, under *"Charge lifecycle — working area
+(Phase 4)"*.
 
-Each question is recorded in the [Phase 4 record](../phases/phase-04-rent-ledger.md#open-questions-for-the-owner)
-with a stable id, so it can be mirrored to Plane and answered there. The recommendation below becomes the
-decision unless you change it; the specification gains a paragraph for it in the same commit, with a note,
-because the specification is where a rule like this belongs.
+## The decisions, as answered
 
-### P4-Q1 — What "ending a lease" means for money
+### P4-Q7 — Raise rent on its due date, not ahead of it
 
-**Recommended:** ending freezes the **terms** and stops **new obligations**; it does not touch money already
-charged, which stays correctable.
+**Decided:** a charge falls due on its due date and is raised **then**, never before.
+*Owner:* "We'll raise on the due date. We'll address early notification systems like a '5 days until rent is
+due' system in Phase 8."
 
-*Alternative considered:* ended means read-only, including money. Rejected — a tenancy ended with the wrong
-final figure could then never be corrected, which contradicts ADR-008.
+The lease says what will be owed; the ledger records what is owed. The tenant's "coming due" figures were
+already derived from the lease (ADR-012), so billing the future bought nothing and created the whole
+close-out problem. Implemented by removing the charging horizon entirely (`RHP_CHARGE_HORIZON_MONTHS`,
+`generation_horizon`) in favour of one rule, `charges_due()`.
 
-### P4-Q2 — Rent already raised for months that will not happen
+### P4-Q1 — Ending freezes the terms and stops new obligations
 
-**Recommended:** ending **offers a close-out** — each remaining charged month inside the term cancelled by an
-adjustment dated at the end, naming the reason ("tenancy ended 2026-10-06"). Append-only, visible on the
-statement, reversible by another adjustment.
+**Decided:** ending freezes the **terms** and stops **new obligations from the schedule**. Money already
+charged stays and stays correctable.
+*Owner:* "We need a system of ended, rather than simply 'Open / Closed'. If an administrator ends the
+tenancy there needs to be a citable reason."
 
-*Alternatives considered:* (a) leave them and let the balance carry — this is what happens today and it
-produces a debt for a month nobody occupied; (b) delete the charges — refused, because the ledger's whole
-guarantee is that history is never erased; (c) block ending a lease while future charges exist — defensible
-but it turns a paperwork act into a ledger puzzle.
+Occupancy and money now have separate state machines: a tenancy is draft, active, or ended, while its
+financial account is open or settled. Ending carries a reason code and note. The split and settlement rules
+are [ADR-020](ADR-020-tenancy-lifecycle.md).
 
-### P4-Q3 — Which money actions an ended lease still allows
+*Alternative rejected:* ended means read-only, including money. A tenancy ended with the wrong final figure
+could then never be corrected, contradicting ADR-008.
 
-**Recommended:** payments **yes** (arrears get paid after a tenancy ends); adjustments, reversals and voids
-**yes** (they correct history); new charges — manual, generated rent, NNN, responsibility — **no**.
+### P4-Q2 — A close-out, offered at the moment of ending
 
-### P4-Q4 — Where the rule is enforced
+**Decided:** as recommended. Ending reviews what the money will do: every month the tenancy will not use is
+cancelled by a **dated adjustment** naming the reason. Cancel all by default; keep one the tenant still owes.
+Append-only, reversible, and the tenant's statement shows the charge and its correction.
+*Owner:* "We'll use your recommendation."
 
-**Recommended:** in the **services** (`generate_charges`, `create_charge`), because the ledger screen, the
-lease screen and `manage.py generate_rent_charges` all pass through them. A rule enforced only in a view is
-a rule that the next caller will not know about. The screens then hide the actions and say why, in the words
-`_refuse_ended_terms` already uses.
+*Alternatives rejected:* leave the charges and let the arrears sit (produces a debt for a month nobody
+occupied); delete them (the ledger's promise is that history is never erased).
 
-### P4-Q5 — How an ended lease reads in Accounting
+### P4-Q3 — Recurring charges stop; remedial charges need just cause
 
-**Recommended:** it stays listed — money is still owed or held, and hiding it would be worse — but marked
-ended, with no charging actions and its final position stated instead of a next-due projection.
+**Decided:** *recurring* charges (rent, NNN, a responsibility share) stop when the tenancy ends. A
+**post-tenancy charge** — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee — may be
+raised after the end, but must carry its just cause: a **reason code**, the **lease clause** it rests on, and
+its **supporting evidence**.
+*Owner:* "Yes — design it so the tenant can still be charged after the tenancy ends… Separate charge types by
+origin… Require justification and documentation."
 
-### P4-Q6 — Move-out settlement
+**The evidence waits for Phase 6.** The owner's next decision was to *wait for Phase 6 so a charge always has
+its evidence*, so this branch refuses **all** new charges on an ended tenancy and marks the single line the
+post-tenancy mechanism will relax (`refuse_if_not_chargeable`). Reopening a settled financial account does
+not restore occupancy or permit rent; evidence-backed post-tenancy charges remain unavailable until E6.
 
-**Recommended:** not in this work. Deposit returns, deductions, a final statement and a forwarding address
-are a real need and a bigger design; they belong in their own extension, filed under the phase that builds
-it. Recording it here keeps it from being smuggled into this decision.
+Money in and corrections remain allowed on an ended/open account. A settled account locks every mutation
+until a manager reopens the financial account with a reason.
+
+### P4-Q4 — The rule lives in the services
+
+**Decided:** as recommended — one predicate, `Lease.can_be_charged`, consulted by `generate_charges` and
+`create_charge`, so the ledger screen, the lease screen and `manage.py generate_rent_charges` all obey it.
+*Owner:* "Unsure, maybe answered by my related answers. Otherwise, we'll go with your recommendation."
+
+### P4-Q5 — Keep the tenancy in Rent & Payments, and keep the old ledger private
+
+**Decided:** an ended tenancy stays listed and reachable, marked with its financial-account status and final
+position. **A new tenant on the same unit must never see the previous tenancy's ledger.**
+*Owner:* "Yes, keep the tenancy. A new tenant should not see the previous tenants ledger though. But the
+admin should see it if they so wish. Maybe all units have a ledger history that can be expanded to show the
+details."
+
+The last sentence is a new idea — a unit-level ledger history — recorded as **P4-E7** and taken up with the
+reporting work.
+
+### P4-Q6 — Move-out settlement is its own extension
+
+**Decided:** `P4-E5` — the deposit, deductions with reasons, a final statement, a forwarding address — taken
+up after this guard lands. *Owner:* "P4-E5 is good."
 
 ## Consequences
 
-**If the recommendations stand:**
+**Good.** A charge now belongs to the period of the tenancy's life it was raised for. The phantom-obligation
+class of defect is structurally impossible: one predicate, consulted by every path that creates an obligation.
+A tenancy that ends leaves a citable reason and a closed-out ledger, and its money can still be paid and
+corrected. Nothing was added to the ledger's arithmetic, and no table was added.
 
-- The phantom-obligation class of bug becomes structurally impossible, in the same way E4 made phantom
-  arrears impossible for a retroactive tenancy: one predicate, consulted by every path that creates an
-  obligation.
-- Corrections keep working on ended leases, so a final figure can always be made right.
-- Ending a lease becomes a two-part act — the paperwork and the money — and the screen must present that
-  honestly, since the close-out changes what the tenant owes.
-- The specification gains the rule it is missing, and P3-Q1 ("does a lease expire by date") becomes a
-  smaller question, because an expired-but-active lease now has a screen that says so.
-- **P4-E3 (concessions) may shrink:** forgiveness and deferral are charge-lifecycle decisions, and the
-  close-out act is a special case of one. E3 should be re-scoped after this is answered rather than designed
-  in parallel.
+**Accepted.** A record edit is now a publish (`docs-sync`, `plane-sync`, `verify`). A settled *financial
+account* is a condition every money path must consider — occupancy and money are separate lifecycles
+(ADR-020), so the account can be closed while the tenancy's history stays exactly where it is — and the
+tests say so. Until P4-E6, billing a debt found after move-out means reopening the **account**, not the
+tenancy: occupancy stays ended, and rent never restarts.
 
-**Negative / accepted trade-offs:**
+**Deferred, each with its own register row:** P4-E5 (move-out settlement), P4-E6 (post-tenancy charges with
+evidence, blocked by Phase 6), P4-E7 (a unit's ledger history), P3-E2 (a tenant's request for early
+termination and its clauses).
 
-- One more guard to remember when adding a future charge kind: the predicate must be consulted, and a test
-  should fail if a new kind ignores it.
-- A close-out is a visible, dated money event the tenant will read on their statement; the wording matters
-  as much as the arithmetic.
+**E3 (concessions) is bigger than this record assumed.** The owner's example: in 2022 several tenants were
+given six months, two quarters were conceded, and a fifth half-year was tacked on — "complicated to do
+practically without a mechanism governing it". So a concession is *forgiveness* (an adjustment, which this
+work makes available) **and** a deferral plan **and** a term extension. It keeps its own design, informed by
+that example, and is no longer a candidate to fold in here.

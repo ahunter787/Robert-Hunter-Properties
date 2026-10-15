@@ -217,14 +217,13 @@ ADMIN
 - full RHP operational access
 
 MANAGER
-- properties
-- units
-- tenants
-- leases
-- charges/payments
-- maintenance
-- documents
-- announcements
+- full portfolio operations across all RHP-owned properties
+- properties and units
+- tenants, invitations, and account activation
+- leases, rent schedules, and expense recoveries
+- charges, payments, settlement, reopening, and financial corrections
+- maintenance, documents, and announcements
+- no role changes, Django administration, site configuration, or destructive deletion
 
 MAINTENANCE
 - assigned maintenance requests
@@ -428,7 +427,7 @@ Implement:
 - login
 - logout
 - password reset
-- administrator-created tenant accounts
+- staff-created tenant accounts (a manager may create one, and activate it)
 - invitation flow if practical
 - role-based permissions
 - tenant/staff route separation
@@ -452,7 +451,8 @@ Acceptance criteria:
 - tenant cannot access management routes
 - tenant A cannot access tenant B data
 - maintenance user has restricted access
-- admin can administer accounts
+- staff can administer accounts: managers create, invite, activate and deactivate them, while a
+  superadmin keeps role changes
 
 
 PHASE 2 — PROPERTY AND TENANT MANAGEMENT
@@ -488,8 +488,8 @@ Unit detail page:
 - vacancy state
 
 Acceptance criteria:
-- admin can create/edit/deactivate properties
-- admin can create/edit units
+- staff can create/edit/deactivate properties
+- staff can create/edit units
 - admin can associate tenants with leases later
 - destructive operations require confirmation
 
@@ -544,6 +544,27 @@ Acceptance criteria:
 - expired leases remain historically available
 - active lease is easy to distinguish
 
+AMENDMENT, 2026-10-07 (owner-decided as P4-Q1, and recorded in ADR-020). This phase
+defined three states but never said what they mean for a tenancy's money, and left the
+end of a tenancy without a reason. Both are now specified:
+
+- Occupancy and money have separate lifecycles. `LeaseStatus` is `DRAFT`, `ACTIVE`, or
+  `ENDED`; `LeaseAccountStatus` is `OPEN` or `SETTLED`. An ended tenancy may still have an
+  open financial account while money is collected or corrected.
+- Ending a tenancy is an act by a staff member, and requires a citable reason: a code
+  (tenant ended early, end of term or not renewed, eviction, sale or transfer, mutual
+  agreement, other) and a note saying what happened.
+- `ended_on` records the day the tenancy actually stopped. The term the lease was signed
+  for (`end_date`) is never rewritten, so ending early is recorded rather than erased.
+- Settlement is available only after the tenancy has ended, the balance is zero, no payment
+  is pending, and no recorded security deposit remains undisposed. Until the move-out
+  workflow records deposit disposition, a nonzero deposit blocks settlement.
+- Reopening requires a reason and reopens only the financial account. It never restores
+  occupancy, changes the tenancy's end date, or restarts recurring charges.
+- Managers have portfolio-wide operational authority, including settlement, reopening, and
+  financial corrections. Role changes, site configuration, Django administration, and
+  destructive deletion remain administrator duties.
+
 
 PHASE 4 — RENT LEDGER
 ---------------------
@@ -569,7 +590,7 @@ Sep 1   ACH Payment       -$1,850
 Aug 1   Rent Charge       +$1,850
 Aug 1   ACH Payment       -$1,850
 
-Admin capabilities:
+Desk capabilities (a manager; see the PHASE 1 amendment on manager authority):
 - create recurring monthly rent charge
 - manually add charge
 - manually record payment
@@ -593,6 +614,28 @@ Acceptance criteria:
 - financial history is immutable or auditable
 - edits/corrections leave an audit trail
 - tenant sees an understandable balance
+
+AMENDMENT, 2026-10-07 (owner-decided as P4-Q3 and P4-Q7, recorded in ADR-017). This phase
+listed the ledger's actions without saying which of them a tenancy's state allows, and it
+left the charging horizon to the office's habit. Both are now specified:
+
+- **A charge falls due on its due date, and is raised then — never ahead of it.** The lease
+  says what will be owed; the ledger records what is owed. The tenant's statement derives
+  what is coming from the lease, so nothing is lost by not billing the future.
+- **A running tenancy is the only one that takes new obligations.** Rent, NNN, a
+  responsibility share and one-off charges are raised on an ACTIVE tenancy.
+- **An ENDED tenancy (post-tenancy) still takes money in and corrections.** Payments are
+  recorded, pending ones cleared, and charges adjusted, reversed or voided exactly as before,
+  because arrears still get paid and a final figure must be correctable.
+- **A settled financial account takes nothing further at all.** Every financial mutation,
+  including payments and corrections, is refused until a manager explicitly reopens it.
+- **When a tenancy ends, the months it will not use are closed out** by adjustment, dated at
+  the end, naming the reason — never by deleting a charge.
+- **A charge posted after a tenancy has ended — damage, cleaning, an unpaid balance, an early
+  termination fee — carries its just cause**: a reason code, the lease clause it rests on, and
+  its supporting evidence. Until documents exist to hold that evidence (Phase 6), the account
+  may be reopened for corrections and payments but the ended tenancy still cannot take new
+  recurring rent. The evidence-backed post-tenancy charge workflow remains P4-E6.
 
 
 PHASE 5 — TENANT DASHBOARD
@@ -975,7 +1018,7 @@ People
 Leasing
   Leases
 
-Accounting
+Rent & Payments
   Charges
   Payments
   Balances

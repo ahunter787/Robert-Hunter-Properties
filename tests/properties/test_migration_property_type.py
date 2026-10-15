@@ -13,6 +13,7 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 BEFORE = ("properties", "0002_unit_type_map_pin_and_banner")
 AFTER = ("properties", "0003_property_type_square_feet_and_amenities")
+LATEST = ("properties", "0004_property_cam_rate_per_sqft")
 
 
 def migrate(target):
@@ -104,4 +105,4 @@ def test_the_reverse_step_pushes_the_designation_back_down():
         assert OldUnit.objects.get(pk=unit.pk).unit_type == "COMMERCIAL"
     finally:
         # Leave the schema where the rest of the suite expects it.
-        migrate(AFTER)
+        migrate(LATEST)

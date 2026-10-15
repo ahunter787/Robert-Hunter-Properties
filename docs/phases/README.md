@@ -27,7 +27,7 @@ across four documents: the paths, the screens, the tests, and the open questions
 | 8 | [Communications](phase-08-communications.md) | Not started | — |
 | 9 | [Admin dashboard](phase-09-admin-dashboard.md) | Not started | — |
 | 10 | [Reporting and search](phase-10-reporting-and-search.md) | Not started | — |
-| 11 | [Payment integration](phase-11-payment-integration.md) | Blocked | Needs your explicit approval before anything is built |
+| 11 | [Payment integration](phase-11-payment-integration.md) | Not started — approved, optional for 2027 | One-time ACH and ACH autopay; processor-hosted bank linking |
 | 12 | [Production hardening](phase-12-production-hardening.md) | Not started | — |
 
 Milestones group the phases: 0+1, 2+3, 4+5, 6+7, 8+9, 10+12, with 11 later. The milestone table is in

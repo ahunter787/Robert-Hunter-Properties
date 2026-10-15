@@ -245,16 +245,17 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
             ledger_rows = ledger_services.ledger_rows()
             ledger_totals = ledger_services.totals(ledger_rows)
             context["ledger_outstanding"] = ledger_totals["outstanding"]
+            context["ledger_due_now"] = ledger_totals["due_now"]
             context["ledger_arrears"] = ledger_totals["arrears"]
             context["ledger_arrears_leases"] = ledger_totals["arrears_leases"]
 
-        if user.is_admin_or_above:
+        if user.is_manager_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()
         return context
 
 
 class TenantAccountListView(ManagerRequiredMixin, ListView):
-    """Tenant list. Managers may read it; only admins may change anything."""
+    """Tenant accounts are operational work for managers and administrators."""
 
     template_name = "management/account_list.html"
     context_object_name = "accounts"
@@ -290,7 +291,7 @@ class TenantAccountListView(ManagerRequiredMixin, ListView):
         return context
 
 
-class TenantAccountCreateView(AdminRequiredMixin, FormView):
+class TenantAccountCreateView(ManagerRequiredMixin, FormView):
     """Admin-created tenant accounts: staff stays in control of who gets access."""
 
     template_name = "management/account_form.html"
@@ -340,12 +341,11 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         return context
 
 
-class TenantAccountPhotoUpdateView(AdminRequiredMixin, View):
+class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
     """Set, replace, or remove a tenant's photo.
 
-    Admin-only, like every other change to an account: managers read accounts,
-    administrators change them. Replacing or removing the photo deletes the file
-    it replaced, so nothing accumulates as an orphan.
+    Managers maintain tenant records. Replacing or removing the photo deletes the
+    file it replaced, so nothing accumulates as an orphan.
     """
 
     http_method_names = ["post"]
@@ -404,7 +404,7 @@ class OwnPhotoView(LoginRequiredMixin, View):
         return photo_response(profile.photo)
 
 
-class TenantAccountToggleActiveView(AdminRequiredMixin, View):
+class TenantAccountToggleActiveView(ManagerRequiredMixin, View):
     """Deactivate or reactivate. Accounts are never deleted."""
 
     http_method_names = ["post"]
@@ -421,7 +421,7 @@ class TenantAccountToggleActiveView(AdminRequiredMixin, View):
         return redirect("manage:account-detail", pk=account.pk)
 
 
-class TenantAccountResendInviteView(AdminRequiredMixin, View):
+class TenantAccountResendInviteView(ManagerRequiredMixin, View):
     http_method_names = ["post"]
 
     def post(self, request, pk):

@@ -29,8 +29,8 @@ maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 | Role | Reaches |
 | --- | --- |
 | `SUPERADMIN` | everything, including role changes and deletion |
-| `ADMIN` | management area, tenant account administration, deletion, reversals and adjustments |
-| `MANAGER` | management area, the portfolio (properties and units), the lease desk, the ledger, and reading tenant records |
+| `ADMIN` | manager capabilities plus destructive deletion and site administration |
+| `MANAGER` | full portfolio operations: properties, units, leases, schedules, expense recoveries, tenant activation, settlement, and financial corrections |
 | `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
 | `TENANT` | their own account, contact details, their own lease, and their own balance |
 
@@ -43,7 +43,7 @@ maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
 | `/manage/leases/` | the lease desk: create, edit, activate, end, and attach the signed lease; deleting a draft is admin-only |
 | `/manage/ledger/` | accounting: each live lease's balance, what is past due, and what is coming due; each lease has its own ledger |
-| `/manage/accounts/` | tenant accounts: read for managers, create/invite/deactivate/role/photo for admins |
+| `/manage/accounts/` | tenant accounts: managers create, invite, activate, and maintain profiles; role changes are superadmin-only |
 | `/account/` | where a tenant lands: what is due now, the next rent, the lease end date, recent activity and quick actions |
 | `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their document, and what they owe now |
 | `/payments/` | a tenant's own statement: what each charge costs now, what is paid, and what is left |
@@ -81,8 +81,8 @@ The **ledger** records what happened to the money: rent charges generated one mo
 twice for the same month, never beyond the tenancy's term), one-off charges, payments recorded as
 cleared or pending, and corrections as reversals and adjustments. Nothing is edited or deleted — a
 mistake is a new entry that names the one it corrects — and the balance is derived from the entries
-every time it is shown, so the ledger and the balance cannot disagree. Managers record money;
-reversals and adjustments are admin-only. Every change is written to an audit trail in the same
+every time it is shown, so the ledger and the balance cannot disagree. Managers perform operational
+money work, including reversals, adjustments, settlement, and reopening. Every change is written to an audit trail in the same
 transaction, visible as the History panel on a lease's ledger (ADR-008).
 
 ## Stack

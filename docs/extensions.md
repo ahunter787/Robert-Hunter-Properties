@@ -1,23 +1,36 @@
-# RHP — extensions E1–E4
+# RHP — extensions E1–E10
 
-**Where this stands:** **E1 (lease templates), E2 (property responsibilities) and E4 (retroactive
-onboarding) are built.** E4 is on its branch, awaiting the owner's testing; it is what lets RHP's live
-tenancies be brought in. **E3 (concessions) is proposed**, its wording decision settled, and is the next
-entry after E4.
+**Where this stands:** **E1, E2, E4 and E9 are built** — lease templates, property responsibilities,
+retroactive onboarding and the plain-language interface — E4 and E9 on the `rhp-charge-lifecycle` branch,
+awaiting the owner's testing. **The tenancy-and-money work is built** too, but it is *not* an extension: it
+is a specification amendment (the states and what they mean for money), recorded below and in
+[ADR-017](decisions/ADR-017-charge-lifecycle.md) and
+[ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **E3 (concessions) is proposed**, re-scoped by the
+owner's own 2022 example; **E5 (move-out settlement), E7 (a unit's ledger history) and E8 (early
+termination) are proposed; E6 is blocked by Phase 6; E10 (property accounting) is future work.**
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
 [`harness/master-spec.md`](harness/master-spec.md), and each built extension gets its own decision record in
 [`decisions/`](decisions/).
 
+An extension is filed under the phase it extends, and the phase-scoped id is the intended form —
+`P4-E1`, `P3-E2` and so on (ADR-018). The `#` column keeps the flat ids the Plane mirror's parser recognises
+today; the phase-scoped id is written into each row's text, and the register is re-keyed in one go when that
+parser accepts the longer form.
+
 | # | What it is | Kind | Status |
 | --- | --- | --- | --- |
-| **E1** | **Lease templates** — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
-| **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
-| **E3** | **Concessions** — forgiveness and deferral | Additive | Proposed, unchanged — see section 4 |
-| **E4** | **Retroactive onboarding** — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Built** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md), branch `rhp-e4-onboarding` |
-
----
+| **E1** | **Lease templates** (`P3-E1`) — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
+| **E2** | **Property responsibilities charged to the unit** (`P4-E2`) — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
+| **E3** | **Concessions** (`P4-E3`) — forgiveness, a deferral plan, and the term extension that goes with them | Additive | Proposed, re-scoped — see section 4 |
+| **E4** | **Retroactive onboarding** (`P4-E4`) — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Built** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md), branch `rhp-e4-onboarding` |
+| **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | Proposed — the owner's "P4-E5 is good" (P4-Q6) |
+| **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Blocked by Phase 6** — the owner's decision: wait, so a charge always has its evidence from the day it exists |
+| **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
+| **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
+| **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md) |
+| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | Future — outside the rent-ledger scope |
 
 ## 1. How a change to the specification is handled
 
@@ -170,26 +183,32 @@ bill must not depend on a neighbour's vacancy).
 
 ---
 
-## 4. E3 — Concessions
+## 4. E3 — Concessions (`P4-E3`)
 
-**Status: proposed, unchanged.** The owner's document says it plainly: *"No changes to the current spec of
-Concessions."*
+**Status: proposed, re-scoped 2026-10-07 by the owner's own example.**
 
-The proposal stands as it was first written: a concession is a **decision** recorded once — forgiveness (a
-charge credited) or deferral (a charge credited and re-raised on a later date) — with an office-facing
-reason and a short note written for the tenant, wrapping the ledger's existing adjustment mechanics rather
-than adding new arithmetic.
+*"An example concession happened in 2022 during COVID. Several of the tenants needed time to pay their rent,
+so RHP deferred the lease for 6 months. The 2022 Q3 and Q4 payments were conceded and a 5th (Half) year were
+tacked on. It was complicated to do practically without a mechanism governing it."*
 
-**The open decision is settled (2026-10-03): the tenant *does* see the concession's wording**, from a short
-note written for them. That is a deliberate, recorded exception to ADR-011's rule that an adjustment's
-free-text reason stays office-facing — a concession is a decision made *about* the tenant and communicated
-to them — so the note is a separate field from the internal reason, and office shorthand never reaches a
-tenant page.
+That is three things at once, and the earlier proposal covered only the first:
 
-**Sequencing (confirmed 2026-10-03): E4 first, then E3.** E4 went ahead because RHP's live tenancies cannot
-be brought into the system without a cutover; E3 follows it. Nothing in E3 is blocked in the meantime: a concession is expressible today as an adjustment (forgiveness) or an
-adjustment plus a new dated charge (deferral) — E3 is what makes the decision *legible*, not what makes it
-possible.
+1. **Forgiveness** — a charge credited, with a reason. Now available: the tenancy-and-money work
+   ([ADR-017](decisions/ADR-017-charge-lifecycle.md)) gives every adjustment a reason and a date, and the
+   close-out is the same mechanism with a different reason.
+2. **A deferral plan** — six months of rent moved, an agreement about when it would be paid. This needs a
+   place to record the agreement (what was deferred, until when, on what terms) rather than a note on a
+   single charge.
+3. **A term extension** — the fifth half-year tacked on in exchange. That changes the lease's terms, so it
+   is the same family as P3-E2 (early termination) and P3-Q3 (renewal).
+
+**The tenant *does* see the concession's wording**, settled 2026-10-03: a concession is a decision made *about*
+the tenant and communicated to them, so the tenant-facing note is a separate field from the office's internal
+reason, and office shorthand never reaches a tenant page. That remains a deliberate exception to ADR-011.
+
+**It is no longer a candidate to fold into the charge-lifecycle work.** Its own design, informed by that
+example, is the honest way to build it — and the parts it needs (a dated adjustment with a reason, and the
+ability to extend a term) are the parts Phase 3 and Phase 4 are still missing.
 
 ---
 
@@ -278,7 +297,128 @@ unnecessary — a lease can be re-onboarded through the screens while it has no 
 
 ---
 
-## 6. Recorded decisions
+## 6. E5 — Move-out settlement (`P4-E5`)
+
+**Status: proposed**, agreed in principle by the owner (P4-Q6: *"P4-E5 is good"*), and the natural next piece
+after the lifecycle work.
+
+The lifecycle correction now permits settlement of an ended, zero-balance account with no pending payment
+and no nonzero recorded deposit. Managers can reopen only the financial account with a reason. That is
+account closure, not the complete move-out workflow: deposit disposition, the final statement, and a record
+of what was withheld or returned remain unbuilt. Any nonzero recorded deposit blocks settlement until E5
+records its complete disposition. E5 is where the remaining workflow belongs:
+
+- **The deposit** — returned, or applied against what is owed. Phase 4 deliberately kept it off the ledger
+  ("held money is not rent paid ahead"), so this is the first piece of work that has to decide what a deposit
+  *is* in the ledger's terms: a liability RHP holds, settled by a payment out or a write-off in.
+- **Deductions** — each with a reason and, once Phase 6 exists, its evidence (E6's mechanism is the same
+  one).
+- **A final statement** — what was owed, what was paid, what was withheld, what was returned. A tenant
+  leaving should be able to read one page and see the whole tenancy.
+- **A forwarding address**, so the statement can be sent and the deposit returned.
+
+It touches the tenant's statement (ADR-011), the deposit field (ADR-008), and documents (Phase 6), which is
+why it did not fold into the guard: the guard is small and correct now, and the settlement deserves its own
+design and its own decision record.
+
+---
+
+## 7. E6 — Post-tenancy charges with their evidence (`P4-E6`)
+
+**Status: blocked by Phase 6.** The owner decided the order: *"Wait for Phase 6 so a charge always has its
+evidence."*
+
+The design, from the owner's own answer to P4-Q3 — the part E5 deliberately leaves out:
+
+- **Charge types are separated by origin.** Recurring charges (rent, monthly fees) stop at the end of a
+  tenancy. **Post-tenancy charges** — damage, cleaning, an unpaid balance, an NSF fee, an early termination
+  fee — may be raised after it.
+- **Each one carries its just cause:** a **reason code** (damage, cleaning, unpaid rent, NSF, early
+  termination, other), **the lease clause it rests on**, and **supporting evidence** — photos, invoices, an
+  itemised list. "This protects you in disputes," in the owner's words.
+- **It relaxes exactly one line** — the refusal in `refuse_if_not_chargeable` — which is why that refusal is
+  a named function with the seam marked rather than a condition buried in a view.
+- Until it exists, ended tenancies accept payments and corrections only while their financial account is
+  open. Reopening a settled account never restores occupancy or permits recurring rent.
+
+---
+
+## 8. E7 — A unit's ledger history (`P4-E7`)
+
+**Status: proposed**, from the owner's answer to P4-Q5: *"Maybe all units have a ledger history that can be
+expanded to show the details."*
+
+Today a unit's tenancies are reachable one at a time from the lease list, and the ledger shows one tenancy.
+What the owner describes is the unit as the unit of history: every tenancy it has had, with its final
+position, expandable.
+
+**The rule it must not break:** a tenant sees only their own tenancy (ADR-003). The history is an
+office-facing view — the same answer the owner gave for the ledger itself — and the isolation test in
+`tests/ledger/test_charge_lifecycle.py` already pins that a new tenant on a unit never sees the previous
+tenancy's money. Reporting (Phase 10) and the admin dashboard (Phase 9) are where this belongs, because it is
+a reading of settled history rather than new arithmetic.
+
+---
+
+## 9. E8 — A tenant's request for early termination (`P3-E2`)
+
+**Status: proposed**, filed under Phase 3 because it changes a lease's terms. From the owner's answer to
+P4-Q1: *"The tenant may also need a 'request early termination' button, which, if approved, would trigger the
+early termination clauses. We may not have that in our current system."*
+
+What it needs: a request from the tenant's own area, a decision by the office, an audit trail, and the
+**early-termination clauses** the lease carries — which means reading a clause out of the lease's paper and
+turning it into a charge and a date. The financial half is already prepared for it: `TENANT_EARLY` is one of
+the end reasons, and an early-termination fee is one of the reason codes E6 will carry.
+
+It is the same family as **P3-Q3 (renewal)** and the term-extension half of **E3**, and the three are worth
+designing together: all of them change a lease's term after it was signed.
+
+---
+
+## 10. E9 — Plain-language interface
+
+**Status: built.** This presentation extension removes development commentary from product pages, adopts the
+vocabulary in ADR-021, and reorganizes the staff lease account around the questions an operator asks. It does
+not change route paths, store a balance, add a payment provider, or add general-ledger accounting.
+
+Future property accounting is limited to properties owned by RHP. Phase 11 is separately approved as an
+optional 2027 capability for one-time ACH and ACH autopay using processor-hosted or tokenized bank linking;
+RHP will never store bank credentials.
+
+## 11. E10 — RHP property accounting
+
+**Status: future.** This extension will add landlord-side accounting only for properties Robert Hunter
+Properties owns. It is not third-party property-management accounting and does not change the tenant rent
+ledger. Its eventual design must define a chart of accounts, bank reconciliation, expenses, owner reports,
+and the boundary between tenant ledger transactions and the general ledger before implementation begins.
+
+
+---
+
+## 12. Recorded decisions
+
+### The tenancy lifecycle and what ending does to money — decided 2026-10-07
+
+Owner-decided in Plane, one work item per question, and **written into the specification** rather than
+registered here, because the specification was silent rather than wrong: it defined the states without
+saying what they mean for money, and left the charging habit unstated.
+
+- **A charge falls due on its due date and is raised then, never ahead of it.** The lease says what will be
+  owed; the ledger records what is owed (P4-Q7).
+- **Occupancy and money have separate states** — a tenancy is draft, active, or ended; its financial
+  account is open or settled. Ending needs a citable reason (P4-Q1).
+- **When a tenancy ends, the months it will not use are closed out by adjustment**, never deleted (P4-Q2).
+- **Only a running tenancy takes new charges**; payments and corrections require an open account; post-tenancy
+  charges need their just cause and therefore wait for Phase 6 (P4-Q3, P4-Q4).
+- **An ended tenancy stays in Rent & Payments**, marked with its account state and final position; a new
+  tenant on the same unit never sees the previous tenancy's money (P4-Q5).
+- **Move-out settlement is its own extension** (P4-Q6 → E5).
+
+Records: [ADR-017](decisions/ADR-017-charge-lifecycle.md), [ADR-020](decisions/ADR-020-tenancy-lifecycle.md),
+[the case study](workflows/tenancy-and-money.md), and the specification's own amendment notes in its Phase 3
+and Phase 4 sections.
+
 
 Decisions taken by the owner that are not entries of their own, kept here so nobody re-opens them by
 accident.
@@ -298,7 +438,7 @@ accident.
 
 ---
 
-## 7. Directions not yet proposed
+## 13. Directions not yet proposed
 
 Recorded so they are not lost, with **no design committed**: the owner intends to extend RHP *after Phase 12
 (hardening)* into a tool for managing the business side of the portfolio — property taxes, depreciation

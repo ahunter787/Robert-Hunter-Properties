@@ -10,10 +10,10 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.html import strip_tags
 
 from apps.audit.models import AuditAction, AuditEvent
+from apps.common.dates import due_date_in
 from apps.ledger import services as ledger_services
 from apps.responsibilities import services
 from apps.responsibilities.models import ResponsibilityCategory
@@ -77,14 +77,14 @@ def test_a_manager_reads_the_property_bills(as_manager):
 
     body = text_of(as_manager.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
 
-    assert "Responsibilities" in body
+    assert "Expense recoveries" in body
     assert "Water" in body
     assert "$600.00" in body
     assert "$200.00 a month to divide" in body
     assert "76.00%" in body and "24.00%" in body
     assert "$152.00" in body and "$48.00" in body
-    assert "Stage the next bill" not in body, "staging is an admin's act"
-    assert "Add a responsibility" not in body
+    assert "Enter bill" in body
+    assert "Add expense recovery" in body
 
 
 def test_the_card_says_what_the_landlord_carries(as_admin):
@@ -94,7 +94,7 @@ def test_the_card_says_what_the_landlord_carries(as_admin):
     body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
 
     assert "$120.00 a month of this bill is not carried by a unit." in body
-    assert "no lease: the landlord carries it" in body
+    assert "RHP share" in body
 
 
 def test_the_card_says_when_nothing_is_staged(as_admin):
@@ -104,26 +104,26 @@ def test_the_card_says_when_nothing_is_staged(as_admin):
 
     body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
 
-    assert "No cycle staged yet, so nothing is being charged." in body
+    assert "No billing period has been scheduled." in body
 
 
-def test_a_manager_cannot_reach_the_admin_screens(as_manager):
+def test_a_manager_can_reach_the_operational_screens(as_manager):
     _property_obj, _first, _second, responsibility, cycle = billed_building()
 
     assert (
         as_manager.get(
             reverse("responsibilities:cycle-stage", args=[responsibility.pk])
         ).status_code
-        == 403
+        == 200
     )
     assert (
-        as_manager.get(reverse("responsibilities:cycle-shares", args=[cycle.pk])).status_code == 403
+        as_manager.get(reverse("responsibilities:cycle-shares", args=[cycle.pk])).status_code == 200
     )
     assert (
         as_manager.get(
             reverse("responsibilities:responsibility-update", args=[responsibility.pk])
         ).status_code
-        == 403
+        == 200
     )
 
 
@@ -225,10 +225,11 @@ def test_a_staged_cycle_can_be_re_aimed_at_the_units(as_admin):
     property_obj, first, second, responsibility, cycle = billed_building()
     del property_obj
 
+    # Within the bill: 200.00 a month is what this cycle divides.
     response = as_admin.post(
         reverse("responsibilities:cycle-shares", args=[cycle.pk]),
         {
-            f"unit_{first.pk}": "300.00",
+            f"unit_{first.pk}": "180.00",
             f"unit_{second.pk}": "0.00",
             "note": "usage-based",
         },
@@ -236,7 +237,7 @@ def test_a_staged_cycle_can_be_re_aimed_at_the_units(as_admin):
 
     assert response.status_code == 302
     shares = {share.unit_id: share.monthly_amount for share in cycle.shares.all()}
-    assert shares == {first.pk: Decimal("300.00")}
+    assert shares == {first.pk: Decimal("180.00")}
     assert AuditEvent.objects.filter(action=AuditAction.RESPONSIBILITY_SHARES_SET).exists()
 
 
@@ -249,7 +250,9 @@ def test_a_charged_cycle_refuses_the_change_out_loud(as_admin):
         rent_due_day=1,
         monthly_rent=Decimal("1000.00"),
     )
-    ledger_services.generate_charges(lease, through=ledger_services.generation_horizon(1))
+    ledger_services.generate_charges(
+        lease, through=due_date_in(TODAY.year + (TODAY.month == 12), (TODAY.month % 12) + 1, 31)
+    )
 
     response = as_admin.post(
         reverse("responsibilities:cycle-shares", args=[cycle.pk]),
@@ -331,8 +334,8 @@ def test_the_tenant_month_card_groups_the_charges(client):
     assert "$1,348.00" in body, "1000 rent + 200 NNN + 100 water + 48 pruning"
     assert "Base rent" in body and "$1,000.00" in body
     assert "NNN" in body and "$200.00" in body
-    assert "Utility" in body and "$100.00" in body
-    assert "Maintenance" in body and "$48.00" in body
+    assert "Property charges" in body and "$148.00" in body
+    assert "$100.00" in body and "$48.00" in body
     assert "Water" in body and "Pruning" in body
     assert "<details" in client.get(reverse("payments:home")).content.decode()
 
@@ -401,8 +404,9 @@ def test_the_next_rent_due_figure_still_separates_nnn(client):
 
     body = text_of(client.get(reverse("payments:home")))
 
-    assert "plus NNN" in body
-    assert date_format(ledger_services.upcoming_rent_date(lease)) in body
+    assert "NNN" in body
+    due = ledger_services.upcoming_rent_date(lease)
+    assert f"{due:%b} {due.day}, {due.year}" in body
 
 
 def test_the_cam_rate_is_reference_only(as_admin):
@@ -416,7 +420,9 @@ def test_the_cam_rate_is_reference_only(as_admin):
     )
 
     body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
-    ledger_services.generate_charges(lease, through=ledger_services.generation_horizon(1))
+    ledger_services.generate_charges(
+        lease, through=due_date_in(TODAY.year + (TODAY.month == 12), (TODAY.month % 12) + 1, 31)
+    )
 
     assert "CAM $0.20 a square foot" in body
     assert "760 sq ft recorded" in body

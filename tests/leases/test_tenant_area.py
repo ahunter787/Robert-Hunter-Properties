@@ -71,7 +71,7 @@ def test_an_ended_lease_is_still_shown_to_the_tenant(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "This lease ended on" in body
+    assert "This tenancy ended on" in body
 
 
 def test_a_tenant_only_ever_sees_their_own_lease(client):

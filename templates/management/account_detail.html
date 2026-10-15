@@ -43,11 +43,11 @@
         </div>
         <div>
           <dt class="text-ink-muted">Last signed in</dt>
-          <dd class="font-medium">{{ account.last_login|default:"Never" }}</dd>
+          <dd class="font-medium">{% if account.last_login %}{{ account.last_login|date:"M j, Y" }}{% else %}Never{% endif %}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Created</dt>
-          <dd class="font-medium">{{ account.date_joined }}</dd>
+          <dd class="font-medium">{{ account.date_joined|date:"M j, Y" }}</dd>
         </div>
       </dl>
     </section>
@@ -77,7 +77,7 @@
     {% if photo_form %}
       <section class="rhp-card">
         <h2 class="text-sm font-semibold">Photo</h2>
-        {% if user.is_admin_or_above %}
+        {% if user.is_manager_or_above %}
           <p class="mt-2 text-sm leading-relaxed text-ink-muted">
             A photo of the tenant, shown beside their name on this page and in the tenant list.
           </p>
@@ -101,7 +101,7 @@
 
     <section class="rhp-card">
       <h2 class="text-sm font-semibold">Actions</h2>
-      {% if user.is_admin_or_above %}
+      {% if user.is_manager_or_above %}
         <div class="mt-4 flex flex-wrap items-center gap-3">
           {% if not account.has_usable_password %}
             <form method="post" action="{% url 'manage:account-resend-invite' account.pk %}">

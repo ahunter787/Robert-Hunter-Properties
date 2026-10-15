@@ -50,10 +50,11 @@
           <a href="{% url 'leases:lease-list' %}?expiring=30" class="rhp-btn rhp-btn-secondary mt-4">Review</a>
         </div>
         <div class="rhp-card">
-          <p class="rhp-eyebrow">Outstanding</p>
+          <p class="rhp-eyebrow">Account balances</p>
           <p class="mt-2 text-3xl font-semibold">{{ ledger_outstanding|money }}</p>
-          <p class="mt-1 text-sm text-ink-muted">owed across every live lease</p>
-          <a href="{% url 'ledger:overview' %}" class="rhp-btn rhp-btn-secondary mt-4">Accounting</a>
+          <p class="mt-1 text-sm text-ink-muted">Includes posted upcoming charges.</p>
+          <p class="mt-2 text-sm">Due now: {{ ledger_due_now|money }}</p>
+          <a href="{% url 'ledger:overview' %}" class="rhp-btn rhp-btn-secondary mt-4">Rent &amp; Payments</a>
         </div>
         <div class="rhp-card">
           <p class="rhp-eyebrow">Past due</p>
@@ -63,7 +64,7 @@
           <p class="mt-1 text-sm text-ink-muted">
             {{ ledger_arrears_leases }} lease{{ ledger_arrears_leases|pluralize }} past a due date
           </p>
-          <a href="{% url 'ledger:overview' %}?arrears=1" class="rhp-btn rhp-btn-secondary mt-4">Chase</a>
+          <a href="{% url 'ledger:overview' %}?arrears=1" class="rhp-btn rhp-btn-secondary mt-4">Review overdue accounts</a>
         </div>
         <div class="rhp-card">
           <p class="rhp-eyebrow">Tenants</p>
@@ -71,7 +72,7 @@
           <p class="mt-1 text-sm text-ink-muted">active accounts</p>
           <a href="{% url 'manage:account-list' %}" class="rhp-btn rhp-btn-secondary mt-4">Tenants</a>
         </div>
-        {% if is_admin %}
+        {% if is_manager %}
           <div class="rhp-card">
             <p class="rhp-eyebrow">Invitations</p>
             <p class="mt-2 text-3xl font-semibold">{{ tenant_invited_count }}</p>
@@ -81,19 +82,11 @@
         {% endif %}
       </section>
 
-      <section class="rhp-card">
-        <h2 class="text-sm font-semibold">Not counted yet</h2>
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Open maintenance requests need the maintenance workflow (Phase 7). RHP does not show a
-          number here until it is real.
-        </p>
-      </section>
     {% else %}
       <section class="rhp-card">
         <h2 class="text-sm font-semibold">Your access</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Maintenance work assigned to you appears here once the maintenance workflow ships
-          (Phase 7). Portfolio and account screens are limited to managers and admins.
+          Your account does not have access to portfolio operations. Contact an administrator if your access needs have changed.
         </p>
       </section>
     {% endif %}

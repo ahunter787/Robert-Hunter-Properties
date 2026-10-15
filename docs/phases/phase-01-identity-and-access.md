@@ -26,6 +26,9 @@ are separated by route, and authorization is enforced on the server for every se
 - **Invitations:** a single-use link with an expiry, sent through the configured email backend; a
   deactivated account cannot sign in; password reset never reveals whether an address exists.
 - **Throttling:** `LoginAttempt` plus `ThrottledLoginView`.
+- **Operational authority:** managers create and invite tenants, activate or deactivate tenant accounts,
+  and maintain tenant photos. Role changes remain superadmin-only; Django administration, site
+  configuration, and destructive deletion stay outside manager authority (ADR-003, ADR-020).
 
 ## Decisions that govern it
 
@@ -33,7 +36,7 @@ are separated by route, and authorization is enforced on the server for every se
 | --- | --- |
 | [ADR-003](../decisions/ADR-003-role-on-user-model.md) | Role as a field on the user, the route/namespace split, 403 for the wrong area and 404 for someone else's record; amended by E4 so staff on a tenant page are redirected instead |
 | [ADR-004](../decisions/ADR-004-invitations-and-throttle.md) | Single-use invitation links, no passwords by email, throttled sign-in |
-| [ADR-009](../decisions/ADR-009-tenant-photos.md) | The tenant photo: admin-set, stored under a randomised name, served through a permission-checked view |
+| [ADR-009](../decisions/ADR-009-tenant-photos.md) | Tenant photos stored under randomized names and served through permission-checked views; operational maintenance now permits managers under ADR-020 |
 
 `docs/security.md` carries the threat model and the per-role matrix.
 
