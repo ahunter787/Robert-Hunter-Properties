@@ -29,6 +29,16 @@ checks) plus a groups/permissions system.
 4. **Two distinct denial responses**:
    - authenticated user reaching an area their role may not use → **403** (`templates/403.html`);
    - an individual record outside the caller's tenancy → **404**, so ids cannot be probed.
+
+   **Amended (E4, 2026-10-03).** Staff who reach a *tenant* page (`/lease/`, `/payments/`) are
+   **redirected** to `/manage/` instead, with a line saying where the same information lives
+   (`TenantAreaMixin`). Two reasons. A staff account has no tenancy of its own, so the only thing the
+   page can show it is the tenant empty state — "No lease yet" — which reads as a broken account
+   rather than the wrong door: that is how the owner found it, signed in as `rhpadmin`, because point 2
+   above lets a superuser past every role test. And `/account/` already redirected staff rather than
+   403-ing them (ADR-010), so this removes an inconsistency rather than adding one. Nothing is
+   disclosed either way, and the 403 rule stands everywhere else — a tenant reaching `/manage/` is
+   still refused.
 5. **Role changes require `SUPERADMIN`**; account administration (list, create, deactivate,
    re-invite) requires `ADMIN` or above; `MANAGER` and `MAINTENANCE` reach `/manage/` only.
 6. Tenant-owned rows are read through `tenant_scope(user, queryset, owner_field)`, which returns the

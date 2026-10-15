@@ -156,7 +156,11 @@ for the portfolio, `leases` for the lease desk, `ledger` for accounting), and th
 
 Denials are deliberate: an authenticated user in the wrong *area* gets **403**, while an individual
 record outside the caller's tenancy is resolved with `tenant_scope(...)` and returns **404**, so ids
-cannot be probed.
+cannot be probed. The one exception is **staff on a tenant page** (`/lease/`, `/payments/`): a staff
+account has no tenancy of its own, so it is redirected to `/manage/` with a line saying why, the way
+`/account/` already treats staff (`TenantAreaMixin`, ADR-003 amended). The alternative — a superuser
+passing every role test and reading the *tenant* empty state, "No lease yet" — looks like a broken
+account, which is exactly how the owner found it.
 
 ## Conventions
 

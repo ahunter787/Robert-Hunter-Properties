@@ -1,12 +1,14 @@
 """The lease desk: creating, activating, ending, and the rules around each."""
 
 import datetime as dt
+from decimal import Decimal
 
 import pytest
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 
-from apps.leases.models import Lease, LeaseStatus, LeaseTenant
+from apps.leases.models import Lease, LeaseStatus, LeaseTemplate, LeaseTenant
 from tests.factories import (
     make_admin,
     make_lease,
@@ -325,3 +327,68 @@ def test_lease_tenants_are_protected_from_deletion():
 
     assert LeaseTenant.objects.filter(lease=lease, tenant=tenant).exists()
     assert make_property  # keep the import honest for readers of this file
+
+
+# --- moving a lease onto the amounts its paper states (E4) -----------------
+
+
+def test_moving_a_lease_off_its_step_up_rule_clears_it(signed_in):
+    """RHP's own lease: it was triple net, and what it actually says is six amounts.
+
+    The browser posts the old rule back with the new template, and the model refuses
+    step-up fields on a template that has none — so a correct change read as "this
+    lease cannot be saved" (the owner hit exactly this). The rule is dropped, and the
+    office is told where the stated amounts go.
+    """
+    lease = make_lease(
+        make_unit(),
+        tenants=[make_tenant(username="ada")],
+        template=LeaseTemplate.NNN,
+        step_up_month=6,
+        step_up_percent=Decimal("4.00"),
+        monthly_rent=Decimal("1450.00"),
+    )
+    data = lease_post_data(lease.unit, lease=lease, template=LeaseTemplate.STATED)
+    assert data["step_up_percent"] == "4.00", "the old rule is still in the posted form"
+
+    response = signed_in.post(reverse("leases:lease-update", args=[lease.pk]), data, follow=True)
+
+    lease.refresh_from_db()
+    assert lease.template == LeaseTemplate.STATED
+    assert (lease.step_up_month, lease.step_up_percent, lease.step_up_amount) == (None, None, None)
+    body = " ".join(strip_tags(response.content.decode()).split())
+    assert "The step-up rule was cleared" in body
+    assert "Add the amounts the lease names on the lease page" in body
+    assert lease.uses_nnn, "and NNN stays a term of the lease"
+
+
+def test_a_stated_lease_is_saveable_without_a_rule(signed_in):
+    lease = make_lease(
+        make_unit(),
+        tenants=[make_tenant(username="ada")],
+        template=LeaseTemplate.STATED,
+        monthly_rent=Decimal("1450.00"),
+    )
+
+    response = signed_in.post(
+        reverse("leases:lease-update", args=[lease.pk]),
+        lease_post_data(lease.unit, lease=lease),
+    )
+
+    assert response.status_code == 302
+    lease.refresh_from_db()
+    assert lease.template == LeaseTemplate.STATED
+
+
+def test_choosing_triple_net_records_the_nnn_term(signed_in):
+    unit = make_unit()
+    data = lease_post_data(unit, [make_tenant(username="ada")], template=LeaseTemplate.NNN)
+    data["step_up_month"] = "6"
+    data["step_up_percent"] = "4.00"
+
+    response = signed_in.post(reverse("leases:lease-create"), data)
+
+    assert response.status_code == 302
+    lease = Lease.objects.latest("pk")
+    assert lease.carries_nnn is True, "the template is the shorthand, the flag is the record"
+    assert lease.uses_nnn is True

@@ -31,6 +31,8 @@ MINIMUM_AMOUNT = Decimal("0.01")
 class ChargeKind(models.TextChoices):
     RENT = "RENT", "Rent"
     NNN = "NNN", "NNN"
+    #: A balance brought forward when a live tenancy is placed in RHP (E4).
+    OPENING = "OPENING", "Brought forward"
     RESPONSIBILITY = "RESPONSIBILITY", "Responsibility"
     MANUAL = "MANUAL", "Manual charge"
     ADJUSTMENT = "ADJUSTMENT", "Adjustment"

@@ -14,9 +14,11 @@ returns RHP data mixes in one of these classes or calls ``role_required``.
 from collections.abc import Callable
 from functools import wraps
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 from apps.accounts.models import ADMIN_ROLES, MANAGER_ROLES, STAFF_ROLES, Role
 
@@ -66,6 +68,37 @@ class TenantRequiredMixin(RoleRequiredMixin):
     """The tenant area: tenants only. Staff use the management screens instead."""
 
     allowed_roles = frozenset({Role.TENANT})
+
+
+class TenantAreaMixin(TenantRequiredMixin):
+    """A tenant's own page, which a staff account reads from the management area.
+
+    A superuser passes every role test by design, so a staff account that landed on
+    ``/lease/`` used to be shown the *tenant* empty state — "No lease yet" — which
+    reads as a broken account rather than the wrong door (the owner hit exactly this
+    while signed in as ``rhpadmin``). Staff are sent to the management home instead,
+    the way ``/account/`` already sends them, with a line saying why. Nothing is
+    disclosed either way: a staff account has no tenancy of its own to show.
+    """
+
+    staff_redirect = "manage:home"
+
+    def test_func(self) -> bool:
+        user = self.request.user
+        if user.is_authenticated and user.is_rhp_staff:
+            return False
+        return super().test_func()
+
+    def handle_no_permission(self):
+        user = self.request.user
+        if user.is_authenticated and user.is_rhp_staff:
+            messages.info(
+                self.request,
+                "That page is a tenant's own view. Your account works from the management "
+                "area, where the same information sits on the lease.",
+            )
+            return redirect(self.staff_redirect)
+        return super().handle_no_permission()
 
 
 class SuperadminRequiredMixin(RoleRequiredMixin):

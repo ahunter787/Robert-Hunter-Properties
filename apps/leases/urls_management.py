@@ -32,4 +32,16 @@ urlpatterns = [
         name="rent-period-update",
     ),
     path("leases/<int:pk>/nnn/", views.NnnRateStageView.as_view(), name="nnn-stage"),
+    # E4: a stated rent amount, and bringing a tenancy that began before RHP into it.
+    path(
+        "leases/<int:pk>/rent-periods/new/",
+        views.RentPeriodCreateView.as_view(),
+        name="rent-period-create",
+    ),
+    path(
+        "leases/<int:pk>/rent-periods/<int:period_pk>/remove/",
+        views.RentPeriodRemoveView.as_view(),
+        name="rent-period-remove",
+    ),
+    path("leases/<int:pk>/onboarding/", views.LeaseOnboardView.as_view(), name="onboard"),
 ]

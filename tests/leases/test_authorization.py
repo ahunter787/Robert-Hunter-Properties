@@ -103,11 +103,19 @@ def test_an_admin_may_reach_every_lease_page(client):
     document.close()
 
 
-def test_staff_are_turned_away_from_the_tenant_area(client):
+def test_staff_are_sent_away_from_the_tenant_area(client):
+    """Staff keep out of the tenant area, and land where the work actually is.
+
+    A redirect, not a 403: a staff account has no tenancy, so the tenant pages can only
+    show it their empty state, and the management area holds the same information
+    (ADR-003, amended).
+    """
     client.force_login(make_manager(username="lease-manager"))
 
-    assert client.get(reverse("tenancy:lease")).status_code == 403
-    assert client.get(reverse("tenancy:document")).status_code == 403
+    for url in (reverse("tenancy:lease"), reverse("tenancy:document")):
+        response = client.get(url)
+        assert response.status_code == 302, url
+        assert response["Location"] == reverse("manage:home")
 
 
 def test_a_tenant_is_turned_away_from_the_lease_desk(client):

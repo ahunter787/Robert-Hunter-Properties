@@ -354,13 +354,46 @@ def test_staging_a_rate_for_a_charged_period_is_refused():
     assert "effective_from" in raised.value.message_dict
 
 
-def test_nnn_cannot_be_staged_on_a_step_up_lease():
+def test_nnn_cannot_be_staged_on_a_lease_that_does_not_carry_it():
     lease = stepped_lease()
 
-    with pytest.raises(ValidationError, match="triple-net"):
+    with pytest.raises(ValidationError, match="carries NNN"):
         lease_services.stage_nnn_rate(
             lease, effective_from=dt.date(2027, 1, 5), monthly_amount=Decimal("100.00")
         )
+
+
+def test_nnn_is_a_term_of_the_lease_not_a_rent_template():
+    """A lease that states its own rent can still pass NNN on to the tenant (E4).
+
+    Which is what RHP's own lease does: the paper names every rent amount *and* the
+    tenant pays their share of the taxes and operating costs.
+    """
+    lease = make_lease(
+        template=LeaseTemplate.STATED,
+        carries_nnn=True,
+        monthly_rent=Decimal("1450"),
+        start_date=dt.date(2022, 6, 1),
+        end_date=dt.date(2027, 5, 31),
+    )
+
+    assert lease.uses_nnn is True
+    assert lease.template_label == "The lease states the amounts + NNN"
+
+    rate = lease_services.stage_nnn_rate(
+        lease, effective_from=lease.start_date, monthly_amount=Decimal("305.00")
+    )
+    assert rate.monthly_amount == Decimal("305.00")
+
+    ledger_services.generate_charges(lease, through=dt.date(2022, 6, 5))
+    assert lease.charges.filter(kind=ChargeKind.NNN, due_date=lease.start_date).exists()
+
+
+def test_a_triple_net_template_records_the_nnn_term():
+    lease = make_lease(template=LeaseTemplate.NNN, step_up_month=1, step_up_percent=Decimal("3"))
+
+    assert lease.uses_nnn is True, "the template is the shortcut for the common case"
+    assert lease.template_label == "Triple net (NNN)", "no doubled label"
 
 
 # --- charging the right amount --------------------------------------------
@@ -648,6 +681,59 @@ def test_an_admin_can_regenerate_and_stage_nnn(as_admin):
 
     assert response.status_code == 302
     assert lease.nnn_for(first) == Decimal("305.52")
+
+
+def test_an_admin_can_stage_nnn_on_a_lease_that_states_its_rent(as_admin):
+    """The office's own lease is exactly this: stated amounts *and* NNN (E4).
+
+    NNN used to hang off the Triple net template alone, which made a lease that
+    writes its own rent unable to carry it. The two are separate facts now.
+    """
+    lease = make_lease(
+        template=LeaseTemplate.STATED,
+        carries_nnn=True,
+        monthly_rent=Decimal("1450.00"),
+        start_date=dt.date(2022, 6, 1),
+        end_date=dt.date(2027, 5, 31),
+        billing_start_date=dt.date(2022, 6, 1),
+    )
+
+    response = as_admin.get(reverse("leases:nnn-stage", args=[lease.pk]))
+    assert response.status_code == 200, "the screen opens for a stated lease that carries NNN"
+
+    response = as_admin.post(
+        reverse("leases:nnn-stage", args=[lease.pk]),
+        {
+            "effective_from": "2022-06-01",
+            "monthly_amount": "305.00",
+            "note": "First year's estimate",
+        },
+    )
+    assert response.status_code == 302
+    assert lease.nnn_for(dt.date(2022, 6, 1)) == Decimal("305.00")
+
+    ledger_services.generate_charges(lease, through=dt.date(2022, 6, 5))
+    assert lease.charges.filter(kind=ChargeKind.NNN, due_date=dt.date(2022, 6, 1)).exists()
+
+
+def test_a_stated_lease_without_the_nnn_term_is_refused_one(as_admin):
+    lease = make_lease(
+        template=LeaseTemplate.STATED,
+        monthly_rent=Decimal("1450.00"),
+        start_date=dt.date(2022, 6, 1),
+        end_date=dt.date(2027, 5, 31),
+        billing_start_date=dt.date(2022, 6, 1),
+    )
+
+    response = as_admin.post(
+        reverse("leases:nnn-stage", args=[lease.pk]),
+        {"effective_from": "2022-06-01", "monthly_amount": "305.00", "note": ""},
+        follow=True,
+    )
+
+    body = strip_tags(response.content.decode())
+    assert "carries NNN" in body
+    assert not lease.nnn_rates.exists()
 
 
 def test_a_period_can_be_set_by_hand_until_it_has_been_charged(as_admin):

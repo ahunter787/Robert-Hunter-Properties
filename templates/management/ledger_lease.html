@@ -14,8 +14,8 @@
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.identifier }}</h1>
         <p class="mt-2 text-sm text-ink-muted">
           {{ lease.tenant_names }} · {{ lease.start_date }} → {{ lease.end_date }} ·
-          {{ lease.get_template_display }} · rent now {{ lease.current_base_rent|money }}
-          {% if lease.template == "NNN" %} + NNN {{ lease.current_nnn|money }}{% endif %},
+          {{ lease.template_label }} · rent now {{ lease.current_base_rent|money }}
+          {% if lease.uses_nnn %} + NNN {{ lease.current_nnn|money }}{% endif %},
           due {{ lease.due_day_label }}
         </p>
       </div>

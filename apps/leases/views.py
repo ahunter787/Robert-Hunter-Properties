@@ -5,6 +5,7 @@ MANAGER and above, deletion is ADMIN, and the tenant area resolves the lease fro
 the session so there is no id in a tenant-facing URL to enumerate.
 """
 
+import datetime as dt
 import logging
 
 from django.conf import settings
@@ -29,13 +30,25 @@ from django.views.generic import (
 from apps.accounts.permissions import (
     AdminRequiredMixin,
     ManagerRequiredMixin,
-    TenantRequiredMixin,
+    TenantAreaMixin,
 )
 from apps.audit.models import AuditAction
 from apps.audit.services import record
 from apps.leases import services as lease_services
-from apps.leases.forms import LeaseForm, LeaseTenantFormSet, NnnRateForm, RentPeriodForm
-from apps.leases.models import Lease, LeaseStatus, LeaseTemplate, RentPeriod
+from apps.leases.forms import (
+    LeaseForm,
+    LeaseTenantFormSet,
+    NnnRateForm,
+    OnboardingForm,
+    RentPeriodCreateForm,
+    RentPeriodForm,
+)
+from apps.leases.models import (
+    Lease,
+    LeaseStatus,
+    OnboardingMethod,
+    RentPeriod,
+)
 from apps.ledger import services as ledger_services
 from apps.properties.models import Unit
 
@@ -52,6 +65,14 @@ def document_response(field_file) -> FileResponse:
 
 
 # --- Staff: the lease desk -------------------------------------------------
+
+#: Said out loud when changing a lease's template drops its step-up rule (E4). The
+#: rule is not "lost": the template that replaced it has none, and a stated lease's
+#: amounts are entered on the lease page.
+RULE_CLEARED_MESSAGE = (
+    "The step-up rule was cleared because this template has none. Add the amounts the "
+    "lease names on the lease page, as it writes them."
+)
 
 
 class LeaseListView(ManagerRequiredMixin, ListView):
@@ -122,6 +143,8 @@ class LeaseCreateView(ManagerRequiredMixin, CreateView):
                 f"A draft lease for {lease.unit.label} was created. Activate it when the "
                 "paperwork is signed.",
             )
+            if form.rule_cleared:
+                messages.info(request, RULE_CLEARED_MESSAGE)
             return redirect("leases:lease-detail", pk=lease.pk)
 
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
@@ -197,6 +220,8 @@ class LeaseUpdateView(ManagerRequiredMixin, UpdateView):
 
             logger.info("lease updated pk=%s by=%s", lease.pk, request.user.pk)
             messages.success(request, "The lease was updated.")
+            if form.rule_cleared:
+                messages.info(request, RULE_CLEARED_MESSAGE)
             return redirect("leases:lease-detail", pk=lease.pk)
 
         return self.render_to_response(self.get_context_data(form=form, formset=formset))
@@ -406,8 +431,8 @@ class NnnRateStageView(AdminRequiredMixin, View):
 
     def get(self, request, pk):
         lease = _schedule_lease(pk)
-        if lease.template != LeaseTemplate.NNN:
-            messages.error(request, "Only a triple-net lease carries an NNN amount.")
+        if not lease.uses_nnn:
+            messages.error(request, "Only a lease that carries NNN takes an NNN amount.")
             return redirect("leases:lease-detail", pk=lease.pk)
         initial = {"effective_from": lease_services.next_nnn_effective_date(lease)}
         form = NnnRateForm(initial=initial)
@@ -415,8 +440,8 @@ class NnnRateStageView(AdminRequiredMixin, View):
 
     def post(self, request, pk):
         lease = _schedule_lease(pk)
-        if lease.template != LeaseTemplate.NNN:
-            messages.error(request, "Only a triple-net lease carries an NNN amount.")
+        if not lease.uses_nnn:
+            messages.error(request, "Only a lease that carries NNN takes an NNN amount.")
             return redirect("leases:lease-detail", pk=lease.pk)
         if _refuse_ended_terms(request, lease):
             return redirect("leases:lease-detail", pk=lease.pk)
@@ -441,6 +466,145 @@ class NnnRateStageView(AdminRequiredMixin, View):
                 return redirect("leases:lease-detail", pk=lease.pk)
 
         return render(request, self.template_name, self._context(lease, form))
+
+
+class RentPeriodCreateView(AdminRequiredMixin, View):
+    """Add a dated rent amount the lease states — a mid-term step, an extra space (E4)."""
+
+    template_name = "management/lease_rent_period_new.html"
+
+    def _initial(self, lease):
+        periods = lease.rent_periods_ordered
+        after = periods[-1].effective_from + dt.timedelta(days=1) if periods else lease.start_date
+        return {"effective_from": lease_services.first_due_on_or_after(lease, after)}
+
+    def _context(self, lease, form):
+        return {"lease": lease, "form": form}
+
+    def get(self, request, pk):
+        lease = _schedule_lease(pk)
+        if _refuse_ended_terms(request, lease):
+            return redirect("leases:lease-detail", pk=lease.pk)
+        form = RentPeriodCreateForm(initial=self._initial(lease))
+        return render(request, self.template_name, self._context(lease, form))
+
+    def post(self, request, pk):
+        lease = _schedule_lease(pk)
+        if _refuse_ended_terms(request, lease):
+            return redirect("leases:lease-detail", pk=lease.pk)
+        form = RentPeriodCreateForm(request.POST)
+        if form.is_valid():
+            try:
+                lease_services.add_rent_period(
+                    lease,
+                    effective_from=form.cleaned_data["effective_from"],
+                    amount=form.cleaned_data["amount"],
+                    note=form.cleaned_data["note"],
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+            else:
+                messages.success(
+                    request,
+                    f"Rent from {form.cleaned_data['effective_from']} recorded at "
+                    f"{form.cleaned_data['amount']}.",
+                )
+                return redirect("leases:lease-detail", pk=lease.pk)
+        return render(request, self.template_name, self._context(lease, form))
+
+
+class RentPeriodRemoveView(AdminRequiredMixin, View):
+    """Remove a dated amount the office added, while nothing has been charged for it."""
+
+    http_method_names = ["post"]
+
+    def post(self, request, pk, period_pk):
+        period = get_object_or_404(
+            RentPeriod.objects.select_related("lease"), pk=period_pk, lease_id=pk
+        )
+        if _refuse_ended_terms(request, period.lease):
+            return redirect("leases:lease-detail", pk=period.lease_id)
+        try:
+            lease_services.remove_rent_period(period, actor=request.user)
+        except ValidationError as exc:
+            messages.error(request, " ".join(exc.messages))
+        else:
+            messages.success(request, "That rent amount was removed.")
+        return redirect("leases:lease-detail", pk=period.lease_id)
+
+
+class LeaseOnboardView(AdminRequiredMixin, View):
+    """Bring a tenancy that began before RHP into it, without inventing a debt (E4)."""
+
+    template_name = "management/lease_onboard.html"
+
+    def _context(self, lease, form):
+        return {
+            "lease": lease,
+            "form": form,
+            "horizon": ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS),
+            "rent_periods": lease.rent_periods_ordered,
+            "nnn_rates": lease.nnn_rates_ordered,
+            "expected_months": _months_between(lease.bill_from, timezone.localdate()),
+        }
+
+    def get(self, request, pk):
+        lease = _schedule_lease(pk)
+        if not lease.needs_onboarding:
+            messages.info(request, "This tenancy has already been brought into RHP.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        form = OnboardingForm(
+            initial={
+                "method": OnboardingMethod.HISTORY,
+                "as_of": timezone.localdate(),
+                "billing_start_date": lease.start_date,
+            }
+        )
+        return render(request, self.template_name, self._context(lease, form))
+
+    def post(self, request, pk):
+        lease = _schedule_lease(pk)
+        if not lease.needs_onboarding:
+            messages.info(request, "This tenancy has already been brought into RHP.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+
+        form = OnboardingForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            try:
+                onboarding = lease_services.onboard_lease(
+                    lease,
+                    method=data["method"],
+                    as_of=data["as_of"],
+                    received_total=data["received_total"],
+                    opening_amount=data["opening_amount"],
+                    billing_start_date=data["billing_start_date"],
+                    note=data["note"],
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+            else:
+                logger.info(
+                    "lease onboarded pk=%s method=%s by=%s",
+                    lease.pk,
+                    onboarding.method,
+                    request.user.pk,
+                )
+                messages.success(
+                    request,
+                    f"{lease.unit.label} was brought into RHP by "
+                    f"{onboarding.get_method_display().lower()}. Charges are raised from "
+                    f"{lease.bill_from} onward.",
+                )
+                return redirect("leases:lease-detail", pk=lease.pk)
+        return render(request, self.template_name, self._context(lease, form))
+
+
+def _months_between(start: dt.date, end: dt.date) -> int:
+    """Whole months from one date to another, for the onboarding screen's arithmetic."""
+    return max((end.year - start.year) * 12 + (end.month - start.month), 0)
 
 
 class LeaseDeleteView(AdminRequiredMixin, DeleteView):
@@ -499,7 +663,7 @@ def visible_lease_for(user):
     return Lease.objects.visible_for(user)
 
 
-class TenantLeaseView(TenantRequiredMixin, TemplateView):
+class TenantLeaseView(TenantAreaMixin, TemplateView):
     """The tenant lease page: their unit, term, rent, co-tenants and document."""
 
     template_name = "tenancy/lease.html"
@@ -517,7 +681,7 @@ class TenantLeaseView(TenantRequiredMixin, TemplateView):
         return context
 
 
-class TenantLeaseDocumentView(TenantRequiredMixin, View):
+class TenantLeaseDocumentView(TenantAreaMixin, View):
     """Serve the tenant's own lease document.
 
     The resource is implied by the session, so there is no id in the URL that

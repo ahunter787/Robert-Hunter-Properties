@@ -39,11 +39,17 @@ class LeaseStatus(models.TextChoices):
 
 
 class LeaseTemplate(models.TextChoices):
-    """The three shapes an RHP lease takes (E1, ADR-013)."""
+    """The shapes an RHP lease takes (E1, ADR-013; STATED arrives with E4).
+
+    A *stated* lease is one whose paper names each amount — a mid-term step, an
+    "extra space" change, a renegotiation — instead of a rule the term follows.
+    The office enters those dates and figures; RHP never invents one.
+    """
 
     FIXED = "FIXED", "Fixed"
     STEP_UP = "STEP_UP", "Step up"
     NNN = "NNN", "Triple net (NNN)"
+    STATED = "STATED", "The lease states the amounts"
 
 
 class RentPeriodOrigin(models.TextChoices):
@@ -56,6 +62,16 @@ class RentPeriodOrigin(models.TextChoices):
 
 #: The templates that carry a once-a-year step up.
 STEPPING_TEMPLATES = (LeaseTemplate.STEP_UP, LeaseTemplate.NNN)
+
+#: The templates whose rent comes from dated periods at all.
+SCHEDULED_TEMPLATES = (LeaseTemplate.STEP_UP, LeaseTemplate.NNN, LeaseTemplate.STATED)
+
+
+class OnboardingMethod(models.TextChoices):
+    """How a live tenancy that began before RHP was brought in (E4)."""
+
+    HISTORY = "HISTORY", "Raise the history and record what was received"
+    POSITION = "POSITION", "Start at a date and state the opening position"
 
 
 class LeaseQuerySet(models.QuerySet):
@@ -121,7 +137,16 @@ class Lease(models.Model):
         choices=LeaseTemplate.choices,
         default=LeaseTemplate.FIXED,
         help_text=(
-            "Fixed, a once-a-year step up, or triple net — rent plus an NNN amount set each year."
+            "How the base rent is set: fixed, a once-a-year step up, triple net, or amounts "
+            "the lease states. Whether NNN applies is recorded separately."
+        ),
+    )
+    carries_nnn = models.BooleanField(
+        default=False,
+        help_text=(
+            "The lease passes the property's operating costs to the tenant, on top of rent. "
+            "Independent of the rent template: a lease can state its own rent and still "
+            "carry NNN (E4)."
         ),
     )
     step_up_month = models.PositiveSmallIntegerField(
@@ -145,6 +170,14 @@ class Lease(models.Model):
         blank=True,
         validators=[MinValueValidator(Decimal("0.01"))],
         help_text="Yearly increase as a fixed amount, when the lease states one instead.",
+    )
+    billing_start_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text=(
+            "The first month RHP raises charges for. Blank bills from the start of the term, "
+            "which is what a lease that began in RHP should do (E4)."
+        ),
     )
     deposit = models.DecimalField(
         max_digits=12,
@@ -196,6 +229,16 @@ class Lease(models.Model):
     def __str__(self) -> str:
         return f"{self.unit.label} ({self.start_date} to {self.end_date})"
 
+    def save(self, *args, **kwargs):
+        # The Triple net template *is* a statement that the tenant pays NNN, so record
+        # the term whenever that template is saved, whichever path got here (the form
+        # does it too). Without this a lease created outside the form would read as
+        # triple net while the flag said otherwise, and moving it to the stated
+        # template would quietly drop NNN (E4).
+        if self.template == LeaseTemplate.NNN:
+            self.carries_nnn = True
+        return super().save(*args, **kwargs)
+
     @property
     def label(self) -> str:
         return self.unit.label
@@ -230,8 +273,8 @@ class Lease(models.Model):
                 raise ValidationError(
                     {
                         "template": (
-                            "A fixed lease has no step up. Choose Step up or Triple net to "
-                            "record one."
+                            "This lease template has no step-up rule. Clear the step-up month "
+                            "and increase, or choose Step up or Triple net to record one."
                         )
                     }
                 )
@@ -254,7 +297,72 @@ class Lease(models.Model):
 
     @property
     def uses_schedule(self) -> bool:
-        return self.template in STEPPING_TEMPLATES
+        """Whether this lease's rent comes from dated amounts at all (E1, E4)."""
+        return self.template in SCHEDULED_TEMPLATES
+
+    @property
+    def is_stated(self) -> bool:
+        """A lease whose paper names each amount, so RHP never invents one (E4)."""
+        return self.template == LeaseTemplate.STATED
+
+    @property
+    def uses_nnn(self) -> bool:
+        """Whether this lease charges NNN on top of rent (E1, E4).
+
+        NNN is not a rent template, it is a term of the lease: the tenant pays their
+        share of the property's operating costs. The Triple net template is the common
+        case — a step-up rent *and* NNN — but a lease that states its own rent can carry
+        NNN too, and that is exactly what RHP's own lease does (ADR-016).
+        """
+        return self.carries_nnn or self.template == LeaseTemplate.NNN
+
+    @property
+    def template_label(self) -> str:
+        """The rent template as a reader should see it, naming NNN when it is separate."""
+        label = self.get_template_display()
+        if self.carries_nnn and self.template != LeaseTemplate.NNN:
+            return f"{label} + NNN"
+        return label
+
+    # --- bringing a live tenancy in (E4) ----------------------------------
+
+    @property
+    def bill_from(self) -> dt.date:
+        """The first month RHP charges for: the cutover, or the start of the term."""
+        return self.billing_start_date or self.start_date
+
+    @property
+    def is_retroactive(self) -> bool:
+        """A tenancy whose term began before this month: it has a history to place."""
+        return self.start_date < timezone.localdate().replace(day=1)
+
+    @property
+    def onboarding_record(self) -> LeaseOnboarding | None:
+        """How this tenancy was brought in, if it has been (E4)."""
+        if not self.pk:
+            return None
+        return LeaseOnboarding.objects.filter(lease_id=self.pk).first()
+
+    @property
+    def has_onboarding(self) -> bool:
+        """Whether the opening position has been recorded at all (E4)."""
+        return self.onboarding_record is not None
+
+    @property
+    def needs_onboarding(self) -> bool:
+        """A live tenancy from before RHP that nobody has placed yet.
+
+        While this is true no charges may be raised: the generator would bill the
+        whole past as if it were new, which is the phantom debt E4 exists to make
+        impossible (ADR-016). *Placing* the tenancy is what sets the cutover, and the
+        cutover is what unlocks charging — the onboarding record says how it was
+        placed, while the cutover says from when RHP bills.
+        """
+        return (
+            self.status == LeaseStatus.ACTIVE
+            and self.is_retroactive
+            and self.billing_start_date is None
+        )
 
     def _cached(self, attribute, queryset_name):
         """Read a related set once per instance; callers prefetch it in lists."""
@@ -407,12 +515,12 @@ class RentPeriod(models.Model):
     def clean(self):
         super().clean()
         _check_due_date(self)
-        if self.lease_id is not None and self.lease.template not in STEPPING_TEMPLATES:
+        if self.lease_id is not None and self.lease.template not in SCHEDULED_TEMPLATES:
             raise ValidationError(
                 {
                     "lease": (
-                        "A fixed lease has one rent for its term. Make the lease a step up or "
-                        "triple net to record dated amounts."
+                        "A fixed lease has one rent for its term. Make the lease a step up, "
+                        "triple net or stated-amounts lease to record dated amounts."
                     )
                 }
             )
@@ -459,8 +567,67 @@ class NnnRate(models.Model):
     def clean(self):
         super().clean()
         _check_due_date(self)
-        if self.lease_id is not None and self.lease.template != LeaseTemplate.NNN:
-            raise ValidationError({"lease": "Only a triple-net lease carries an NNN amount."})
+        if self.lease_id is not None and not self.lease.uses_nnn:
+            raise ValidationError({"lease": "Only a lease that carries NNN takes an NNN amount."})
+
+
+class LeaseOnboarding(models.Model):
+    """How a live tenancy that began before RHP was brought in (E4).
+
+    One record per lease, written once, saying which of the two ways the tenancy
+    was placed and what figures it was placed with. The money itself lives in the
+    ledger — a brought-forward charge, a credit, or the payment that settled the
+    history — so this table is the *decision*, and the ledger is the arithmetic.
+    """
+
+    lease = models.OneToOneField(Lease, on_delete=models.PROTECT, related_name="onboarding")
+    method = models.CharField(max_length=10, choices=OnboardingMethod.choices)
+    as_of = models.DateField(help_text="The date this position speaks to.")
+    #: Method HISTORY: the total received from the tenant before RHP, as one figure.
+    received_total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0"))],
+        help_text="Everything received before RHP, brought in as one settling payment.",
+    )
+    #: Method POSITION: what was owed at the cutover. Positive owed, negative in credit.
+    opening_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Balance brought forward: positive owed, negative paid ahead.",
+    )
+    note = models.CharField(max_length=200, blank=True)
+    set_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="lease_onboardings_set",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "lease onboarding"
+
+    def __str__(self) -> str:
+        return f"{self.lease} · {self.get_method_display()}"
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.method == OnboardingMethod.HISTORY and self.received_total is None:
+            raise ValidationError({"received_total": "Say what the tenant had paid before RHP."})
+        if self.method == OnboardingMethod.POSITION and self.opening_amount is None:
+            raise ValidationError(
+                {"opening_amount": "Enter 0 if the tenancy was exactly square on that date."}
+            )
 
 
 class LeaseTenant(models.Model):

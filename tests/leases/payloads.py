@@ -42,6 +42,10 @@ def lease_post_data(unit, tenants=(), *, lease=None, **overrides):
         data["step_up_month"] = str(lease.step_up_month or "")
         data["step_up_percent"] = str(lease.step_up_percent or "")
         data["step_up_amount"] = str(lease.step_up_amount or "")
+    if lease is not None and lease.carries_nnn:
+        # A ticked checkbox posts its value; an unticked one posts nothing, and the
+        # browser is what the office actually uses (E4).
+        data["carries_nnn"] = "on"
 
     index = 0
     for membership in initial:

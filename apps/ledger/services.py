@@ -18,7 +18,7 @@ from django.utils import timezone
 from apps.audit.models import AuditAction
 from apps.audit.services import record
 from apps.common.dates import due_date_in
-from apps.leases.models import Lease, LeaseStatus, LeaseTemplate
+from apps.leases.models import Lease, LeaseStatus
 from apps.ledger.models import (
     Charge,
     ChargeKind,
@@ -807,11 +807,14 @@ def rent_due_dates(lease: Lease, *, through: dt.date) -> list[dt.date]:
     Phase 4 (the desk adds a manual charge for it).
     """
     horizon = min(through, lease.end_date)
+    # Charging starts at the lease's cutover: a tenancy RHP took on part-way through
+    # its term is billed from the month the office named, never from before it (E4).
+    start = max(lease.start_date, lease.bill_from)
     dates: list[dt.date] = []
-    year, month = lease.start_date.year, lease.start_date.month
+    year, month = start.year, start.month
     while (year, month) <= (horizon.year, horizon.month):
         due = due_date_in(year, month, lease.rent_due_day)
-        if lease.start_date <= due <= horizon:
+        if start <= due <= horizon:
             dates.append(due)
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
     return dates
@@ -837,11 +840,17 @@ def generate_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Char
         raise ValidationError(
             "A draft lease has no ledger yet: its terms can still change. Activate the lease first."
         )
+    if lease.needs_onboarding:
+        raise ValidationError(
+            "This tenancy began before this month and has not been brought into RHP yet. "
+            "Place its history on the lease page first, so nobody is billed for a past that "
+            "was already settled."
+        )
 
     created: list[Charge] = []
     for due in rent_due_dates(lease, through=through):
         created.extend(_create_rent_charge(lease, due, actor=actor))
-        if lease.template == LeaseTemplate.NNN:
+        if lease.uses_nnn:
             created.extend(_create_nnn_charge(lease, due, actor=actor))
         created.extend(_create_responsibility_charges(lease, due, actor=actor))
     return created

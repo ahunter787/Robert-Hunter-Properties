@@ -50,7 +50,8 @@ Three additions RHP asked for that the specification does not cover. They are pr
 | # | Extension | Status | What it is |
 | --- | --- | --- | --- |
 | E1 | Lease templates | In `main` | Fixed, Step Up, and Triple Net: the term's rent is worked out when the lease is activated, and NNN is staged each year ([ADR-013](decisions/ADR-013-lease-templates.md)) |
-| E2 | Property responsibilities | **Built, in review** | Utilities and maintenance billed to a property, charged to each unit's share, and read as one month by the tenant ([ADR-014](decisions/ADR-014-property-responsibilities.md)) |
+| E2 | Property responsibilities | In `main` | Utilities and maintenance billed to a property, charged to each unit's share, and read as one month by the tenant ([ADR-014](decisions/ADR-014-property-responsibilities.md)) |
+| E4 | Retroactive onboarding | **Built, in review** | A live tenancy brought into RHP: the history raised and what was received brought in, or one opening position, and a schedule the lease states ([ADR-016](decisions/ADR-016-retroactive-onboarding.md)) |
 | E3 | Concessions | Proposed | A month forgiven, or moved to a later date, recorded as a decision |
 
 ---
@@ -561,6 +562,54 @@ share; type a different figure for one unit and save. Then open a tenancy on tha
 `/manage/ledger/` and press **Create charges**: the month should carry rent, any NNN, and the unit's share
 of the water as its own lines. Sign in as that tenant and open `/payments/`: the month should be one card
 that opens into base rent, NNN and the responsibilities by category.
+
+## Extension E4 — Retroactive onboarding (built, in review)
+
+**In one sentence:** RHP's tenancies are already running, so a lease can be *placed* — its history raised
+and what the tenant already paid brought in, or one opening position — instead of being billed from the day
+the portal was switched on.
+
+**What exists now:** a lease that began before this month and has not been placed **cannot be charged at
+all**: the lease page asks for its history to be brought in, and the ledger says the same thing in the same
+words. Placing it is one screen with two ways in. **Raise the history** bills every month the term has run
+and records everything the tenant had already paid as one settling payment, which the ledger applies to the
+oldest months first — so the balance is the true position and the tenant's statement shows the whole
+tenancy. **State the position** bills nothing before the date you give and records one line: a
+brought-forward balance, or a credit on account if the tenant is paid ahead. A lease can also be **stated**,
+meaning its paper names each amount: you add dated amounts (a mid-year step, an extra space taken, a
+renewal) and RHP keeps them, never inventing one and never removing one you entered.
+
+**What you can do today:** bring a live tenancy in either way, with the figures and a note; record the
+amounts a lease states, and remove one you added while nothing has been charged for it; correct a due day
+(the lease at 910 SE Stark says the 1st, RHP had the 5th); and read on the lease what was placed, when, by
+which method.
+
+**Deliberate decisions worth knowing:**
+
+- **The phantom balance is impossible, not discouraged.** An unplaced tenancy refuses to raise charges,
+  because the generator would bill years of history as if it were new — on one real lease that read as
+  $100,536 owed by a tenant who was paid up.
+- **The cutover is a decision a person makes.** A lease with no cutover bills from its term start exactly as
+  before; a lease that has one is billed from that month. Nothing infers it.
+- **A credit is money, not a correction.** A tenant paid ahead is recorded as a payment on account, so it
+  settles the next months as they come; a brought-forward debt is a charge of its own.
+- **The lease as written is entered, not reconciled.** Where a lease disagrees with itself — one real lease
+  states both "$305/month" and "$0.19/sf" for its 2022 NNN — the office records what governs, and RHP makes
+  the drift visible to both sides rather than quietly choosing (ADR-016).
+- **A hand-entered amount is never deleted by regenerating a schedule.** That was a real defect, found by
+  cross-referencing a live lease, and it is now pinned by a test.
+
+**What it deliberately does not do:** no late fees or interest (see the recorded decisions in
+`extensions.md`), no usage or meter billing, no tax, depreciation or land valuation (that is the
+owner-facing direction recorded in the register), and no rewriting of anything already charged once a
+tenancy is onboarded.
+
+**How to check it:** open a lease whose term began before this month — it should say it has not been brought
+into RHP and offer to place it. Try **Create charges** on its ledger: it should refuse and say why. Then
+place it with **Raise the history** (one total received) and look at the tenant's statement: the months
+should be there, the payment should have settled the oldest, and the balance should be the real one. On a
+stated lease, add a rent amount from a mid-year date, then press **Work the schedule out again** — your
+amount must still be there.
 
 ## Cross-phase change map
 

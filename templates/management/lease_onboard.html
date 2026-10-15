@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Bring {{ lease.unit.label }} into RHP — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'leases:lease-detail' lease.pk %}" class="underline-offset-2 hover:underline">Lease</a>
+        · {{ lease.unit.identifier }}
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Bring this tenancy into RHP</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        {{ lease.tenant_names }} · {{ lease.start_date }} → {{ lease.end_date }}. This tenancy began
+        before RHP kept its books, so nothing can be charged until it is placed: the generator would
+        otherwise bill the whole past as if it were new.
+      </p>
+    </div>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">What is recorded for it so far</h2>
+      <dl class="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-ink-muted">Lease template</dt>
+          <dd class="font-medium">{{ lease.template_label }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Rent now, as RHP reads the lease</dt>
+          <dd class="font-medium">{{ lease.current_base_rent|money }}</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">Stated rent amounts</dt>
+          <dd class="font-medium">{{ rent_periods|length }} recorded</dd>
+        </div>
+        <div>
+          <dt class="text-ink-muted">NNN rates staged</dt>
+          <dd class="font-medium">{{ nnn_rates|length }} recorded</dd>
+        </div>
+      </dl>
+
+      {% if lease.uses_schedule and not rent_periods %}
+        <p class="mt-3 text-sm text-warning" role="status">
+          No rent amounts are recorded yet. Raise the history now and every month will be billed at
+          {{ lease.monthly_rent|money }}. Record the amounts the lease states first if it steps up.
+          <a href="{% url 'leases:rent-period-create' lease.pk %}"
+             class="font-medium text-primary underline-offset-2 hover:underline">Add a rent amount</a>.
+        </p>
+      {% endif %}
+      {% if lease.uses_nnn and not nnn_rates %}
+        <p class="mt-2 text-sm text-warning" role="status">
+          No NNN is staged, so the history would carry rent alone.
+          <a href="{% url 'leases:nnn-stage' lease.pk %}"
+             class="font-medium text-primary underline-offset-2 hover:underline">Stage the NNN</a>.
+        </p>
+      {% endif %}
+    </section>
+
+    <div class="rhp-card">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        <div class="mt-6 flex items-center gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">Place this tenancy</button>
+          <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <p class="text-sm text-ink-muted">
+      <span class="font-medium">Raise the history</span> bills every month the term has run, from
+      {{ lease.start_date }} through {{ horizon }}, and records what the tenant had paid as one
+      settling payment — oldest months first. The statement then shows the whole tenancy.
+      <span class="font-medium">State the position</span> bills nothing before the date you give and
+      records one brought-forward line instead.
+    </p>
+  </div>
+{% endblock %}

@@ -309,10 +309,18 @@ def test_a_draft_lease_is_not_shown(client, payments):
 
 
 @pytest.mark.parametrize("maker", [make_manager, make_admin], ids=["manager", "admin"])
-def test_staff_are_turned_away(client, payments, maker):
+def test_staff_are_sent_to_the_management_area(client, payments, maker):
+    """A staff account has no tenancy of its own, so the empty state is the wrong door.
+
+    It used to be a 403; the tenant pages' *content* is never right for staff, and a
+    redirect to where the same information lives is friendlier (ADR-003, amended).
+    """
     client.force_login(maker(username="staff-member"))
 
-    assert client.get(payments).status_code == 403
+    response = client.get(payments)
+
+    assert response.status_code == 302
+    assert response["Location"] == reverse("manage:home")
 
 
 def test_anonymous_visitors_are_sent_to_sign_in(client, payments):

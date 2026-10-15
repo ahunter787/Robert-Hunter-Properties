@@ -9,7 +9,14 @@ from django.utils import timezone
 
 from apps.ledger import services
 from apps.ledger.models import PaymentStatus
-from tests.factories import make_charge, make_lease, make_manager, make_payment, make_tenant
+from tests.factories import (
+    make_admin,
+    make_charge,
+    make_lease,
+    make_manager,
+    make_payment,
+    make_tenant,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -108,10 +115,30 @@ def test_a_draft_lease_is_not_shown_to_its_tenant(client):
     assert "No lease yet" in body
 
 
-def test_staff_are_turned_away_from_the_tenant_lease_page(client):
+def test_staff_are_sent_to_the_management_area_from_the_tenant_lease_page(client):
     client.force_login(make_manager(username="lease-manager"))
 
-    assert client.get(reverse("tenancy:lease")).status_code == 403
+    response = client.get(reverse("tenancy:lease"))
+
+    assert response.status_code == 302
+    assert response["Location"] == reverse("manage:home")
+
+
+def test_a_superadmin_is_not_shown_a_tenant_empty_state(client):
+    """The owner's own case: signed in as rhpadmin at ``/lease/``, reading "No lease yet".
+
+    A superuser passes every role test by design, which is what let a staff account
+    into a tenant page in the first place (ADR-003, amended).
+    """
+    staff = make_admin(username="rhpadmin")
+    staff.is_superuser = True
+    staff.save(update_fields=["is_superuser"])
+    client.force_login(staff)
+
+    response = client.get(reverse("tenancy:lease"), follow=True)
+
+    assert "No lease yet" not in response.content.decode()
+    assert "management area" in response.content.decode()
 
 
 def test_the_tenant_sees_an_expected_payment_as_pending_not_as_paid(client):

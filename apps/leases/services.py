@@ -13,6 +13,7 @@ import datetime as dt
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -23,12 +24,14 @@ from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
     Lease,
-    LeaseTemplate,
+    LeaseOnboarding,
+    LeaseStatus,
     NnnRate,
+    OnboardingMethod,
     RentPeriod,
     RentPeriodOrigin,
 )
-from apps.ledger.models import ChargeKind
+from apps.ledger.models import ChargeKind, PaymentMethod
 
 #: The smallest amount a rent period or an NNN rate may carry.
 MINIMUM_AMOUNT = Decimal("0.01")
@@ -199,6 +202,11 @@ def generate_rent_schedule(
     removed only when nothing has been charged against them — which is how a lease
     that goes back to a fixed rent loses the periods it no longer has.
     """
+    if lease.is_stated:
+        # A stated lease's amounts are the office's, entered from the paper: there
+        # is no rule to work out and nothing here may remove what they wrote (E4).
+        return ScheduleResult()
+
     planned = planned_periods(lease) if lease.uses_schedule else []
     existing = {period.effective_from: period for period in lease.rent_periods.all()}
     if not planned and not existing:
@@ -241,6 +249,12 @@ def generate_rent_schedule(
 
     for date, period in existing.items():
         if date in planned_dates:  # pragma: no cover - planned dates are popped above
+            continue
+        if period.origin == RentPeriodOrigin.MANUAL:
+            # The office's own dated amount — a mid-term step, a renegotiation, an
+            # "extra space" change. A rule cannot plan it, so the rule must not
+            # delete it either (E4; this was a real defect).
+            result.kept.append(period)
             continue
         if _is_locked(date, every_date, charged, lease):
             result.locked.append(date)
@@ -337,8 +351,8 @@ def stage_nnn_rate(
     The rate already in force keeps applying until that date arrives, so staging
     next year's figure never disturbs this year's (ADR-013).
     """
-    if lease.template != LeaseTemplate.NNN:
-        raise ValidationError("Only a triple-net lease carries an NNN amount.")
+    if not lease.uses_nnn:
+        raise ValidationError("Only a lease that carries NNN takes an NNN amount.")
     if monthly_amount is None or monthly_amount < ZERO:
         raise ValidationError({"monthly_amount": "An NNN amount cannot be negative."})
     if _nnn_window_is_charged(lease, effective_from):
@@ -371,3 +385,196 @@ def stage_nnn_rate(
         effective_from=effective_from,
     )
     return rate
+
+
+# --- the office's own dated amounts (E4) ----------------------------------
+
+
+@transaction.atomic
+def add_rent_period(
+    lease: Lease, *, effective_from: dt.date, amount: Decimal, note: str = "", actor=None
+) -> RentPeriod:
+    """Add a dated rent amount the lease states — a mid-term step, a renegotiation.
+
+    This is what a *stated* lease is for, and it also lets a stepped lease record a
+    change its rule cannot plan. The period is marked as the office's own, so
+    regenerating the schedule never removes it (E4, ADR-016).
+    """
+    if not lease.uses_schedule:
+        raise ValidationError(
+            "This lease has one rent for its term. Make it a stated-amounts lease to record "
+            "dated amounts."
+        )
+    if amount is None or amount < MINIMUM_AMOUNT:
+        raise ValidationError({"amount": "A rent amount must be at least one cent."})
+
+    period = RentPeriod(
+        lease=lease,
+        effective_from=effective_from,
+        amount=amount,
+        origin=RentPeriodOrigin.MANUAL,
+        note=note,
+        created_by=_actor(actor),
+    )
+    period.save()
+    _forget_cached(lease)
+    record(
+        _actor(actor),
+        AuditAction.RENT_PERIOD_CHANGED,
+        obj=period,
+        lease=lease,
+        summary=f"Rent from {period.effective_from} set to {amount}",
+        amount=amount,
+        effective_from=period.effective_from,
+    )
+    return period
+
+
+@transaction.atomic
+def remove_rent_period(period: RentPeriod, *, actor=None) -> None:
+    """Remove a dated amount the office added, while nothing has been charged for it."""
+    if _period_is_locked(period.lease, period):
+        raise ValidationError(
+            "That period has already been charged. Correct the charge with an adjustment "
+            "instead of removing the amount the lease states."
+        )
+    lease = period.lease
+    effective_from = period.effective_from
+    period.delete()
+    _forget_cached(lease)
+    record(
+        _actor(actor),
+        AuditAction.RENT_PERIOD_CHANGED,
+        obj=lease,
+        lease=lease,
+        summary=f"Rent from {effective_from} removed",
+        effective_from=effective_from,
+    )
+
+
+# --- bringing a live tenancy in (E4) --------------------------------------
+
+
+@transaction.atomic
+def onboard_lease(
+    lease: Lease,
+    *,
+    method: str,
+    as_of: dt.date,
+    received_total: Decimal | None = None,
+    opening_amount: Decimal | None = None,
+    billing_start_date: dt.date | None = None,
+    note: str = "",
+    through: dt.date | None = None,
+    actor=None,
+) -> LeaseOnboarding:
+    """Place a tenancy that began before RHP, without inventing a debt (E4).
+
+    Two ways in, both recorded on the lease:
+
+    * **history** — the term's charges are raised and everything the tenant had
+      already paid is brought in as one settling payment. The ledger's oldest-first
+      allocation then leaves the true position, and the tenant has a full statement.
+    * **position** — charging starts at the cutover and the past is one line: a
+      brought-forward balance, or a credit on account.
+
+    Either way the lease may not be charged before this runs, which is what makes
+    the phantom back-bill impossible rather than merely discouraged (ADR-016).
+    """
+    from apps.ledger import services as ledger_services
+    from apps.ledger.models import ChargeKind
+
+    if method not in OnboardingMethod.values:
+        raise ValidationError({"method": "Choose how this tenancy is being brought in."})
+    if lease.status == LeaseStatus.DRAFT:
+        raise ValidationError("Activate the lease first: a draft's terms can still change.")
+    if lease.charges.exists():
+        raise ValidationError(
+            "This lease already has charges. Correct them with adjustments rather than "
+            "bringing it in again."
+        )
+    if not lease.is_retroactive:
+        raise ValidationError(
+            "This tenancy begins in the current month or later: raise its charges in the "
+            "ordinary way."
+        )
+
+    if method == OnboardingMethod.HISTORY:
+        if received_total is None or received_total < ZERO:
+            raise ValidationError(
+                {"received_total": "Say what the tenant had paid before RHP (0 if nothing)."}
+            )
+        # The whole term is billed from its start; the payment settles it oldest-first.
+        lease.billing_start_date = billing_start_date or lease.start_date
+        lease.save(update_fields=["billing_start_date", "updated_at"])
+        through = through or ledger_services.generation_horizon(settings.RHP_CHARGE_HORIZON_MONTHS)
+        ledger_services.generate_charges(lease, through=through, actor=actor)
+        if received_total > ZERO:
+            ledger_services.record_payment(
+                lease,
+                amount=received_total,
+                payment_date=as_of,
+                method=PaymentMethod.OTHER,
+                external_reference="Opening position",
+                notes="Everything received before RHP was brought in (E4).",
+                actor=actor,
+            )
+    else:
+        cutover = billing_start_date or ledger_services.upcoming_rent_date(lease) or as_of
+        if cutover < lease.start_date or cutover > lease.end_date:
+            raise ValidationError(
+                {"billing_start_date": "The first month billed has to fall inside the term."}
+            )
+        if opening_amount is None:
+            raise ValidationError({"opening_amount": "Enter 0 if the tenancy was square."})
+        lease.billing_start_date = cutover
+        lease.save(update_fields=["billing_start_date", "updated_at"])
+        if opening_amount > ZERO:
+            ledger_services.create_charge(
+                lease,
+                description="Balance brought forward",
+                amount=opening_amount,
+                due_date=as_of,
+                actor=actor,
+                kind=ChargeKind.OPENING,
+            )
+        elif opening_amount < ZERO:
+            # Paid ahead: money on account, which is what a credit is.
+            ledger_services.record_payment(
+                lease,
+                amount=-opening_amount,
+                payment_date=as_of,
+                method=PaymentMethod.OTHER,
+                external_reference="Opening position",
+                notes="Credit brought forward from before RHP (E4).",
+                actor=actor,
+            )
+
+    onboarding = LeaseOnboarding(
+        lease=lease,
+        method=method,
+        as_of=as_of,
+        received_total=received_total if method == OnboardingMethod.HISTORY else None,
+        opening_amount=opening_amount if method == OnboardingMethod.POSITION else None,
+        note=note,
+        set_by=_actor(actor),
+    )
+    onboarding.save()
+    _forget_cached(lease)
+
+    record(
+        _actor(actor),
+        AuditAction.LEASE_ONBOARDED,
+        obj=lease,
+        lease=lease,
+        summary=(
+            f"{lease.unit.label} brought into RHP by "
+            f"{onboarding.get_method_display().lower()} as of {as_of}"
+        ),
+        method=method,
+        as_of=as_of,
+        received_total=received_total,
+        opening_amount=opening_amount,
+        billing_start_date=lease.billing_start_date,
+    )
+    return onboarding

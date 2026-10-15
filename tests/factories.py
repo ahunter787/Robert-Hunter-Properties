@@ -177,6 +177,9 @@ def make_amenity(name: str = "Parking", *, is_active: bool = True) -> Amenity:
 
 # --- Leasing --------------------------------------------------------------
 
+#: Marks a lease the factory should treat as already placed in RHP (E4).
+_AUTO_CUTOVER = object()
+
 
 def make_lease(
     unit: Unit | None = None,
@@ -188,16 +191,27 @@ def make_lease(
     monthly_rent: Decimal = Decimal("1850.00"),
     deposit: Decimal = Decimal("1850.00"),
     rent_due_day: int = 1,
+    billing_start_date=_AUTO_CUTOVER,
     **fields,
 ) -> Lease:
-    """A lease with sensible defaults. Pass ``tenants`` to attach them in order."""
+    """A lease with sensible defaults. Pass ``tenants`` to attach them in order.
+
+    A lease built here is treated as **already placed in RHP** — its cutover is the
+    start of its term — because that is what a tenancy the office has taken on looks
+    like, and it keeps every test that is not about onboarding (E4) working against
+    the same arithmetic it always did. Pass ``billing_start_date=None`` for a
+    tenancy that has *not* been placed, which is what the guard refuses to bill.
+    """
     if unit is None:
         unit = make_unit()
     start = start_date or timezone.localdate()
     end = end_date or (start + dt.timedelta(days=365))
+    if billing_start_date is _AUTO_CUTOVER:
+        billing_start_date = start
     lease = Lease.objects.create(
         unit=unit,
         start_date=start,
+        billing_start_date=billing_start_date,
         end_date=end,
         monthly_rent=monthly_rent,
         deposit=deposit,

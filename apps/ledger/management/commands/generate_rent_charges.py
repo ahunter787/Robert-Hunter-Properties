@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.common.dates import due_date_in
-from apps.leases.models import Lease, LeaseTemplate
+from apps.leases.models import Lease
 from apps.ledger import services
 from apps.ledger.models import ChargeKind
 
@@ -84,7 +84,7 @@ class Command(BaseCommand):
             )
         )
         missing = sum(1 for due in due_dates if due not in rent)
-        if lease.template == LeaseTemplate.NNN:
+        if lease.uses_nnn:
             missing += sum(1 for due in due_dates if due not in nnn and lease.nnn_for(due) > 0)
         for due in due_dates:
             for responsibility, _amount in services.responsibilities_due(lease, due):

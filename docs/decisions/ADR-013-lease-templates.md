@@ -31,6 +31,14 @@ exists keeps its present meaning. A step-up or triple-net lease carries the rule
 steps up, and **exactly one** basis — a percentage or a fixed amount. A fixed lease carries none of
 them, and refuses them if they are set.
 
+**Amended by E4 (ADR-016).** The template says how the *base rent* is set. Whether the tenant also pays
+NNN is a separate term of the lease, `Lease.carries_nnn`, because the two are genuinely independent: a
+lease can state each of its own rent amounts (E4's `STATED` template) and still pass the property's
+operating costs on to the tenant. That combination is not hypothetical — it is RHP's own lease. The
+`NNN` template survives as the common case and a shorthand: it means a step-up rent *and* NNN, and
+choosing it records `carries_nnn`. Every pre-E4 triple-net lease was migrated to `carries_nnn = True`,
+so nothing about what those leases charge changed.
+
 ### The whole term is worked out once, and stored
 
 For a Step Up or NNN lease, activating the lease generates its **rent periods**: a dated amount is

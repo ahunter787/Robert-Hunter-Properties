@@ -93,7 +93,21 @@ format: ## Auto-format and auto-fix
 	$(UV) run ruff check --fix .
 
 check: ## Run Django system checks (development settings)
+	@unreadable=$$(find . -path ./.git -prune -o -path ./.venv -prune -o -path ./.uv-cache -prune \
+		-o -path ./node_modules -prune -o -name '.env' -prune -o -name '.env.*' -prune \
+		-o -type f ! -perm -o=r -print); \
+	if [ -n "$$unreadable" ]; then \
+		echo "The app container cannot read these files (run 'make perms'):"; \
+		echo "$$unreadable"; exit 1; \
+	fi
 	$(UV) run python manage.py check
+
+perms: ## Make every checkout file readable by the containers
+	@find . -path ./.git -prune -o -path ./.venv -prune -o -path ./.uv-cache -prune \
+		-o -path ./node_modules -prune -o -name '.env' -prune -o -name '.env.*' -prune \
+		-o -type f ! -perm -o=r -print0 \
+		| xargs -0 -r chmod u+rw,go+r
+	@echo "Every file in the checkout is readable by the containers."
 
 check-deploy: ## Run Django deployment checks against production settings
 	DJANGO_SETTINGS_MODULE=config.settings.production \

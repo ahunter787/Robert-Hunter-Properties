@@ -20,7 +20,7 @@ from django.views.generic import DetailView, TemplateView
 from apps.accounts.permissions import (
     AdminRequiredMixin,
     ManagerRequiredMixin,
-    TenantRequiredMixin,
+    TenantAreaMixin,
 )
 from apps.audit.services import events_for_lease
 from apps.leases.models import Lease, LeaseStatus
@@ -372,7 +372,7 @@ class ChargeAdjustView(AdminRequiredMixin, View):
 # --- The tenant's own money -----------------------------------------------
 
 
-class TenantPaymentsView(TenantRequiredMixin, TemplateView):
+class TenantPaymentsView(TenantAreaMixin, TemplateView):
     """A tenant's own payment history: what was charged, what was paid.
 
     Read-only and deliberately thin: it renders `build_ledger`'s numbers, so the

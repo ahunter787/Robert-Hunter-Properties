@@ -1,9 +1,9 @@
 # RHP — extensions E1–E4
 
-**Where this stands:** **E1 (lease templates) and E2 (property responsibilities) are in `main`.** **E4
-(retroactive onboarding) is approved** and is the next unit of work, because RHP's live tenancies cannot be
-brought in without it. **E3 (concessions) remains proposed**, unchanged from the earlier proposal at the
-owner's instruction, and is the entry after E4 unless the owner redirects.
+**Where this stands:** **E1 (lease templates), E2 (property responsibilities) and E4 (retroactive
+onboarding) are built.** E4 is on its branch, awaiting the owner's testing; it is what lets RHP's live
+tenancies be brought in. **E3 (concessions) is proposed**, its wording decision settled, and is the next
+entry after E4.
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -15,7 +15,7 @@ the working model compiled by the owner with Robert. The governing specification
 | **E1** | **Lease templates** — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
 | **E2** | **Property responsibilities charged to the unit** — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
 | **E3** | **Concessions** — forgiveness and deferral | Additive | Proposed, unchanged — see section 4 |
-| **E4** | **Retroactive onboarding** — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Approved** — see section 5 |
+| **E4** | **Retroactive onboarding** — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Built** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md), branch `rhp-e4-onboarding` |
 
 ---
 
@@ -195,8 +195,10 @@ possible.
 
 ## 5. E4 — Retroactive onboarding
 
-**Status: approved 2026-10-03; not built.** Owner's words: *"all of the RHP tenants have a currently live
-lease, and I do not intend to wait for their lease to expire to enroll them into this new system."*
+**Status: built** on `rhp-e4-onboarding`; the decision record is
+[ADR-016](decisions/ADR-016-retroactive-onboarding.md). Owner's words: *"all of the RHP tenants have a
+currently live lease, and I do not intend to wait for their lease to expire to enroll them into this new
+system."*
 
 ### The problem, stated with the evidence
 
@@ -217,7 +219,7 @@ not plan is **silently deleted by "Work the schedule out again"** — verified i
 **Core-semantic**, with one invariant: a lease with no cutover and no opening position behaves exactly as it
 does today — charges from the term start, a schedule generated from the rule.
 
-### What it will do
+### What was built
 
 1. **A cutover date on the lease** (`billing_start_date`): the first month RHP raises charges for. Nothing
    before it is billed unless the office explicitly asks for the history.
@@ -231,10 +233,16 @@ does today — charges from the term start, a schedule generated from the rule.
 3. **A stated schedule.** A lease may say "the lease states the amounts" instead of "rise by a rule", and
    the office can add, change or remove a dated amount — which is what a mid-year step, an "Extra Space"
    change or a renegotiation needs. **The defect above is fixed with it**: a period the office entered by
-   hand is never removed by regenerating, and a regression test pins that.
+   hand is never removed by regenerating, and a regression test pins that. Moving a lease onto this
+   template from a step-up or triple-net one drops the step-up rule the old template carried — the model
+   refuses a rule on a template that has none, and the form used to leave the office holding that refusal
+   with no way to save (ADR-016). The lease page says the rule was cleared and where the amounts go.
 4. **An NNN series the office stages** — dated rates, adjusted when the lease says. The live lease says
    **October**; our earlier note (from the owner's first document) said November, and the docs are corrected
-   to "whenever the lease says".
+   to "whenever the lease says". **NNN is a term of the lease, not a rent template**: entering a lease whose
+   paper states its own rent *and* charges NNN exposed E1's conflation of the two, so `Lease.carries_nnn`
+   now records it independently of the template (ADR-013 amended, ADR-016). Michael's lease is `STATED` +
+   NNN, which is what it says.
 5. **The lease's own record, entered not reconciled.** A retroactive lease is entered as the paper reads:
    the rent due day the lease names (Michael's says the 1st; RHP had the 5th), the amounts it states, the
    square footage as it changed. Where the paper disagrees with itself (this lease says both "$305/month"

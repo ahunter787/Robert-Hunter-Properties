@@ -228,10 +228,11 @@ running container. `python manage.py check --deploy` runs in CI.
 
 Phases 1–3 satisfy the first four, and Phase 5 extends the first to money: a tenant's dashboard and
 payment history show only their own tenancy (there is no id in either URL), and the tests live in
-`tests/accounts/`, `tests/properties/` and `tests/leases/`. The lease suite asserts the role matrix route by route (403 for the wrong area, 302 to
-sign-in when anonymous), that a tenant who is not on a lease gets 404 from the tenant area, that the
-tenant document URL carries no id, and that an ended lease refuses a direct POST as well as hiding the
-form.
+`tests/accounts/`, `tests/properties/` and `tests/leases/`. The lease suite asserts the role matrix route
+by route (403 for the wrong area, 302 to sign-in when anonymous, and a staff account sent on to
+`/manage/` from the tenant pages), that a tenant who is not on a lease gets 404 from the tenant area,
+that the tenant document URL carries no id, and that an ended lease refuses a direct POST as well as
+hiding the form.
 
 Phase 4 satisfies the fifth, in `tests/ledger/`: the balance is the charges minus the cleared payments
 (including part payments, credits and overpayments), a reversal restores the balance while leaving the

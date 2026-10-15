@@ -10,7 +10,15 @@ from django.forms import inlineformset_factory
 
 from apps.accounts.models import Role, User
 from apps.common.forms import StyledForm, StyledModelForm
-from apps.leases.models import Lease, LeaseStatus, LeaseTenant, RentPeriod
+from apps.leases.models import (
+    STEPPING_TEMPLATES,
+    Lease,
+    LeaseStatus,
+    LeaseTemplate,
+    LeaseTenant,
+    OnboardingMethod,
+    RentPeriod,
+)
 from apps.properties.models import Unit
 
 #: What a signed lease may be uploaded as.
@@ -26,6 +34,7 @@ class LeaseForm(StyledModelForm):
             "end_date",
             "monthly_rent",
             "template",
+            "carries_nnn",
             "step_up_month",
             "step_up_percent",
             "step_up_amount",
@@ -42,17 +51,21 @@ class LeaseForm(StyledModelForm):
             "lease_file": "Lease document",
             "monthly_rent": "Rent at the start of the term",
             "template": "Lease template",
+            "carries_nnn": "The tenant pays NNN on top of rent",
         }
         help_texts = {
             "lease_file": "The signed lease as a PDF, or a JPEG or PNG scan.",
             "template": (
-                "Fixed is one rent for the term. Step up rises once a year. Triple net is a "
-                "step up with an NNN amount set each year."
+                "How the base rent is set: fixed is one rent for the term, step up rises once a "
+                "year, triple net is a step up with NNN, and stated amounts are entered from the "
+                "lease exactly as it writes them."
             ),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        #: Set when a template change made a posted step-up rule inapplicable.
+        self.rule_cleared = False
 
         free_units = (
             Unit.objects.select_related("property")
@@ -74,6 +87,29 @@ class LeaseForm(StyledModelForm):
 
     def clean(self):
         cleaned = super().clean()
+
+        # Choosing the Triple net template is also a statement that the tenant pays
+        # NNN, so record the term explicitly. It then survives a later change of rent
+        # template — a stated lease can carry NNN just as a triple-net one does (E4).
+        if cleaned.get("template") == LeaseTemplate.NNN:
+            cleaned["carries_nnn"] = True
+
+        # A lease is often moved from a rule to the amounts its paper names. The rule
+        # fields are then still in the posted form, and the model refuses them — which
+        # reads as "this lease cannot be saved" rather than "that rule no longer
+        # applies" (the owner hit exactly this on RHP's own lease). Drop them, and let
+        # the view say so: a stated lease's amounts are added on the lease page (E4).
+        template = cleaned.get("template")
+        if template and template not in STEPPING_TEMPLATES:
+            stale = [
+                field
+                for field in ("step_up_month", "step_up_percent", "step_up_amount")
+                if cleaned.get(field)
+            ]
+            if stale:
+                for field in stale:
+                    cleaned[field] = None
+                self.rule_cleared = True
 
         start_date, end_date = cleaned.get("start_date"), cleaned.get("end_date")
         if start_date and end_date and end_date < start_date:
@@ -217,3 +253,76 @@ class NnnRateForm(StyledForm):
         required=False,
         help_text="Where the figure came from: the November calculation, a reconciliation.",
     )
+
+
+class RentPeriodCreateForm(StyledForm):
+    """A dated rent amount the lease states — a mid-term step, an extra space, a renewal."""
+
+    effective_from = forms.DateField(
+        label="From",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="A date rent falls due on, inside the tenancy.",
+    )
+    amount = forms.DecimalField(
+        label="Monthly rent", max_digits=12, decimal_places=2, min_value=Decimal("0.01")
+    )
+    note = forms.CharField(
+        max_length=200,
+        required=False,
+        help_text="What changed: 'extra space', 'renewal', 'agreed reduction'.",
+    )
+
+
+class OnboardingForm(StyledForm):
+    """Place a tenancy that began before RHP: the history, or the position (E4)."""
+
+    method = forms.ChoiceField(
+        choices=OnboardingMethod.choices,
+        initial=OnboardingMethod.HISTORY,
+        label="How to bring it in",
+        help_text=(
+            "Raise the months the term charged and record what the tenant had paid, or start "
+            "billing at a date and state where the tenancy stood."
+        ),
+    )
+    as_of = forms.DateField(
+        label="Figures as of",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="The date the amounts below speak to.",
+    )
+    received_total = forms.DecimalField(
+        label="Received before RHP",
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0"),
+        required=False,
+        help_text="Everything the tenant has paid to date. It settles the oldest months first.",
+    )
+    opening_amount = forms.DecimalField(
+        label="Balance brought forward",
+        max_digits=12,
+        decimal_places=2,
+        required=False,
+        help_text="Positive if the tenant owes, negative if they are paid ahead, 0 if square.",
+    )
+    billing_start_date = forms.DateField(
+        label="Bill from",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        required=False,
+        help_text="The first month RHP charges for. Leave blank to bill the whole term.",
+    )
+    note = forms.CharField(max_length=200, required=False, help_text="Where the figures came from.")
+
+    def clean(self):
+        cleaned = super().clean()
+        method = cleaned.get("method")
+        if method == OnboardingMethod.HISTORY and cleaned.get("received_total") is None:
+            self.add_error(
+                "received_total", "Say what the tenant had paid before RHP (0 if nothing)."
+            )
+        if method == OnboardingMethod.POSITION:
+            if cleaned.get("opening_amount") is None:
+                self.add_error("opening_amount", "Enter 0 if the tenancy was square.")
+            if not cleaned.get("billing_start_date"):
+                self.add_error("billing_start_date", "Say which month RHP starts billing from.")
+        return cleaned

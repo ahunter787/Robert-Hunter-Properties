@@ -130,7 +130,14 @@ make superuser  # create an admin account
 make test       # pytest against the dev stack's PostgreSQL
 make lint       # ruff check + format check
 make health     # curl http://localhost:8000/healthz
+make perms      # make every file readable by the containers (after editing with a private-umask tool)
 ```
+
+`make check` refuses to pass if any file in the checkout is not world-readable: the containers run as
+another user, so a file saved with a private umask (`-rw-------`) reads fine on the host and raises
+`PermissionError` the moment Django tries to load it. `make perms` fixes what it reports. `.env` is
+exempt in both: Compose reads it on the host, no container does, and `make env` deliberately creates it
+`chmod 600`.
 
 ### Running without Docker
 
