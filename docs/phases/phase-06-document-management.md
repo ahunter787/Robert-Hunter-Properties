@@ -66,10 +66,10 @@ matters — the existing `lease_file` must become a categorised document row wit
 
 | # | Question | My recommendation | Your answer |
 | --- | --- | --- | --- |
-| P6-Q1 | Default visibility for an uploaded document: tenant-visible or staff-only? | **Staff-only by default**, with an explicit "tenant can see this" choice on upload — a misfiled internal document is worse than a document the tenant has to ask for. | *(awaiting)* |
-| P6-Q2 | Should documents attach to a **tenancy** (lease), a **property**, or a **person**? | All three, as the specification says, but a tenancy is the default and the only one a tenant sees. | *(awaiting)* |
-| P6-Q3 | Do you want a receipt per recorded payment, generated from the ledger entry? | Yes, eventually — it is the first genuinely useful generated document, and Phase 10 is where it belongs. | *(awaiting)* |
-| P6-Q4 | Should a superseded document (an old lease version) be replaced or kept alongside? | Kept alongside, with a date — history is the whole point, and the ledger already refuses to erase. | *(awaiting)* |
+| P6-Q1 | Default visibility for an uploaded document: tenant-visible or staff-only? | **Staff-only by default**, with an explicit "tenant can see this" choice on upload — a misfiled internal document is worse than a document the tenant has to ask for. | **As recommended** — staff-only unless the uploader ticks the tenant-visible box (2026-10-15). |
+| P6-Q2 | Should documents attach to a **tenancy** (lease), a **property**, or a **person**? | All three, as the specification says, but a tenancy is the default and the only one a tenant sees. | **As recommended** — all three, tenancy the default. |
+| P6-Q3 | Do you want a receipt per recorded payment, generated from the ledger entry? | Yes, eventually — it is the first genuinely useful generated document, and Phase 10 is where it belongs. | **As recommended** — yes, but Phase 10, not here. |
+| P6-Q4 | Should a superseded document (an old lease version) be replaced or kept alongside? | Kept alongside, with a date — history is the whole point, and the ledger already refuses to erase. | **Kept alongside — and a document uploaded in error can be removed: an admin may remove one, with a note. Not a manager, and nothing lower.** |
 
 ## How to verify it
 
