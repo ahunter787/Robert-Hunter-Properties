@@ -41,6 +41,13 @@ node_modules/
 .uv-cache/
 .npm-cache/
 
+# --- Development ecosystem (Plane, Outline, Mailpit) ------------------------
+# The tooling that tracks and documents RHP's development lives in the
+# workspace, not in the repository: it carries generated secrets, a live
+# database and its own git history. Ignored, so a clone is still the portal and
+# `git status` stays readable. See docs/decisions/ADR-015.
+ecosystem/
+
 # --- Editors / OS ----------------------------------------------------------
 .idea/
 .vscode/

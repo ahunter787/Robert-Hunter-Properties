@@ -4,8 +4,11 @@ Derived from the governing specification in [`harness/master-spec.md`](harness/m
 Work proceeds one phase at a time; a phase is complete only when its acceptance criteria and tests
 pass.
 
-For the readable version — what each phase is for, what exists, and which later phase will change it —
-see [`phase-guide.md`](phase-guide.md). This file is the terse checklist.
+Each phase also has **one record** in [`phases/`](phases/README.md) — its scope, what exists in the code
+today, the decisions that govern it, its gaps, and the questions waiting on you. This file is the terse
+checklist and the status word the tooling mirrors into Plane; the record is where the working knowledge
+lives. For the long-horizon view — which later phase will change something that already works — see
+[`phase-guide.md`](phase-guide.md).
 
 | Phase | Scope | Status |
 | --- | --- | --- |

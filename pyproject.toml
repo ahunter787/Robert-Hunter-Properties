@@ -23,7 +23,9 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py314"
-exclude = [".venv", "migrations", "staticfiles", "node_modules"]
+# `ecosystem/` is the development tooling in the workspace, not this project: its
+# Python is checked by its own repository's CI.
+exclude = [".venv", "migrations", "staticfiles", "node_modules", "ecosystem"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "DJ", "S", "T20"]

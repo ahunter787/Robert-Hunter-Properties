@@ -135,9 +135,10 @@ make perms      # make every file readable by the containers (after editing with
 
 `make check` refuses to pass if any file in the checkout is not world-readable: the containers run as
 another user, so a file saved with a private umask (`-rw-------`) reads fine on the host and raises
-`PermissionError` the moment Django tries to load it. `make perms` fixes what it reports. `.env` is
-exempt in both: Compose reads it on the host, no container does, and `make env` deliberately creates it
-`chmod 600`.
+`PermissionError` the moment Django tries to load it. `make perms` fixes what it reports. Two paths are
+exempt in both: `.env`, because Compose reads it on the host and `make env` deliberately creates it
+`chmod 600`, and `.agents/`, because `.dockerignore` keeps it out of the image — no container reads
+either one.
 
 ### Running without Docker
 
@@ -193,7 +194,9 @@ docker/          entrypoint and container healthcheck
 
 | Document | Contents |
 | --- | --- |
-| [`docs/phase-guide.md`](docs/phase-guide.md) | **Start here**: every phase in plain language, and what later phases will change |
+| [`docs/phases/README.md`](docs/phases/README.md) | **Start here**: one record per phase — scope, what exists, the decisions, the gaps, and the questions waiting on you |
+| [`docs/phase-guide.md`](docs/phase-guide.md) | The long-horizon view: which later phase will change something that works, and the questions left open |
+| [`docs/workflows/tenancy-and-money.md`](docs/workflows/tenancy-and-money.md) | The tenancy-and-money case study: how a lease's life and its charges fail to meet, with the evidence |
 | [`docs/architecture.md`](docs/architecture.md) | System shape, request flow, structure, conventions |
 | [`docs/database.md`](docs/database.md) | Database configuration, migration rules, modeling conventions |
 | [`docs/deployment.md`](docs/deployment.md) | Local VM and VPS topologies, TLS, backup/restore, upgrades |

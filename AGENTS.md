@@ -6,6 +6,8 @@ This file is the operating contract for any coding agent working in this reposit
 - Full product specification (vision, non-goals, domain model, Phases 0–12, security rules):
   `docs/harness/master-spec.md`
 - Phase plan and current status: `docs/roadmap.md`
+- **One record per phase** — scope, what exists, the decisions, the gaps, and the questions waiting on the
+  owner: `docs/phases/README.md`
 - Architecture and structure: `docs/architecture.md`
 - Additions that are **not** phases — the register of owner-approved extensions and recorded
   clarifications: `docs/extensions.md`
@@ -17,7 +19,9 @@ Work **one phase at a time**. Never start a later phase's features while a phase
 Before changing anything:
 
 1. Inspect the repository.
-2. Read `README.md`, `docs/roadmap.md`, and the architecture sections your change touches.
+2. Read `README.md`, `docs/roadmap.md`, the record for the phase you are touching
+   (`docs/phases/README.md`), and the architecture sections your change touches. The record carries the
+   questions still waiting on the owner — do not implement a recommendation that has not been answered.
 3. State the phase you are implementing and the current state of the code in one short paragraph.
 4. List the files and components you expect to change.
 
@@ -33,19 +37,37 @@ While implementing:
 When finished, report exactly: implemented, files changed, migrations, tests, known limitations.
 Never claim a test passed without having run it, and never leave a known failure unstated.
 
-## Development tooling (outside this repository)
+## Development tooling (in the workspace, not in the repository)
 
 Ticketing, versioning and documentation for RHP's development — Plane, Outline and a Mailpit mail sink —
-run on this machine from **their own repository**, not from this one. An RHP checkout contains the portal
-and nothing else. That tooling only ever *reads* this checkout: the tracked markdown it publishes to
-Outline, and the phase table in `docs/roadmap.md` and the register in `docs/extensions.md` that it mirrors
-into Plane. Nothing here refers to it.
+run from **`ecosystem/` in this workspace**. It is a checkout of its own with its own git history,
+generated secrets and a live database, and it is **ignored by git**, excluded from the Docker build
+context and from `ruff`: a clone of RHP is still the portal and nothing else, and `git status` stays
+readable ([ADR-019](docs/decisions/ADR-019-ecosystem-in-the-workspace.md), which supersedes
+ADR-015).
 
-If another agent or workstream is working in this checkout, hand it that repository's `AGENT-BRIEFING.md`
-before it starts. Its containers must not be stopped, pruned or reconfigured, and its ports — `8080`,
-`8090`, `1025`, `8025`, `8443`, `10025`, `10465`, `10587` — are not available to RHP. The reasoning, and
-what the separation costs, is in
-[ADR-015](docs/decisions/ADR-015-development-tooling-is-external.md).
+```bash
+make -C ecosystem health        # what answers, and which port belongs to whom
+make -C ecosystem docs-sync     # dry run: what would change in Outline (ARGS=--apply to write)
+make -C ecosystem plane-sync    # dry run: what would change in Plane (ARGS=--apply to write)
+make -C ecosystem verify        # the exit criterion: the plan, the documents and the copies agree
+make -C ecosystem mailbox | backup | ps | logs S=plane
+```
+
+The ecosystem only ever *reads* this checkout: the tracked markdown it publishes to Outline, and the phase
+table in `docs/roadmap.md` and the register in `docs/extensions.md` that it mirrors into Plane. Nothing
+about the product refers to it. The plan travels one way — change the documents, re-run the sync, never
+edit the plan in Plane — while the **open questions and bugs raised in Plane** are where the owner works,
+and the answers come back into the records (ADR-018).
+
+Its containers must not be stopped, pruned or reconfigured, and its ports — `8080`, `8090`, `1025`,
+`8025`, `8443`, `10025`, `10465`, `10587` — are not available to RHP. Never `docker system prune` or
+`docker volume prune`: Plane's and Outline's datastores look unused whenever the stack is stopped.
+`AGENT-BRIEFING.md` inside `ecosystem/` is the long version; ADR-019 records why it was brought back and
+ADR-015 why it was extracted in the first place.
+
+A skill for this is installed at `.agents/skills/project-ecosystem/`: it knows the commands and how to tell
+that this checkout and the published copies agree. Agents that do not read skills should follow it by hand.
 
 ## Branches
 

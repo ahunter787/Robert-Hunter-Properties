@@ -12,6 +12,12 @@ __pycache__
 .ruff_cache
 .coverage
 htmlcov
+# Agent instructions and skills: how to work on RHP, not part of the portal.
+.agents
+# The development ecosystem (Plane, Outline, Mailpit) lives in the workspace and
+# carries generated secrets, a live database and Plane's vendored bundle. It is
+# never part of the portal, and the Dockerfile ends in `COPY . .`.
+ecosystem
 node_modules
 staticfiles
 # Generated CSS: always rebuilt from source in the asset stage.

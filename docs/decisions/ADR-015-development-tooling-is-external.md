@@ -1,6 +1,10 @@
 # ADR-015: Development tooling lives outside this repository
 
-- **Status:** Accepted (owner-directed, 2026-10-03)
+- **Status:** **Superseded by [ADR-019](ADR-019-ecosystem-in-the-workspace.md) (2026-10-06)** — the tooling
+  now lives in the workspace at `ecosystem/`, ignored by git and excluded from images and lint. This record
+  is kept because it explains why it was extracted, and that reasoning still holds for *what is in the
+  repository*: the ecosystem is not part of the checkout's history. The 2026-10-06 amendment below (one-way
+  for the plan, two-way for questions) was itself folded into ADR-018 and ADR-019.
 - **Date:** 2026-10-03
 - **Context:** Plane, Outline and Mailpit were stood up inside this repository, and the coupling cost more
   than it bought
@@ -41,6 +45,32 @@ Plane. Nothing is ever written back, and no RHP code, setting or Compose project
 
 This repository therefore carries exactly two things about it: the short section in `AGENTS.md` pointing at
 the tooling and its agent briefing, and this ADR.
+
+## Amendment, 2026-10-06 — one-way for the plan, two-way for questions
+
+Two things changed, and the separation itself did not.
+
+**An agent in this checkout now drives the tooling.** The tooling repository was brought up to the same
+standard as the per-project ecosystem seed (a `verify` command, idempotent syncs, no tooling pages in the
+project's documentation), and the `project-ecosystem` skill was installed here at
+`.agents/skills/project-ecosystem/`. `AGENTS.md` points at it. An agent runs
+`make -C <tooling-path> {health,docs-sync,plane-sync,verify}` itself, publishes the documents it changed, and
+reports `verify`'s verdict rather than asserting that the two sides agree. The earlier rule that an agent
+must not touch the tooling repository was written when there was no skill and no `verify`; it now means
+*do not edit the tooling's code*, not *do not use it*.
+
+**Questions travel in the other direction.** Plane was a pure mirror: change the documents, re-run the sync,
+never the reverse. That stays true of the **plan** — the phases and the register are edited in this checkout
+and mirrored out, and nothing writes a phase's status back. But a phase record can carry **open questions
+for the owner**, each with a stable id (`P4-Q1`), and those are mirrored to Plane as items so the owner can
+answer them there. The answer is read back into the record, and the implementation plan for that phase or
+extension is written from it. So: one-way for the plan, two-way for questions.
+
+This does not weaken the first decision. Nothing about the product refers to the tooling; the checkout still
+contains the portal, and the meeting point is still the documents and `RHP_REPO`. What it changes is who
+turns the crank, and it makes the questions part of the plan instead of living in a conversation.
+
+See [ADR-018](ADR-018-phase-records-and-the-mirror.md) for the document contract this creates.
 
 ## Consequences
 

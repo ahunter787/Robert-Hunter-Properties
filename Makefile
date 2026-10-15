@@ -95,6 +95,7 @@ format: ## Auto-format and auto-fix
 check: ## Run Django system checks (development settings)
 	@unreadable=$$(find . -path ./.git -prune -o -path ./.venv -prune -o -path ./.uv-cache -prune \
 		-o -path ./node_modules -prune -o -name '.env' -prune -o -name '.env.*' -prune \
+		-o -path ./.agents -prune -o -path ./ecosystem -prune \
 		-o -type f ! -perm -o=r -print); \
 	if [ -n "$$unreadable" ]; then \
 		echo "The app container cannot read these files (run 'make perms'):"; \
@@ -105,6 +106,7 @@ check: ## Run Django system checks (development settings)
 perms: ## Make every checkout file readable by the containers
 	@find . -path ./.git -prune -o -path ./.venv -prune -o -path ./.uv-cache -prune \
 		-o -path ./node_modules -prune -o -name '.env' -prune -o -name '.env.*' -prune \
+		-o -path ./.agents -prune -o -path ./ecosystem -prune \
 		-o -type f ! -perm -o=r -print0 \
 		| xargs -0 -r chmod u+rw,go+r
 	@echo "Every file in the checkout is readable by the containers."
