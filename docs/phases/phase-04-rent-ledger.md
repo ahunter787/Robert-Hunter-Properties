@@ -58,7 +58,7 @@ moved to a later date, recorded as a decision rather than as a deleted charge. *
 merge into the charge-lifecycle work below: forgiveness and deferral are charge-lifecycle decisions, and
 answering P4-Q2 and P4-Q3 may settle most of E3's design.
 
-**P4-E4 — Retroactive onboarding** (register id `E4`, **Built, in review** on `rhp-e4-onboarding`,
+**P4-E4 — Retroactive onboarding** (register id `E4`, **in `main`**,
 [ADR-016](../decisions/ADR-016-retroactive-onboarding.md)). A live tenancy that began before RHP cannot be
 onboarded by activating it: the generator walks from the term start and bills the whole past. The extension
 adds `Lease.billing_start_date` as the cutover that unlocks charging, `LeaseOnboarding` recording how the

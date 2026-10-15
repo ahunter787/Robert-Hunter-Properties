@@ -1,8 +1,8 @@
 # RHP — extensions E1–E10
 
 **Where this stands:** **E1, E2, E4 and E9 are built** — lease templates, property responsibilities,
-retroactive onboarding and the plain-language interface — E4 and E9 on the `rhp-charge-lifecycle` branch,
-awaiting the owner's testing. **The tenancy-and-money work is built** too, but it is *not* an extension: it
+retroactive onboarding and the plain-language interface — all four are in `main` now, on their own
+branches until they were folded. **The tenancy-and-money work is built** too, but it is *not* an extension: it
 is a specification amendment (the states and what they mean for money), recorded below and in
 [ADR-017](decisions/ADR-017-charge-lifecycle.md) and
 [ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **E3 (concessions) is proposed**, re-scoped by the
@@ -24,7 +24,7 @@ parser accepts the longer form.
 | **E1** | **Lease templates** (`P3-E1`) — Fixed, Step Up, and Triple Net (NNN) | Core-semantic | **In `main`** — [ADR-013](decisions/ADR-013-lease-templates.md) |
 | **E2** | **Property responsibilities charged to the unit** (`P4-E2`) — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
 | **E3** | **Concessions** (`P4-E3`) — forgiveness, a deferral plan, and the term extension that goes with them | Additive | Proposed, re-scoped — see section 4 |
-| **E4** | **Retroactive onboarding** (`P4-E4`) — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **Built** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md), branch `rhp-e4-onboarding` |
+| **E4** | **Retroactive onboarding** (`P4-E4`) — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **In `main`** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md) |
 | **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | Proposed — the owner's "P4-E5 is good" (P4-Q6) |
 | **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Blocked by Phase 6** — the owner's decision: wait, so a charge always has its evidence from the day it exists |
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
@@ -214,7 +214,7 @@ ability to extend a term) are the parts Phase 3 and Phase 4 are still missing.
 
 ## 5. E4 — Retroactive onboarding
 
-**Status: built** on `rhp-e4-onboarding`; the decision record is
+**Status: built** — in `main`; the decision record is
 [ADR-016](decisions/ADR-016-retroactive-onboarding.md). Owner's words: *"all of the RHP tenants have a
 currently live lease, and I do not intend to wait for their lease to expire to enroll them into this new
 system."*

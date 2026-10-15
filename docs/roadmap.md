@@ -36,13 +36,13 @@ additions that are **not** phases are proposed, approved and tracked in
 | --- | --- | --- | --- | --- |
 | E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
 | E2 | Property responsibilities charged to the unit | **In `main`** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | folded |
-| E4 | Retroactive onboarding, and a stated rent schedule | **Built, in review** | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | `rhp-e4-onboarding` |
+| E4 | Retroactive onboarding, and a stated rent schedule | **In `main`** | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | folded |
 | E5 | Move-out settlement — the deposit, deductions, a final statement | Proposed | — | — |
 | E6 | Post-tenancy charges with their evidence | **Blocked by Phase 6** | — | — |
 | E7 | A unit's ledger history | Proposed | — | — |
 | E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
-| E9 | Plain-language interface — product vocabulary and account-first design | **Built, in review** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | `rhp-charge-lifecycle` |
+| E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
 | E10 | RHP property accounting — general-ledger style books | Future | — | — |
 
 ## Milestones
