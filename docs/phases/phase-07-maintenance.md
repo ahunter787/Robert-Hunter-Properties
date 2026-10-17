@@ -1,6 +1,6 @@
 # Phase 7 — Maintenance system
 
-**Status:** Not started
+**Status:** Next
 **Milestone:** 4 — Documents and maintenance requests work end to end
 **Specification:** `docs/harness/master-spec.md`, `PHASE 7 — MAINTENANCE SYSTEM`
 
