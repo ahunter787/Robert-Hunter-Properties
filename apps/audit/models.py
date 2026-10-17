@@ -32,6 +32,8 @@ class AuditAction(models.TextChoices):
     PAYMENT_CLEARED = "PAYMENT_CLEARED", "Payment cleared"
     PAYMENT_VOIDED = "PAYMENT_VOIDED", "Payment voided"
     PAYMENT_REVERSED = "PAYMENT_REVERSED", "Payment reversed"
+    DOCUMENT_UPLOADED = "DOCUMENT_UPLOADED", "Document uploaded"
+    DOCUMENT_REMOVED = "DOCUMENT_REMOVED", "Document removed"
     ROLE_CHANGED = "ROLE_CHANGED", "Role changed"
 
 

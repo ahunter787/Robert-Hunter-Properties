@@ -71,7 +71,7 @@ requires Pillow, which is why it is a runtime dependency (ADR-006, ADR-009).
 
 | Table | Purpose | Notes |
 | --- | --- | --- |
-| `leases_lease` | one tenancy of one unit and its financial-account state | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)`; `CheckConstraint(account_status='OPEN' OR (account_status='SETTLED' AND status='ENDED' AND settled_at IS NOT NULL))`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. Occupancy is `DRAFT`/`ACTIVE`/`ENDED`; `account_status` is `OPEN`/`SETTLED`; current settlement metadata is `settled_at`, `settled_by`, and `settlement_note`. `monthly_rent` and `deposit` are `Decimal(12,2)`; `lease_file` holds `lease_documents/<uuid><ext>` |
+| `leases_lease` | one tenancy of one unit and its financial-account state | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)`; `CheckConstraint(account_status='OPEN' OR (account_status='SETTLED' AND status='ENDED' AND settled_at IS NOT NULL))`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. Occupancy is `DRAFT`/`ACTIVE`/`ENDED`; `account_status` is `OPEN`/`SETTLED`; current settlement metadata is `settled_at`, `settled_by`, and `settlement_note`. `monthly_rent` and `deposit` are `Decimal(12,2)`. Its document is now a row in `documents_document` (Phase 6, ADR-022) |
 | `leases_leasetenant` | the people on a lease | `UniqueConstraint(lease, tenant)` and `UniqueConstraint(lease, condition=is_primary=True)` — one primary contact per lease; `lease` is **`CASCADE`**, `tenant` is **`PROTECT`**, so a person with tenancy history cannot be deleted |
 
 **Occupancy is derived, never stored.** There is no `is_occupied` column: a unit is occupied while an
@@ -79,12 +79,20 @@ active lease's term covers today, computed by `LeaseQuerySet.current()`. `Unit.c
 `Unit.occupants`, `Unit.is_vacant` and `Unit.is_occupied` all read that one definition (ADR-007).
 A unit that is out of service is a third state — neither occupied nor vacant.
 
-**Uploads.** A lease document lives in `MEDIA_ROOT` (the `media_data` volume) under a randomised
-filename in `lease_documents/`, is validated for size and type, and is served only by a
-permission-checked view (`LeaseDocumentView` for staff, `TenantLeaseDocumentView` for the tenant on that
-lease). `Lease.lease_document_name` separately stores the readable title or original uploaded filename;
-legacy files without display metadata read "Signed lease" until staff name them. Replacing it, or
-deleting the lease, deletes the stored file.
+**Uploads.** A lease's document is a `documents_document` row now: `apps/documents/models.py` stores the
+file under a randomised name in `documents/<uuid4hex><ext>` (the `media_data` volume), keeps the name it
+arrived with in `original_name`, and carries the readable `title`. It is validated for size and type by
+`apps/common/files.py::validate_document_upload` and served only by a permission-checked view
+(`DocumentDownloadView` for staff, `TenantDocumentDownloadView` for the tenant, scoped by
+`Document.objects.visible_to`). The migration `documents/0002_lease_files_become_documents` turned each
+old `Lease.lease_file` into such a row without moving the file, and `leases/0010` dropped `lease_file`
+and `lease_document_name` (ADR-022).
+
+## Document table (Phase 6)
+
+| Table | Purpose | Notes |
+| --- | --- | --- |
+| `documents_document` | one uploaded file, and who may see it | `title`; `category` (`LEASE`/`ADDENDUM`/`NOTICE`/`RECEIPT`/`INSPECTION`/`CORRESPONDENCE`/`OTHER`); `file` under `documents/<uuid4hex><ext>`; `original_name`; optional `lease`, `property`, `tenant` — all **`PROTECT`**, and `clean()` requires at least one; `tenant_visible` default `False`; `document_date`; `note`; `uploaded_by` (**`SET_NULL`**); `created_at`; indexed `(category, created_at)` and `(tenant_visible, created_at)` (ADR-022) |
 
 ## Ledger and audit tables (Phase 4)
 
@@ -112,9 +120,12 @@ original stays visible. `Charge`/`Payment` are registered read-only in the Djang
 
 These are binding for the phases that follow (Phases 2–11):
 
-- **Primary keys**: `BigAutoField` internally. Any resource exposed in a URL that a tenant or an
-  outsider could enumerate (documents, maintenance requests, lease documents) uses a `UUIDField`
-  instead of a sequential id.
+- **Primary keys**: `BigAutoField` internally. A resource exposed in a URL that a tenant or an
+  outsider could enumerate (maintenance requests, attachments) uses a `UUIDField` instead of a
+  sequential id where the surface can afford it. **Documents are the deliberate exception** (ADR-022):
+  a `Document` keeps its integer id and its tenant-facing download URL carries it, because the control
+  is the tenancy scope rather than the id — `Document.objects.visible_to` returns nothing for another
+  tenancy's row, so the view answers 404.
 - **Money**: `DecimalField(max_digits=12, decimal_places=2)`. Never `FloatField`. Amounts are stored
   positive with an explicit direction (charge vs payment), not as signed floats.
 - **Dates**: `DateField` for business dates (rent due day, lease start/end, payment date).

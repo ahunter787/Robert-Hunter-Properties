@@ -7,14 +7,12 @@ the session so there is no id in a tenant-facing URL to enumerate.
 
 import datetime as dt
 import logging
-from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Q
-from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -57,17 +55,6 @@ from apps.ledger import services as ledger_services
 from apps.properties.models import Unit
 
 logger = logging.getLogger("apps.leases")
-
-
-def document_response(field_file, *, filename="") -> FileResponse:
-    """Serve an uploaded document from the application, never from the proxy."""
-    field_file.open("rb")
-    if filename and not filename.lower().endswith(Path(field_file.name).suffix.lower()):
-        filename += Path(field_file.name).suffix
-    response = FileResponse(field_file, filename=filename)
-    response["Cache-Control"] = "private, max-age=300"
-    response["X-Content-Type-Options"] = "nosniff"
-    return response
 
 
 # --- Staff: the lease desk -------------------------------------------------
@@ -211,18 +198,9 @@ class LeaseUpdateView(ManagerRequiredMixin, UpdateView):
         formset = LeaseTenantFormSet(request.POST, request.FILES, instance=self.object)
 
         if form.is_valid() and formset.is_valid():
-            previous_document = (
-                Lease.objects.filter(pk=self.object.pk).values_list("lease_file", flat=True).first()
-                or ""
-            )
-            storage = self.object.lease_file.storage
             with transaction.atomic():
                 lease = form.save()
                 formset.save()
-
-            current_document = lease.lease_file.name if lease.lease_file else ""
-            if previous_document and previous_document != current_document:
-                storage.delete(previous_document)
 
             logger.info("lease updated pk=%s by=%s", lease.pk, request.user.pk)
             messages.success(request, "The lease was updated.")
@@ -814,18 +792,6 @@ class LeaseDeleteView(AdminRequiredMixin, DeleteView):
         return response
 
 
-class LeaseDocumentView(ManagerRequiredMixin, View):
-    """The lease document for staff, served through the application."""
-
-    http_method_names = ["get"]
-
-    def get(self, request, pk):
-        lease = get_object_or_404(Lease, pk=pk)
-        if not lease.lease_file:
-            raise Http404("This lease has no document attached.")
-        return document_response(lease.lease_file, filename=lease.document_name)
-
-
 # --- The tenant's own lease ------------------------------------------------
 
 
@@ -852,19 +818,3 @@ class TenantLeaseView(TenantAreaMixin, TemplateView):
         context["ledger"] = ledger_services.build_ledger(lease) if lease else None
         context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
         return context
-
-
-class TenantLeaseDocumentView(TenantAreaMixin, View):
-    """Serve the tenant's own lease document.
-
-    The resource is implied by the session, so there is no id in the URL that
-    could be changed to reach somebody else's file.
-    """
-
-    http_method_names = ["get"]
-
-    def get(self, request):
-        lease = visible_lease_for(request.user)
-        if lease is None or not lease.lease_file:
-            raise Http404("There is no lease document on your account.")
-        return document_response(lease.lease_file, filename=lease.document_name)

@@ -32,8 +32,9 @@ and the portfolio (properties and units) are in place. Domain apps arrive one ph
 - **db** — PostgreSQL 17 on a named volume. Development publishes the port for host-side tooling;
   production keeps it private to the Compose network.
 - **caddy** — production only. Terminates TLS, serves `/static/*` from the shared volume, and proxies
-  everything else to gunicorn. It deliberately does **not** serve `/media`: tenant documents must pass
-  Django permission checks (Phase 6).
+  everything else to gunicorn. It deliberately does **not** serve `/media`: every uploaded document and
+  photo passes a Django permission check before its bytes are returned
+  ([ADR-022](decisions/ADR-022-documents.md)).
 - **Entry point** — `docker/entrypoint.sh` applies migrations (and collects static files for `web`)
   before starting the server, so a fresh stack comes up without manual steps.
 - **Health** — `docker/healthcheck.py` polls `/healthz`, which returns 200 only when PostgreSQL
@@ -66,7 +67,8 @@ apps/                   domain apps, one per phase
   leases/                 tenancies: the lease desk and the tenant's lease (Phase 3)
   ledger/                 accounting: charges, payments, balances (Phase 4)
   audit/                  the audit trail: who changed what (Phase 4)
-  common/                 shared, domain-neutral building blocks (form styling, dates, filters)
+  documents/              documents: one row per uploaded file, and its screens (Phase 6)
+  common/                 shared, domain-neutral building blocks (form styling, dates, filters, the file rules)
 templates/              base layout, components/, account/, management/, tenancy/
 assets/css/input.css    Tailwind v4 entry point and the RHP design tokens
 static/                 build output only (static/css/rhp.css); gitignored
@@ -136,7 +138,7 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/manage/properties/<pk>/banner/` | the banner photo, served by a permission-checked view (never a public media path) |
 | `/manage/units/…` | units the same way, attached to a property |
 | `/manage/leases/…` | lease desk: list, create, detail, edit, activate/end (POST), delete a draft (admin) |
-| `/manage/leases/<pk>/document/` | the signed lease, served by a permission-checked view |
+| `/manage/documents/…` | documents: list (search, category, visibility and property filters), upload, download, remove (admin) — each download permission-checked |
 | `/manage/ledger/` | Rent & Payments: due now, account balance, past due and upcoming amounts, with a past-due filter |
 | `/manage/ledger/leases/<pk>/` | one lease account: identity and states, financial summary, actions, chronological transactions with running balance, and audit history |
 | `/manage/ledger/leases/<pk>/rent-charges/` | generate the missing monthly rent charges (POST, idempotent) |
@@ -145,14 +147,14 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/manage/ledger/payments/<pk>/clear/`, `…/void/` | move a pending payment to cleared or void (POST) |
 | `/manage/accounts/…` | tenant accounts: managers create/invite/activate and maintain profiles; role changes remain superadmin-only |
 | `/manage/accounts/<pk>/photo/`, `/account/photo/` | a tenant photo, served by a permission-checked view — the tenant's own URL carries **no id** |
-| `/lease/`, `/lease/document/` | the tenant's own lease and its document — tenant-only, scoped, and the document URL carries **no id** |
+| `/lease/`, `/lease/documents/`, `/lease/documents/<pk>/download/` | the tenant's own lease and the documents shared with them — tenant-only, every document resolved through the tenancy scope ([ADR-022](decisions/ADR-022-documents.md)) |
 | `/payments/` | the tenant's own statement — tenant-only, no id in the URL, one paginated list of list rows rather than tables |
 | `/admin/` | Django back office (`is_staff` gate) |
 
-Three URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts, `portfolio`
-for the portfolio, `leases` for the lease desk, `ledger` for accounting), and the tenant area has its own
-(`tenancy`). One shared namespace would leave whichever module was included first unreachable through
-`reverse()`.
+Several URL modules sit under `/manage/` with **different namespaces** (`manage` for accounts, `portfolio`
+for the portfolio, `leases` for the lease desk, `ledger` for accounting, `documents` for documents), and
+the tenant area has its own (`tenancy`, plus `tenant_documents` for `/lease/documents/`). One shared
+namespace would leave whichever module was included first unreachable through `reverse()`.
 
 Denials are deliberate: an authenticated user in the wrong *area* gets **403**, while an individual
 record outside the caller's tenancy is resolved with `tenant_scope(...)` and returns **404**, so ids
@@ -195,6 +197,13 @@ account, which is exactly how the owner found it.
   there is no stored balance (ADR-008).
 - **Append-only money.** A charge or payment is corrected by a reversal or an adjustment row, never
   edited or deleted, and every mutation appends an `AuditEvent` in the same transaction.
+- **Documents are rows, and every download is a view** ([ADR-022](decisions/ADR-022-documents.md)).
+  `apps/documents` holds one `Document` per file, filed against a tenancy, a property or a tenant — at
+  least one, and a tenancy is the default — with `tenant_visible` false unless staff tick it. The
+  accepted types and the size cap live in `apps/common/files.py`; the stored name is random and the
+  uploaded name is kept only as metadata. Staff read any document by id, a tenant only their own visible
+  ones through `Document.objects.visible_to`; removal is an admin's act with a required note, and it
+  deletes the row and the bytes while recording a `DOCUMENT_REMOVED` event.
 - **Tests** exercise behavior through the public HTTP surface and the ORM, against PostgreSQL.
 
 ## Not in Phase 5

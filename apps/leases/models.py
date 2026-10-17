@@ -8,8 +8,6 @@ convention (ADR-007).
 
 import datetime as dt
 from decimal import Decimal
-from pathlib import Path
-from uuid import uuid4
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -25,9 +23,16 @@ ZERO = Decimal("0.00")
 
 
 def lease_document_path(instance, filename: str) -> str:
-    """Randomised storage path: never the client's filename (docs/security.md)."""
-    if not instance.lease_document_name:
-        instance.lease_document_name = Path(filename.replace("\\", "/")).name[:255]
+    """Where a lease's file was stored when a lease had exactly one (Phase 3, E4).
+
+    **Kept for the migrations, not for the code.** `leases/0001_initial` and
+    `leases/0009_...` serialise this function as the field's ``upload_to``, so a
+    historical migration stops importing without it. New uploads are documents, and
+    `apps/documents/models.py` names their files (ADR-022).
+    """
+    from pathlib import Path
+    from uuid import uuid4
+
     suffix = Path(filename).suffix.lower()
     if len(suffix) > 10 or not suffix.isascii():
         suffix = ""
@@ -253,17 +258,6 @@ class Lease(models.Model):
         blank=True,
         help_text="The detail behind the reason: who asked, what was agreed, what was served.",
     )
-    lease_file = models.FileField(
-        upload_to=lease_document_path,
-        blank=True,
-        null=True,
-        help_text="The signed lease as a PDF or scan.",
-    )
-    lease_document_name = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="A readable document name. Leave blank to use the uploaded filename.",
-    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -313,11 +307,6 @@ class Lease(models.Model):
     @property
     def label(self) -> str:
         return self.unit.label
-
-    @property
-    def document_name(self) -> str:
-        """Display metadata independent of the private storage path."""
-        return self.lease_document_name or "Signed lease"
 
     @property
     def is_current(self) -> bool:

@@ -111,17 +111,11 @@
       <section class="rhp-card">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-sm font-semibold">Documents</h2>
-          {% if lease.lease_file %}
-            <a href="{% url 'tenancy:document' %}" target="_blank" rel="noopener"
-               class="rhp-btn rhp-btn-secondary">View your lease</a>
-          {% endif %}
+          <a href="{% url 'tenant_documents:list' %}" class="rhp-btn rhp-btn-secondary">Your documents</a>
         </div>
-        {% if lease.lease_file %}<p class="mt-2 text-sm text-ink-muted">{{ lease.document_name }}</p>{% endif %}
-        {% if not lease.lease_file %}
-          <p class="mt-2 text-sm text-ink-muted">
-            No document has been shared with you yet.
-          </p>
-        {% endif %}
+        <p class="mt-2 text-sm text-ink-muted">
+          Your lease and anything else Robert Hunter Properties has shared with you.
+        </p>
       </section>
 
       <section class="rhp-card">

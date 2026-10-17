@@ -42,7 +42,7 @@ proxy refuses to serve media in production, and every download runs through `doc
 
 - **Staff** read any document, by id.
 - **A tenant** reads a document only when it is `tenant_visible` **and** scoped to their own tenancy —
-  `Document.objects.get(pk=..., lease__tenants=request.user)`, the authorization scope rather than a bare
+  `Document.objects.visible_to(request.user)` (the queryset form of `lease__lease_tenants__tenant`), the authorization scope rather than a bare
   primary key. Somebody else's id answers **404, not 403**: the refusal must not confirm that the document
   exists.
 

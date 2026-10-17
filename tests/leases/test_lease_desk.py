@@ -343,7 +343,7 @@ def test_a_lease_with_no_document_offers_no_link(signed_in):
 
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    assert "No document attached yet" in body
+    assert "Nothing filed against this tenancy yet" in body
     assert "View lease" not in body
 
 

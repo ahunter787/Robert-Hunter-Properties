@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Documents — RHP{% endblock %}
+
+{% block content %}
+  <div class="space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">Documents</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Everything the office holds</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          Leases, addenda, notices, inspections and correspondence. A document is only on a
+          tenant's pages if somebody ticked "the tenant can see this" when filing it.
+        </p>
+      </div>
+      <a href="{% url 'documents:upload' %}" class="rhp-btn rhp-btn-primary">File a document</a>
+    </div>
+
+    <form method="get" class="rhp-card flex flex-wrap items-end gap-3">
+      <div class="min-w-56 grow">
+        <label class="rhp-label" for="q">Search</label>
+        <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
+               placeholder="Title, filename or a note">
+      </div>
+      <div>
+        <label class="rhp-label" for="category">Category</label>
+        <select name="category" id="category" class="rhp-field pr-8">
+          <option value="">Every category</option>
+          {% for value, label in categories %}
+            <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="rhp-label" for="visibility">Visibility</label>
+        <select name="visibility" id="visibility" class="rhp-field pr-8">
+          <option value="">All</option>
+          <option value="tenant" {% if visibility == "tenant" %}selected{% endif %}>The tenant can see it</option>
+          <option value="staff" {% if visibility == "staff" %}selected{% endif %}>Office only</option>
+        </select>
+      </div>
+      <div>
+        <label class="rhp-label" for="property">Property</label>
+        <select name="property" id="property" class="rhp-field pr-8">
+          <option value="">All properties</option>
+          {% for property in properties %}
+            <option value="{{ property.pk }}" {% if property_id == property.pk|stringformat:"s" %}selected{% endif %}>
+              {{ property.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="rhp-btn rhp-btn-secondary">Filter</button>
+    </form>
+
+    <div class="rhp-card overflow-x-auto">
+      {% if documents %}
+        <table class="w-full text-left text-sm">
+          <caption class="sr-only">Documents</caption>
+          <thead class="text-xs uppercase tracking-wide text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4">Document</th>
+              <th scope="col" class="py-2 pr-4">Category</th>
+              <th scope="col" class="py-2 pr-4">Filed against</th>
+              <th scope="col" class="py-2 pr-4">Dated</th>
+              <th scope="col" class="py-2 pr-4">The tenant</th>
+              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-muted">
+            {% for document in documents %}
+              <tr>
+                <td class="py-3 pr-4">
+                  <span class="font-medium">{{ document.title }}</span>
+                  {% if document.original_name %}
+                    <span class="block text-xs text-ink-muted">{{ document.original_name }}</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 pr-4 text-ink-muted">{{ document.get_category_display }}</td>
+                <td class="py-3 pr-4 text-ink-muted">{{ document.attachment_label }}</td>
+                <td class="py-3 pr-4 text-ink-muted">
+                  {{ document.document_date|date:"M j, Y"|default:"—" }}
+                </td>
+                <td class="py-3 pr-4">
+                  {% if document.tenant_visible %}
+                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Can see it</span>
+                  {% else %}
+                    <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Office only</span>
+                  {% endif %}
+                </td>
+                <td class="whitespace-nowrap py-3 text-right">
+                  <a href="{% url 'documents:download' document.pk %}" target="_blank" rel="noopener"
+                     class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
+                  {% if can_remove %}
+                    <a href="{% url 'documents:remove' document.pk %}"
+                       class="ml-3 font-medium text-ink-muted underline-offset-2 hover:underline">Remove</a>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-sm text-ink-muted">
+          {% if search or category or visibility or property_id %}
+            No document matches that filter.
+          {% else %}
+            No documents yet.
+            <a href="{% url 'documents:upload' %}" class="font-medium text-primary underline-offset-2 hover:underline">File one</a>.
+          {% endif %}
+        </p>
+      {% endif %}
+    </div>
+
+    {% if is_paginated %}
+      <div class="flex items-center justify-between text-sm">
+        <span class="text-ink-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="rhp-btn rhp-btn-secondary">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="rhp-btn rhp-btn-secondary">Next</a>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

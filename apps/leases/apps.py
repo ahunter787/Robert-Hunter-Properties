@@ -8,8 +8,3 @@ class LeasesConfig(AppConfig):
     name = "apps.leases"
     label = "leases"
     verbose_name = "Leasing"
-
-    def ready(self):
-        # Registers the lease-document cleanup; imported here because models are
-        # not loaded yet when the app config is created.
-        from apps.leases import signals  # noqa: F401

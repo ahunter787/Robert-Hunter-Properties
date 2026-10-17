@@ -22,7 +22,7 @@ across four documents: the paths, the screens, the tests, and the open questions
 | 3 | [Lease management](phase-03-lease-management.md) | Complete | Put tenants on a lease, activate it, read it as that tenant |
 | 4 | [Rent ledger](phase-04-rent-ledger.md) | Complete | See what each tenancy owes, charge rent, record payments, correct mistakes without erasing them |
 | 5 | [Tenant dashboard](phase-05-tenant-dashboard.md) | Complete | What is due now, what is next, when the lease ends, and the statement — on a phone |
-| 6 | [Document management](phase-06-document-management.md) | Next | — |
+| 6 | [Document management](phase-06-document-management.md) | Built — awaiting the owner's fold | File a lease, an addendum, a notice or an inspection against a tenancy, choose whether the tenant sees it, and hand it back only through a permission check |
 | 7 | [Maintenance](phase-07-maintenance.md) | Not started | — |
 | 8 | [Communications](phase-08-communications.md) | Not started | — |
 | 9 | [Admin dashboard](phase-09-admin-dashboard.md) | Not started | — |

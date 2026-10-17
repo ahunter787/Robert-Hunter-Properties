@@ -1,139 +1,80 @@
-"""Lease documents: validation, storage, serving, and cleanup."""
+"""A lease's documents, on the pages that show a tenancy.
 
-from urllib.parse import quote
+The lease no longer owns a file (ADR-022): it owns a set of documents, and every one
+of them is filed through the documents app. These tests hold the seams between the two
+— the tenancy's page lists what is filed against it, the tenant sees only what was
+shared, and both downloads are named after the document rather than its storage path.
+"""
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
-from apps.leases.models import Lease, LeaseStatus
+from apps.documents.models import Document, DocumentCategory
+from tests.documents.helpers import make_document
 from tests.factories import make_admin, make_lease, make_manager, make_tenant, make_unit
-from tests.leases.payloads import lease_post_data
 
 pytestmark = pytest.mark.django_db
 
 
-def document(name="signed-lease.pdf", content_type="application/pdf", body=b"%PDF-1.4 lease"):
-    return SimpleUploadedFile(name, body, content_type=content_type)
-
-
 @pytest.fixture
 def as_manager(client):
-    client.force_login(make_manager(username="document-manager"))
+    client.force_login(make_manager(username="lease-document-manager"))
     return client
 
 
-@pytest.fixture
-def as_admin(client):
-    client.force_login(make_admin(username="document-admin"))
-    return client
+def a_tenancy(*, username: str = "ada", identifier: str = "1"):
+    tenant = make_tenant(username=username)
+    return tenant, make_lease(make_unit(identifier=identifier), tenants=[tenant])
 
 
-def test_uploading_a_lease_document_stores_a_randomised_name(as_manager, settings):
-    unit = make_unit()
-    tenant = make_tenant(username="ada")
-    lease = make_lease(unit, tenants=[tenant], status=LeaseStatus.DRAFT)
+def test_the_tenancys_page_lists_what_is_filed_against_it(as_manager):
+    _, lease = a_tenancy()
+    make_document(title="Signed lease", lease=lease, category=DocumentCategory.LEASE)
+    make_document(title="November notice", lease=lease, category=DocumentCategory.NOTICE)
 
-    response = as_manager.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(unit, lease=lease, lease_file=document("my scan.pdf")),
-    )
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    lease.refresh_from_db()
-    assert response.status_code == 302
-    assert lease.lease_file.name.startswith("lease_documents/")
-    assert "my scan" not in lease.lease_file.name
-    assert lease.document_name == "my scan.pdf"
-    assert (settings.MEDIA_ROOT / lease.lease_file.name).exists()
+    assert "Signed lease" in body
+    assert "November notice" in body
+    assert "Lease" in body
+    assert reverse("documents:upload") in body
 
 
-def test_a_wrong_file_type_is_refused(as_manager):
-    unit = make_unit()
-    tenant = make_tenant(username="ada")
-    lease = make_lease(unit, tenants=[tenant], status=LeaseStatus.DRAFT)
+def test_the_tenancys_page_marks_which_documents_the_tenant_can_see(as_manager):
+    _, lease = a_tenancy()
+    make_document(title="Signed lease", lease=lease, tenant_visible=True)
+    make_document(title="Internal valuation", lease=lease, tenant_visible=False)
 
-    response = as_manager.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(
-            unit,
-            lease=lease,
-            lease_file=document("lease.docx", content_type="application/msword", body=b"PK"),
-        ),
-    )
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    lease.refresh_from_db()
-    assert response.status_code == 200
-    assert not lease.lease_file
-    assert b"PDF, or as a JPEG or PNG scan" in response.content
+    assert "The tenant can see it" in body
+    assert "Office only" in body
 
 
-def test_an_oversized_document_is_refused(as_manager, settings):
-    settings.RHP_MAX_UPLOAD_MB = 1
-    unit = make_unit()
-    tenant = make_tenant(username="ada")
-    lease = make_lease(unit, tenants=[tenant], status=LeaseStatus.DRAFT)
+def test_the_tenancys_page_says_so_when_nothing_is_filed(as_manager):
+    _, lease = a_tenancy()
 
-    response = as_manager.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(
-            unit,
-            lease=lease,
-            lease_file=document(body=b"%PDF-1.4" + b"x" * (2 * 1024 * 1024)),
-        ),
-    )
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    lease.refresh_from_db()
-    assert response.status_code == 200
-    assert not lease.lease_file
-    assert b"larger than 1 MB" in response.content
+    assert "Nothing filed against this tenancy yet" in body
 
 
-def test_replacing_a_document_deletes_the_previous_file(as_manager, settings):
-    unit = make_unit()
-    tenant = make_tenant(username="ada")
-    lease = make_lease(unit, tenants=[tenant], status=LeaseStatus.DRAFT)
+def test_the_document_has_its_own_place_on_the_page_not_the_storage_path(as_manager):
+    _, lease = a_tenancy()
+    document = make_document(title="Signed lease", lease=lease, file_name="scan-0001.pdf")
 
-    as_manager.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(unit, lease=lease, lease_file=document("first.pdf")),
-    )
-    lease.refresh_from_db()
-    first = lease.lease_file.name
+    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    as_manager.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(unit, lease=lease, lease_file=document("second.pdf")),
-    )
-    lease.refresh_from_db()
-
-    assert lease.lease_file.name != first
-    assert not (settings.MEDIA_ROOT / first).exists()
-    assert (settings.MEDIA_ROOT / lease.lease_file.name).exists()
+    assert reverse("documents:download", args=[document.pk]) in body
+    assert document.file.name not in body, "the private path is never shown"
 
 
-def test_deleting_a_draft_removes_its_document(as_admin, settings):
-    unit = make_unit()
-    tenant = make_tenant(username="ada")
-    lease = make_lease(unit, tenants=[tenant], status=LeaseStatus.DRAFT)
-    as_admin.post(
-        reverse("leases:lease-update", args=[lease.pk]),
-        lease_post_data(unit, lease=lease, lease_file=document()),
-    )
-    lease.refresh_from_db()
-    stored = lease.lease_file.name
-    assert (settings.MEDIA_ROOT / stored).exists()
+def test_the_officer_opens_the_document_the_page_links_to(as_manager):
+    _, lease = a_tenancy()
+    document = make_document(title="Signed lease", lease=lease)
 
-    as_admin.post(reverse("leases:lease-delete", args=[lease.pk]))
-
-    assert not (settings.MEDIA_ROOT / stored).exists()
-
-
-def test_the_document_is_served_to_staff(as_manager):
-    lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
-    lease.lease_file.save("lease.pdf", document())
-    assert lease.lease_file
-
-    response = as_manager.get(reverse("leases:lease-document", args=[lease.pk]))
+    response = as_manager.get(reverse("documents:download", args=[document.pk]))
 
     assert response.status_code == 200
     assert response["Content-Type"] == "application/pdf"
@@ -142,67 +83,108 @@ def test_the_document_is_served_to_staff(as_manager):
     assert body.startswith(b"%PDF")
 
 
-def test_a_lease_without_a_document_has_no_document_url(as_manager):
-    lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
+def test_the_tenancy_page_offers_the_tenants_documents_page(client):
+    tenant, _ = a_tenancy()
+    client.force_login(tenant)
 
-    assert as_manager.get(reverse("leases:lease-document", args=[lease.pk])).status_code == 404
+    body = client.get(reverse("tenancy:lease")).content.decode()
 
-
-def test_the_document_link_appears_on_the_lease_page(as_manager):
-    lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
-    lease.lease_file.save("lease.pdf", document())
-
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
-
-    assert reverse("leases:lease-document", args=[lease.pk]) in body
-    assert "View lease" in body
-    assert "lease.pdf" in body
-    assert lease.lease_file.name not in body
+    assert reverse("tenant_documents:list") in body
+    assert "Your documents" in body
 
 
-def test_document_title_is_displayed_and_used_for_downloads(as_manager):
-    lease = make_lease(lease_document_name="Signed lease – November 2024.pdf")
-    lease.lease_file.save("upload.pdf", document())
+def test_the_tenant_sees_the_lease_that_was_shared_with_them(client):
+    tenant, lease = a_tenancy()
+    make_document(title="Signed lease", lease=lease, tenant_visible=True)
+    client.force_login(tenant)
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
-    assert lease.document_name in body
-    edit_body = as_manager.get(reverse("leases:lease-update", args=[lease.pk])).content.decode()
-    assert lease.document_name in edit_body
-    assert lease.lease_file.name not in edit_body
-    response = as_manager.get(reverse("leases:lease-document", args=[lease.pk]))
+    body = client.get(reverse("tenant_documents:list")).content.decode()
+
+    assert "Signed lease" in body
+    assert reverse("tenant_documents:download", args=[Document.objects.get().pk]) in body
+
+
+def test_the_tenant_does_not_see_the_office_only_documents(client):
+    tenant, lease = a_tenancy()
+    make_document(title="Signed lease", lease=lease, tenant_visible=True)
+    make_document(title="Internal valuation", lease=lease, tenant_visible=False)
+    client.force_login(tenant)
+
+    body = client.get(reverse("tenant_documents:list")).content.decode()
+
+    assert "Signed lease" in body
+    assert "Internal valuation" not in body
+
+
+def test_the_tenants_documents_page_says_so_when_nothing_has_been_shared(client):
+    tenant, _ = a_tenancy()
+    client.force_login(tenant)
+
+    body = client.get(reverse("tenant_documents:list")).content.decode()
+
+    assert "Nothing has been shared with you yet" in body
+
+
+def test_the_tenant_download_is_named_after_the_document_not_the_path(client):
+    tenant, lease = a_tenancy()
+    document = make_document(
+        title="Signed lease November 2024.pdf",
+        lease=lease,
+        tenant_visible=True,
+        file_name="scan-0001.pdf",
+    )
+    client.force_login(tenant)
+
+    response = client.get(reverse("tenant_documents:download", args=[document.pk]))
+
     disposition = response["Content-Disposition"]
-    assert quote(lease.document_name) in disposition, "the readable name is the download's name"
-    assert lease.lease_file.name not in disposition, "the private path is never shown"
+    assert 'filename="Signed lease November 2024.pdf"' in disposition
+    assert document.file.name not in disposition
+    assert "scan-0001" not in disposition
     response.close()
 
 
-def test_a_legacy_document_with_no_name_reads_as_the_signed_lease(as_manager):
-    """A document uploaded before the field existed has no name to show (database.md)."""
-    lease = make_lease()
-    lease.lease_file.save("scan.pdf", document())
-    # Simulate the legacy row: a file on disk that the name field never saw.
-    type(lease).objects.filter(pk=lease.pk).update(lease_document_name="")
-    lease.refresh_from_db()
+def test_a_lease_document_whose_bytes_are_missing_is_a_404_for_the_office(as_manager, settings):
+    _, lease = a_tenancy()
+    document = make_document(title="Signed lease", lease=lease)
+    (settings.MEDIA_ROOT / document.file.name).unlink()
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    response = as_manager.get(reverse("documents:download", args=[document.pk]))
 
-    assert lease.document_name == "Signed lease"
-    assert "Signed lease" in body
+    assert response.status_code == 404
+    assert Document.objects.filter(pk=document.pk).exists()
 
 
-def test_an_upload_remembers_the_filename_it_arrived_with(as_manager):
-    lease = make_lease()
-    lease.lease_file.save("Michael Ortolano Lease (Nov 2024).pdf", document())
+def test_a_lease_document_whose_bytes_are_missing_is_a_404_for_the_tenant(client, settings):
+    tenant, lease = a_tenancy()
+    document = make_document(title="Signed lease", lease=lease, tenant_visible=True)
+    (settings.MEDIA_ROOT / document.file.name).unlink()
+    client.force_login(tenant)
 
-    lease.refresh_from_db()
-    assert lease.lease_document_name == "Michael Ortolano Lease (Nov 2024).pdf"
-    assert lease.lease_file.name.startswith("lease_documents/"), "storage stays randomized"
+    response = client.get(reverse("tenant_documents:download", args=[document.pk]))
+
+    assert response.status_code == 404
 
 
-def test_a_document_only_reachable_through_the_view(as_manager):
-    """The file lives under MEDIA_ROOT, which the proxy never serves in production."""
-    lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
-    lease.lease_file.save("lease.pdf", document())
+def test_an_admin_files_a_document_from_the_tenancys_page(client):
+    """The page's own button files against that tenancy, without asking again."""
+    _, lease = a_tenancy()
+    client.force_login(make_admin(username="lease-document-admin"))
 
-    assert lease.lease_file.name.startswith("lease_documents/")
-    assert Lease.objects.get(pk=lease.pk).lease_file.name == lease.lease_file.name
+    response = client.post(
+        reverse("documents:upload") + f"?lease={lease.pk}",
+        {
+            "title": "Signed lease",
+            "category": DocumentCategory.LEASE,
+            "file": SimpleUploadedFile(
+                "scan.pdf", b"%PDF-1.4 lease", content_type="application/pdf"
+            ),
+            "tenant_visible": "on",
+        },
+    )
+
+    assert response.status_code == 302
+    document = Document.objects.get()
+    assert document.lease == lease
+    assert document.property == lease.unit.property
+    assert document.tenant_visible is True

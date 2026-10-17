@@ -3,11 +3,9 @@
 from decimal import Decimal
 
 from django import forms
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import inlineformset_factory
-from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
@@ -23,22 +21,6 @@ from apps.leases.models import (
     RentPeriod,
 )
 from apps.properties.models import Unit
-
-#: What a signed lease may be uploaded as.
-LEASE_DOCUMENT_TYPES = frozenset({"application/pdf", "image/jpeg", "image/png"})
-
-
-class LeaseDocumentInput(forms.ClearableFileInput):
-    template_name = "components/lease_document_input.html"
-
-    def get_context(self, name, value, attrs):
-        context = super().get_context(name, value, attrs)
-        if value and value.instance.pk:
-            context["widget"]["document_name"] = value.instance.document_name
-            context["widget"]["document_url"] = reverse(
-                "leases:lease-document", args=[value.instance.pk]
-            )
-        return context
 
 
 class LeaseForm(StyledModelForm):
@@ -56,24 +38,18 @@ class LeaseForm(StyledModelForm):
             "step_up_amount",
             "deposit",
             "rent_due_day",
-            "lease_file",
-            "lease_document_name",
             "notes",
         ]
         widgets = {
-            "lease_file": LeaseDocumentInput(),
             "start_date": forms.DateInput(attrs={"type": "date"}),
             "end_date": forms.DateInput(attrs={"type": "date"}),
         }
         labels = {
-            "lease_file": "Lease document",
-            "lease_document_name": "Document name",
             "monthly_rent": "Rent at the start of the term",
             "template": "Lease template",
             "carries_nnn": "The tenant pays NNN on top of rent",
         }
         help_texts = {
-            "lease_file": "The signed lease as a PDF, or a JPEG or PNG scan.",
             "template": (
                 "How the base rent is set: fixed is one rent for the term, step up rises once a "
                 "year, triple net is a step up with NNN, and stated amounts are entered from the "
@@ -147,24 +123,10 @@ class LeaseForm(StyledModelForm):
                 )
         return cleaned
 
-    def clean_lease_file(self):
-        document = self.cleaned_data.get("lease_file")
-        # No content_type means the field still holds the stored file rather than
-        # a fresh upload; Django has already validated that one.
-        if not document or not hasattr(document, "content_type"):
-            return document
-
-        if document.size > settings.RHP_MAX_UPLOAD_MB * 1024 * 1024:
-            raise ValidationError(
-                f"That file is larger than {settings.RHP_MAX_UPLOAD_MB} MB. "
-                "Compress it and try again."
-            )
-        if document.content_type not in LEASE_DOCUMENT_TYPES:
-            raise ValidationError("Upload the lease as a PDF, or as a JPEG or PNG scan.")
-        return document
-
 
 class LeaseTenantForm(StyledModelForm):
+    """One tenant on a lease, and whether they are the primary contact."""
+
     class Meta:
         model = LeaseTenant
         fields = ["tenant", "is_primary"]

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Documents — RHP{% endblock %}
+
+{% block content %}
+  <div class="space-y-6">
+    <div>
+      <p class="rhp-eyebrow">Your documents</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Documents shared with you</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        What Robert Hunter Properties has filed for you to read. Your lease, a notice, an
+        inspection report — each one opens here.
+      </p>
+    </div>
+
+    <div class="rhp-card">
+      {% if documents %}
+        <ul class="divide-y divide-surface-muted">
+          {% for document in documents %}
+            <li class="flex flex-wrap items-center justify-between gap-3 py-3">
+              <div>
+                <a href="{% url 'tenant_documents:download' document.pk %}"
+                   class="font-medium text-primary underline-offset-2 hover:underline">
+                  {{ document.title }}
+                </a>
+                <p class="text-xs text-ink-muted">
+                  {{ document.get_category_display }}
+                  {% if document.document_date %}· {{ document.document_date|date:"M j, Y" }}{% endif %}
+                </p>
+              </div>
+              <a href="{% url 'tenant_documents:download' document.pk %}"
+                 class="rhp-btn rhp-btn-secondary">Open</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm text-ink-muted">
+          Nothing has been shared with you yet. If you are expecting something, contact Robert
+          Hunter Properties.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

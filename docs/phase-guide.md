@@ -38,17 +38,17 @@ Things that will be revisited, and by which phase. This is the quickest way to s
 
 | Element | Built in | Revisited by | What changes |
 | --- | --- | --- | --- |
-| Tenant dashboard | Phase 5 | Phase 6, 7, 8, 9 | Gains documents, live maintenance and announcements; Phase 9 consolidates the dashboards |
+| Tenant dashboard | Phase 5 | Phase 6, 7, 8, 9 | Phase 6 added the documents page and its link on `/lease/`; live maintenance and announcements are next, and Phase 9 consolidates the dashboards |
 | Reading money as a tenant | Phase 5 review | Phase 10, 11 | The statement nets corrections and pages; reports and a payment provider will each need their own reading of the same records (ADR-011) |
 | Tenant payment history | Phase 5 | Phase 11 | May gain a "pay now" action once a provider is chosen |
-| Single lease file | Phase 3 | Phase 6 | Becomes documents in the documents table (categories, visibility, multiple files) |
-| Lease document access rule | Phase 3 | Phase 6, 12 | Generalised to all documents; included in the security test pass |
+| Single lease file | Phase 3 | **Done — Phase 6** | `Document` rows replaced it: categories, visibility, many files per tenancy, and the old single file migrated in place (ADR-022) |
+| Lease document access rule | Phase 3 | **Done — Phase 6**, then 12 | Generalised to every document: staff by id, a tenant through the tenancy scope (404 for another's id); Phase 12 still runs the security test pass over it |
 | Tenant `/lease/` page | Phase 3 | Phase 4, 5 | Phase 4 added the balance and activity; Phase 5 added the dashboard beside it, so this page stays the lease detail |
 | Occupancy / vacancy definition | Phase 3 | Phase 9, 10 | Reported on in the dashboard and the occupancy report |
 | Staff landing counters | Phases 2, 3, 4, 7 | Phase 9 | Replaced by the real admin dashboard (P9-Q2) |
 | Rent due day (stored) | Phase 3 | Phase 4 | Done: the month-end clamping rule lives in `apps.common.dates.due_date_in` |
 | Lease status changes | Phase 3 | Phase 4 | Done: they are written to the audit table, not only the log |
-| **Charging an ended lease** | Phase 4 | **Done — P4-E5** | Ending a tenancy is now two acts on one screen: a citable reason and a close-out by adjustment. New obligations stop with ended occupancy; every mutation stops on a settled account; nothing is posted ahead of its due date. Post-tenancy charges with evidence wait for Phase 6 (E6); the analysis is [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md) |
+| **Charging an ended lease** | Phase 4 | **Done — P4-E5** | Ending a tenancy is now two acts on one screen: a citable reason and a close-out by adjustment. New obligations stop with ended occupancy; every mutation stops on a settled account; nothing is posted ahead of its due date. Post-tenancy charges with evidence now wait for E6 — Phase 6, the documents they were waiting for, is built; the analysis is [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md) |
 | Structured security logs | Phases 1, 2 | Phase 4, 12 | Phase 4 added the audit table; Phase 12 decides retention and whether the append-only rules need database enforcement (P12-Q5) |
 | Banner photo | Phase 2 | Phase 6, 12 | Thumbnails and resizing; content-security policy for the map |
 | Map pin | Phase 2 | Phase 12 | The Google embed becomes an explicit security-policy entry |
@@ -73,7 +73,8 @@ view of them.
 - **Charging an ended lease** — **answered 2026-10-07, amended 2026-10-14** (P4-Q1…P4-Q7). A charge falls due on its due
   date and is posted then; occupancy is draft/active/ended and the financial account is open/settled;
   ending takes a citable reason and closes out unused months by adjustment; only a running tenancy takes new
-  charges, and a remedial charge after the end waits for its evidence (E6, Phase 6). See
+  charges, and a remedial charge after the end waits for its evidence (E6; Phase 6, the documents it waited
+  for, is built). See
   [`workflows/tenancy-and-money.md`](workflows/tenancy-and-money.md), [ADR-017](decisions/ADR-017-charge-lifecycle.md)
   and [ADR-020](decisions/ADR-020-tenancy-lifecycle.md).
 - **A financial account settled by mistake** — **answered**: reopenable by a manager, with a reason and an
@@ -97,8 +98,9 @@ view of them.
   yet".
 - **Applying a payment to a named charge** — P11-Q3. Phase 4 applies money oldest-first, which is what a rent
   ledger does; a provider sending remittance detail is where an allocation table would earn its keep.
-- **Invoices, statements and receipts** — P6-Q3 and P10-Q1. Nothing in the ledger produces a document yet.
-  Phase 6 makes it possible; whether RHP wants it is your call.
+- **Invoices, statements and receipts** — P6-Q3 and P10-Q1. Nothing in the ledger produces a document
+  yet. Phase 6 is built, so a receipt can be filed by hand like any other document today; generating one
+  from a recorded payment is Phase 10, and whether RHP wants it is your call.
 - **Direct messaging** — P8-Q4 and the Phase 8 record: announcements cover the real need; a chat system is a
   much bigger commitment and is explicitly deferred.
 - **Payment provider** — P11-Q1. Phase 11 waits for your decision, and nothing else is blocked by it.

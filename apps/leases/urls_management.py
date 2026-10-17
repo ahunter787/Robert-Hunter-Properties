@@ -22,7 +22,6 @@ urlpatterns = [
     path("leases/<int:pk>/settle/", views.LeaseSettleView.as_view(), name="lease-settle"),
     path("leases/<int:pk>/reopen/", views.LeaseReopenView.as_view(), name="lease-reopen"),
     path("leases/<int:pk>/delete/", views.LeaseDeleteView.as_view(), name="lease-delete"),
-    path("leases/<int:pk>/document/", views.LeaseDocumentView.as_view(), name="lease-document"),
     # E1: the rent schedule and the triple-net amount.
     path(
         "leases/<int:pk>/schedule/generate/",

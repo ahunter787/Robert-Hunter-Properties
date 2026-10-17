@@ -5,9 +5,11 @@ retroactive onboarding and the plain-language interface — all four are in `mai
 branches until they were folded. **The tenancy-and-money work is built** too, but it is *not* an extension: it
 is a specification amendment (the states and what they mean for money), recorded below and in
 [ADR-017](decisions/ADR-017-charge-lifecycle.md) and
-[ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **E3 (concessions) is proposed**, re-scoped by the
-owner's own 2022 example; **E5 (move-out settlement), E7 (a unit's ledger history) and E8 (early
-termination) are proposed; E6 is blocked by Phase 6; E10 (property accounting) is future work.**
+[ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is built** on
+`rhp-6-documents`, awaiting the owner's fold into `main`; it is the phase E6 was waiting for, so **E6 is
+no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
+(concessions) is proposed**, re-scoped by the owner's own 2022 example; **E7 (a unit's ledger history)
+and E8 (early termination) are proposed; E10 (property accounting) is future work.**
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -25,8 +27,8 @@ parser accepts the longer form.
 | **E2** | **Property responsibilities charged to the unit** (`P4-E2`) — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
 | **E3** | **Concessions** (`P4-E3`) — forgiveness, a deferral plan, and the term extension that goes with them | Additive | Proposed, re-scoped — see section 4 |
 | **E4** | **Retroactive onboarding** (`P4-E4`) — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **In `main`** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md) |
-| **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | Proposed — the owner's "P4-E5 is good" (P4-Q6) |
-| **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Blocked by Phase 6** — the owner's decision: wait, so a charge always has its evidence from the day it exists |
+| **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | Proposed — next up; the owner's "P4-E5 is good" (P4-Q6) |
+| **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Proposed** — was waiting on Phase 6, which is now built; the owner's decision: a charge always has its evidence from the day it exists |
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md) |
@@ -299,8 +301,8 @@ unnecessary — a lease can be re-onboarded through the screens while it has no 
 
 ## 6. E5 — Move-out settlement (`P4-E5`)
 
-**Status: proposed**, agreed in principle by the owner (P4-Q6: *"P4-E5 is good"*), and the natural next piece
-after the lifecycle work.
+**Status: proposed**, agreed in principle by the owner (P4-Q6: *"P4-E5 is good"*), and the next piece
+now that the lifecycle work and Phase 6 are behind us.
 
 The lifecycle correction now permits settlement of an ended, zero-balance account with no pending payment
 and no nonzero recorded deposit. Managers can reopen only the financial account with a reason. That is
@@ -311,22 +313,29 @@ records its complete disposition. E5 is where the remaining workflow belongs:
 - **The deposit** — returned, or applied against what is owed. Phase 4 deliberately kept it off the ledger
   ("held money is not rent paid ahead"), so this is the first piece of work that has to decide what a deposit
   *is* in the ledger's terms: a liability RHP holds, settled by a payment out or a write-off in.
-- **Deductions** — each with a reason and, once Phase 6 exists, its evidence (E6's mechanism is the same
-  one).
+- **Deductions** — each with a reason and, now that Phase 6 exists, its evidence: a filed document
+  (E6's mechanism is the same one).
 - **A final statement** — what was owed, what was paid, what was withheld, what was returned. A tenant
   leaving should be able to read one page and see the whole tenancy.
 - **A forwarding address**, so the statement can be sent and the deposit returned.
 
-It touches the tenant's statement (ADR-011), the deposit field (ADR-008), and documents (Phase 6), which is
-why it did not fold into the guard: the guard is small and correct now, and the settlement deserves its own
-design and its own decision record.
+It touches the tenant's statement (ADR-011), the deposit field (ADR-008), and documents (ADR-022, now
+built), which is why it did not fold into the guard: the guard is small and correct now, and the
+settlement deserves its own design and its own decision record.
 
 ---
 
 ## 7. E6 — Post-tenancy charges with their evidence (`P4-E6`)
 
-**Status: blocked by Phase 6.** The owner decided the order: *"Wait for Phase 6 so a charge always has its
-evidence."*
+**Status: proposed — no longer blocked.** Phase 6 is built (`apps/documents`,
+[ADR-022](decisions/ADR-022-documents.md)), so the thing the owner was waiting for exists: a document can
+be filed against a tenancy today. The owner decided the order: *"Wait for Phase 6 so a charge always has
+its evidence."* That order has been honoured, and E6 is now a real next step rather than a blocked one.
+
+One design question is left for E6 itself: a `Document` links to a tenancy, a property or a tenant — not
+to a charge — so E6 has to decide how a post-tenancy charge points at the documents that support it
+(most likely through the tenancy the charge belongs to, with the specific files named). Filing the
+evidence is possible; citing it from a charge is E6's work.
 
 The design, from the owner's own answer to P4-Q3 — the part E5 deliberately leaves out:
 
@@ -409,8 +418,9 @@ saying what they mean for money, and left the charging habit unstated.
 - **Occupancy and money have separate states** — a tenancy is draft, active, or ended; its financial
   account is open or settled. Ending needs a citable reason (P4-Q1).
 - **When a tenancy ends, the months it will not use are closed out by adjustment**, never deleted (P4-Q2).
-- **Only a running tenancy takes new charges**; payments and corrections require an open account; post-tenancy
-  charges need their just cause and therefore wait for Phase 6 (P4-Q3, P4-Q4).
+- **Only a running tenancy takes new charges**; payments and corrections require an open account;
+  post-tenancy charges need their just cause, so they wait for E6, which was itself waiting on Phase 6
+  (P4-Q3, P4-Q4).
 - **An ended tenancy stays in Rent & Payments**, marked with its account state and final position; a new
   tenant on the same unit never sees the previous tenancy's money (P4-Q5).
 - **Move-out settlement is its own extension** (P4-Q6 → E5).

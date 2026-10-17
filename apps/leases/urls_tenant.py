@@ -14,5 +14,4 @@ app_name = "tenancy"
 
 urlpatterns = [
     path("", views.TenantLeaseView.as_view(), name="lease"),
-    path("document/", views.TenantLeaseDocumentView.as_view(), name="document"),
 ]

@@ -3,23 +3,16 @@
 import datetime as dt
 
 import pytest
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
 
 from apps.leases.models import LeaseStatus
+from tests.documents.helpers import make_document
 from tests.factories import make_lease, make_tenant, make_unit
 
 pytestmark = pytest.mark.django_db
 
 TODAY = timezone.localdate()
-
-
-def attach_document(lease, name="signed-lease.pdf"):
-    lease.lease_file.save(
-        name, SimpleUploadedFile(name, b"%PDF-1.4 lease", content_type="application/pdf")
-    )
-    return lease.lease_file.name
 
 
 def test_a_tenant_sees_their_current_lease(client):
@@ -88,59 +81,17 @@ def test_a_tenant_only_ever_sees_their_own_lease(client):
     assert "Theirs" not in body
 
 
-def test_a_tenant_with_no_lease_has_no_document(client):
-    client.force_login(make_tenant(username="new-tenant"))
-
-    assert client.get(reverse("tenancy:document")).status_code == 404
-
-
-def test_the_lease_document_is_served_to_the_tenant_on_it(client):
+def test_the_lease_page_offers_the_tenants_documents(client):
+    """The lease itself is a document now, and the door to them is on this page."""
     tenant = make_tenant(username="ada")
     lease = make_lease(make_unit(), tenants=[tenant])
-    attach_document(lease)
+    make_document(title="Signed lease", lease=lease, tenant_visible=True)
     client.force_login(tenant)
 
-    response = client.get(reverse("tenancy:document"))
+    body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert response.status_code == 200
-    assert response["Content-Type"] == "application/pdf"
-    assert response["X-Content-Type-Options"] == "nosniff"
-    body = b"".join(response.streaming_content)
-    response.close()
-    assert body.startswith(b"%PDF")
-
-
-def test_a_tenant_without_a_document_gets_a_404(client):
-    tenant = make_tenant(username="ada")
-    make_lease(make_unit(), tenants=[tenant])
-    client.force_login(tenant)
-
-    assert client.get(reverse("tenancy:document")).status_code == 404
-
-
-def test_another_tenants_document_is_unreachable(client):
-    """There is no id in the tenant URL, so there is nothing to guess."""
-    mine = make_tenant(username="mine")
-    theirs = make_tenant(username="theirs")
-    make_lease(make_unit(identifier="Mine"), tenants=[mine])
-    their_lease = make_lease(make_unit(identifier="Theirs"), tenants=[theirs])
-    attach_document(their_lease)
-    client.force_login(mine)
-
-    response = client.get(reverse("tenancy:document"))
-
-    assert response.status_code == 404
-
-
-def test_the_lease_page_offers_the_document_only_when_there_is_one(client):
-    tenant = make_tenant(username="ada")
-    lease = make_lease(make_unit(), tenants=[tenant])
-
-    client.force_login(tenant)
-    assert "View your lease" not in client.get(reverse("tenancy:lease")).content.decode()
-
-    attach_document(lease)
-    assert "View your lease" in client.get(reverse("tenancy:lease")).content.decode()
+    assert reverse("tenant_documents:list") in body
+    assert "Your documents" in body
 
 
 def test_the_tenant_navigation_offers_the_lease_page(client):

@@ -9,7 +9,8 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 5 (the tenant dashboard) is complete; Phase 6 (documents) is next.** RHP models the
+**Current status: Phase 6 (documents) is built, awaiting the owner's fold; Phase 7 (maintenance) is next.**
+RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
 tenants are created by staff and invited, roles gate every route server-side, the portfolio can be
 created, edited, and taken out of service, and a lease ties a unit to its tenants with a term, rent,
@@ -45,7 +46,8 @@ maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 | `/manage/ledger/` | accounting: each live lease's balance, what is past due, and what is coming due; each lease has its own ledger |
 | `/manage/accounts/` | tenant accounts: managers create, invite, activate, and maintain profiles; role changes are superadmin-only |
 | `/account/` | where a tenant lands: what is due now, the next rent, the lease end date, recent activity and quick actions |
-| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their document, and what they owe now |
+| `/lease/` | a tenant's own lease: unit, term, rent, deposit, co-tenants, their documents, and what they owe now |
+| `/lease/documents/` | what the office has shared with that tenant: the lease, notices, inspections |
 | `/payments/` | a tenant's own statement: what each charge costs now, what is paid, and what is left |
 | `/admin/` | Django back office for superusers |
 
@@ -68,8 +70,10 @@ A **lease** ties a unit to the people renting it: its term, monthly rent, deposi
 primary contact among its tenants, and the signed lease as a PDF or a scan. A unit can have only **one
 active lease** — a database constraint, not a form rule — and a lease moves *draft* → *active* → *ended*
 by explicit action, never because a date passed. Ended leases are read-only history; only a draft can be
-deleted, and only by an admin. Tenants read their own lease at `/lease/`, whose document URL carries no
-id and is served through a permission-checked view.
+deleted, and only by an admin. Tenants read their own lease and the documents the office shares with them
+at `/lease/documents/`: files carry randomised storage names, no path can be guessed, and every download is
+resolved through the tenancy scope by a permission-checked view — somebody else's id is a 404
+([ADR-022](docs/decisions/ADR-022-documents.md)).
 
 A tenant's own portal is three pages — the **dashboard** at `/account/` (a thin banner naming the unit and
 building, then the balance, next rent due and lease end date), the **lease**, and the **statement** at

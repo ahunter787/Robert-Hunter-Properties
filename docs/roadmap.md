@@ -18,7 +18,7 @@ lives. For the long-horizon view — which later phase will change something tha
 | 3 | Lease management | **Complete** |
 | 4 | Rent ledger | **Complete** |
 | 5 | Tenant dashboard | **Complete** |
-| 6 | Document management | **Next** |
+| 6 | Document management | **Built — awaiting the owner's fold** |
 | 7 | Maintenance system | Not started |
 | 8 | Communications (announcements) | Not started |
 | 9 | Admin dashboard | Not started |
@@ -37,8 +37,8 @@ additions that are **not** phases are proposed, approved and tracked in
 | E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
 | E2 | Property responsibilities charged to the unit | **In `main`** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | folded |
 | E4 | Retroactive onboarding, and a stated rent schedule | **In `main`** | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | folded |
-| E5 | Move-out settlement — the deposit, deductions, a final statement | Proposed | — | — |
-| E6 | Post-tenancy charges with their evidence | **Blocked by Phase 6** | — | — |
+| E5 | Move-out settlement — the deposit, deductions, a final statement | Proposed — the next piece | — | — |
+| E6 | Post-tenancy charges with their evidence | Proposed — no longer blocked by Phase 6 | — | — |
 | E7 | A unit's ledger history | Proposed | — | — |
 | E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
@@ -133,7 +133,7 @@ Deferred on purpose, each labeled in the UI rather than faked (ADR-005):
 | Panel or counter the spec lists | Arrives with |
 | --- | --- |
 | Property maintenance summary, unit recent maintenance | Phase 7 (maintenance) |
-| Property documents | Phase 6 (documents) |
+| Property documents | Phase 6 — filing works; the property page does not list them yet |
 | Open maintenance requests counter | Phase 7 |
 | Full admin dashboard | Phase 9 |
 
@@ -251,6 +251,19 @@ Review round, added while the phase was open (ADR-010 revision, ADR-011, ADR-012
       the whole balance, the age of the oldest unpaid charge, and what is coming due (ADR-012)
 
 ## Phase 6 — Document management
+
+**Status note:** implemented on the `rhp-6-documents` branch, awaiting the owner's fold into `main`. The
+decision is [ADR-022](decisions/ADR-022-documents.md) and the working detail is in the
+[Phase 6 record](phases/phase-06-document-management.md).
+
+Delivered: an app of its own (`apps/documents`) with one row per file — title, category, the file, the
+name it arrived with, optional links to a tenancy, a property and a tenant, a document date, an office
+note, and staff-only visibility unless the uploader ticks "the tenant can see this". The office gets the
+list at `/manage/documents/` (search, category, visibility and property filters, 25 to a page) and the
+upload screen, and the tenant gets `/lease/documents/`; every download is a permission-checked view,
+never a media path. `documents/0002_lease_files_become_documents` turned each lease's single file into a
+document row without moving it, and `leases/0010` dropped the old fields and routes. A document uploaded
+in error can be removed by an admin, with a required note; superseded documents are kept alongside.
 
 Uploads categorised (lease, addendum, notice, receipt, inspection, correspondence, other) and
 attached to a lease, property, or tenant, with explicit tenant visibility and permission-checked

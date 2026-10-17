@@ -13,14 +13,17 @@ pytestmark = pytest.mark.django_db(transaction=True)
 
 BEFORE = ("leases", "0005_lease_end_reason_lease_end_reason_note_and_more")
 AFTER = ("leases", "0006_lease_account_status_lease_settled_at_and_more")
-LATEST = ("leases", "0009_lease_lease_document_name_alter_lease_lease_file")
+#: The head of the chain, now that Phase 6 moved the lease's file into a document and
+#: dropped the fields this test's rollback restores (leases/0010, documents/0002).
+LATEST = ("leases", "0010_remove_lease_lease_document_name_and_more")
+DOCUMENTS = ("documents", "0002_lease_files_become_documents")
 PROPERTIES = ("properties", "0004_property_cam_rate_per_sqft")
 
 
 def migrate(target):
     executor = MigrationExecutor(connection)
     executor.loader.build_graph()
-    targets = [target, PROPERTIES]
+    targets = target if isinstance(target, list) else [target, PROPERTIES]
     executor.migrate(targets)
     return executor.loader.project_state(targets).apps
 
@@ -60,7 +63,7 @@ def test_legacy_settlement_becomes_ended_open_with_a_system_audit_event():
         assert event.actor_id is None
         assert "security-deposit disposition" in event.metadata["reason"]
     finally:
-        migrate(LATEST)
+        migrate([LATEST, DOCUMENTS])
 
 
 def test_the_migration_can_be_reversed_without_losing_the_audit_events():
@@ -96,4 +99,4 @@ def test_the_migration_can_be_reversed_without_losing_the_audit_events():
             "the record of the migration survives the rollback: audit rows are append-only"
         )
     finally:
-        migrate(LATEST)
+        migrate([LATEST, DOCUMENTS])

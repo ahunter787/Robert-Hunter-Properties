@@ -21,7 +21,7 @@ Rules:
        raise PermissionDenied
 
    # Right: the database never returns another tenancy's row
-   document = get_object_or_404(Document, pk=pk, lease__tenants=request.user)
+   document = get_object_or_404(Document.objects.visible_to(request.user), pk=pk)
    ```
 
 3. **Never trust input that decides access**: URL ids, hidden form fields, submitted role values,
@@ -43,45 +43,65 @@ Rules:
 
 ## Identifiers and enumeration
 
-Externally exposed resources that a tenant could enumerate (documents, maintenance requests,
-attachments, lease files) use `UUIDField` primary keys or a random slug. Sequential integer ids stay
-internal. Authorization is enforced regardless — unguessable ids are defense in depth, not the control.
+Externally exposed resources that a tenant could enumerate (maintenance requests, attachments, lease
+files) use `UUIDField` primary keys or a random slug, and sequential integer ids stay internal where a
+new surface can afford it. Authorization is enforced regardless — unguessable ids are defense in depth,
+not the control.
 
-The tenant lease document is the strongest form of this: its URL is `/lease/document/` with **no id at
-all**, so there is nothing to enumerate and the view can only ever return the document of the one lease
-the caller is on.
+**Documents are the deliberate exception** ([ADR-022](decisions/ADR-022-documents.md)). A `Document` has
+an integer primary key and the tenant's download URL carries it (`/lease/documents/<pk>/download/`). The
+rule the specification sets is about *guessing a media path*, not about ids, and the control is the
+tenancy scope rather than the id: `Document.objects.visible_to(user)` filters to `tenant_visible=True`
+and the caller's own lease or tenant, and the view resolves `get_object_or_404` over that scope — so
+another tenancy's id answers **404, not 403**, because a refusal must not confirm that the document
+exists. The old "no id in the URL" lease-document view is gone: the lease is now one document row among
+many, so the general case cannot keep that shape.
 
 ## Uploads
 
-Lease documents have a readable display name independent of their randomized storage path. New uploads
-retain their original filename as display metadata unless staff supply a title; legacy uploads use
-"Signed lease" until staff name them. Templates escape these names, and viewing or downloading still
-passes through the permission-checked document view. A friendly name never grants access to a file.
+A document has a readable `title` independent of its randomized storage path, and keeps the name it was
+uploaded with in `original_name` (`apps/documents/models.py`). Staff supply the title; when it is blank
+the uploaded name is used. Templates escape both, and viewing or downloading still passes through the
+permission-checked document view. A friendly name never grants access to a file.
 
-In force since Phase 2's banner photos, extended in Phase 3 by lease documents; the general document
-work arrives in Phase 6 and maintenance photos in Phase 7:
+In force since Phase 2's banner photos and extended in Phase 3 by the lease document; the document rules
+moved into `apps/common/files.py` in Phase 6 ([ADR-022](decisions/ADR-022-documents.md)), and maintenance
+photos arrive in Phase 7:
 
 - Allow-list extensions and content types; reject everything else. Banners and tenant photos accept
-  JPEG, PNG, and WebP only — SVG is refused because it can carry script. Lease documents accept PDF,
-  JPEG, and PNG. The image rules are implemented once, in `apps/common/images.py`.
-- Enforce a maximum size at the form (`RHP_MAX_UPLOAD_MB`, default 5), plus a maximum pixel dimension;
-  the reverse-proxy body limit is Phase 12.
-- Store under a randomized filename (`property_banners/<uuid>.<ext>`, `lease_documents/<uuid><ext>`,
-  `tenant_photos/<uuid><ext>`); never reuse the client-supplied name on disk.
+  JPEG, PNG, and WebP only — SVG is refused because it can carry script. Documents accept PDF, JPEG,
+  PNG, WebP, Word, Excel, CSV and plain text (`DOCUMENT_EXTENSIONS`). The image rules are implemented
+  once, in `apps/common/images.py`; the document rules once, in
+  `apps/common/files.py::validate_document_upload`, which the upload form calls.
+- Enforce a maximum size at the form (`RHP_MAX_UPLOAD_MB`, default 5) for documents as well as images,
+  plus a maximum pixel dimension for images; the reverse-proxy body limit is Phase 12.
+- Store under a randomized filename (`property_banners/<uuid>.<ext>`, `tenant_photos/<uuid>.<ext>`,
+  `documents/<uuid4hex><ext>`); never reuse the client-supplied name on disk.
 - Never execute uploaded content; never serve it with a content type that browsers execute.
 - **Every download is permission-checked.** Uploaded files are never reachable through a static file
   handler or the reverse proxy, and `MEDIA_URL` is only wired up in development. Banners are served by
-  `PropertyBannerView`, lease documents by `LeaseDocumentView` (staff) and `TenantLeaseDocumentView`
-  (the tenant on that lease); each checks its permission first (ADR-006, ADR-007).
+  `PropertyBannerView`, tenant photos by `TenantPhotoView`/`OwnPhotoView` (each with its own small
+  response helper), and documents by `DocumentDownloadView` (staff, any id) and
+  `TenantDocumentDownloadView` (the tenant, through `Document.objects.visible_to`); each checks its
+  permission first, and documents all serve through `apps/common/files.py::document_response`
+  (ADR-006, ADR-007, ADR-009, ADR-022). A document whose bytes are missing answers **404, not 500**,
+  on both document views.
+- **Removing a document is an admin's act, with a required note** (the owner's P6-Q4). Managers may file
+  and read documents; `DocumentRemoveView` mixes in `AdminRequiredMixin`, so a manager gets **403**.
+  `apps/documents/services.py::remove_document` refuses an empty note, deletes the row *and* the stored
+  bytes, and writes a `DOCUMENT_REMOVED` audit event carrying the title, the category, what it was
+  attached to, the actor and the reason. A superseded document is kept alongside instead.
 - Downloads carry `Cache-Control: private` and `X-Content-Type-Options: nosniff`, so a shared cache
   never holds a tenant document or photo and a browser never sniffs one into a different type.
 - **A tenant photo is personal data** (ADR-009). It is uploaded by staff on the tenant's
   account page, served only through `TenantPhotoView` (staff) or `OwnPhotoView` (the tenant, whose URL
   carries no id), and never shown to another tenant — there is no tenant-facing directory.
 - Keep uploaded files outside the web root (`media_data` volume, mounted privately).
-- Replacing or removing an image deletes the stored file, and deleting a property deletes its banner;
-  replacing a lease document, or deleting its lease, deletes the old file, so uploads do not accumulate
-  as orphans.
+- Replacing or removing an image deletes the stored file, and deleting a property deletes its banner. A
+  document row's file is deleted when the row is deleted (a `post_delete` signal in
+  `apps/documents/signals.py`), so an admin's removal takes the bytes with it; a lease or a property
+  that still has documents cannot be deleted at all — those foreign keys are `PROTECT` — so uploads do
+  not accumulate as orphans.
 
 ## Maps and third-party requests
 
@@ -233,15 +253,15 @@ running container. `python manage.py check --deploy` runs in CI.
 - A guessed or enumerated id for another tenancy returns 404, not the object.
 - Internal notes are never visible to tenants.
 - Balance calculations, partial payments, reversals, and overdue determination (Phase 4).
-- Uploads reject disallowed types and oversize files (Phase 6/7).
+- Uploads reject disallowed types and oversize files (documents in Phase 6, maintenance photos in
+  Phase 7).
 
 Phases 1–3 satisfy the first four, and Phase 5 extends the first to money: a tenant's dashboard and
 payment history show only their own tenancy (there is no id in either URL), and the tests live in
 `tests/accounts/`, `tests/properties/` and `tests/leases/`. The lease suite asserts the role matrix route
 by route (403 for the wrong area, 302 to sign-in when anonymous, and a staff account sent on to
-`/manage/` from the tenant pages), that a tenant who is not on a lease gets 404 from the tenant area,
-that the tenant document URL carries no id, and that an ended lease refuses a direct POST as well as
-hiding the form.
+`/manage/` from the tenant pages), that a tenant who is not on a lease gets 404 from the tenant area, and
+that an ended lease refuses a direct POST as well as hiding the form.
 
 Phase 4 satisfies the fifth, in `tests/ledger/`: the balance is the charges minus the cleared payments
 (including part payments, credits and overpayments), a reversal restores the balance while leaving the
@@ -250,6 +270,14 @@ cannot be edited, deleted, reversed twice, or written on a draft. `tests/audit/`
 actor and an action per change, amounts recorded without floating point, and events that refuse to be
 changed or removed. `tests/ledger/test_authorization.py` walks every accounting route for each role,
 including that managers may reverse and adjust while destructive deletion and role changes remain restricted.
+
+Phase 6's tests cover the last item, in `tests/documents/` and `tests/leases/`: the allow-list and the
+size cap refuse a disallowed or oversize upload before a row is written, a stored name is randomised and
+the uploaded name is kept only as metadata, a staff-only document is absent from the tenant's list,
+another tenancy's id answers 404 from the download (and never appears in the list), the file is served
+only through the permission-checked view, and removal is refused to a manager and writes an audit event
+when an admin does it with a note. The migration that turns each lease's single file into a document row
+is covered where the lease suite lives.
 
 ## Reporting a problem
 

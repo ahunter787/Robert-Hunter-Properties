@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "apps.leases",
     "apps.ledger",
     "apps.responsibilities",
+    "apps.documents",
     "apps.audit",
 ]
 
@@ -117,6 +118,9 @@ MEDIA_ROOT = env("DJANGO_MEDIA_ROOT", default=str(BASE_DIR / "media"))
 # --- Portfolio media and maps ---------------------------------------------
 # Maximum banner photo size in megabytes; the property form enforces it.
 RHP_MAX_UPLOAD_MB = env.int("RHP_MAX_UPLOAD_MB", default=5)
+
+# What may be uploaded as a document is an allow-list in `apps/common/files.py`, beside
+# the image rules, so the form and the service cannot disagree about it (ADR-022).
 # Expand shortened Google Maps links (maps.app.goo.gl/...) with one outbound
 # request to Google when a pin is saved. Every other link shape is parsed offline.
 # Turn this off on a host without outbound network — staff can always paste the
