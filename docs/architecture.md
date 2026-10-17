@@ -100,7 +100,18 @@ publishes build output.
 - Node is required only to build CSS. The Docker image builds it in a `node:22-alpine` stage and the
   runtime image is Python-only; `make assets` does the same on a workstation.
 - There is no JavaScript application. Interactivity is added with HTMX and small progressive
-  enhancements when a phase needs it.
+  enhancements when a phase needs it. **HTMX is installed as of the share calculator** (2026-10-15):
+  version **2.0.4**, vendored (committed) at `static/js/htmx.min.js` — the project static directory
+  `STATICFILES_DIRS` already serves, so `collectstatic` publishes it and no build step is involved — with
+  its upstream hash recorded in the file's banner. `static/css/rhp.css` stays generated and
+  gitignored. The October 16 calculator correction replaces the cascade with a stateless
+  bill-details → allocation → signed review flow (ADR-014). A small first-party script at
+  `static/js/expense-allocation.js` tracks the input basis and requests server-calculated previews;
+  aborts and revision checks discard stale responses. Every action also works through a plain
+  form submission. All money arithmetic remains in Python. Only a final, validated review writes;
+  the responsibility row serializes allocation saves and expense-charge generation so posted
+  history cannot race an allocation edit. Review signatures include the saved allocation, unit
+  roster, bill and tenancy facts, and bind the reviewed cents to the acting manager.
 
 ## Design language
 

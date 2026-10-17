@@ -1,18 +1,15 @@
-"""Forms for a property's responsibilities and the cycles they are billed in."""
+"""Explicit bill details and monthly allocation forms (ADR-014)."""
 
 from decimal import Decimal
 
 from django import forms
-from django.utils import timezone
 
 from apps.common.forms import StyledForm, StyledModelForm
-from apps.responsibilities import services as responsibility_services
-from apps.responsibilities.models import PropertyResponsibility, ResponsibilityCycle
+from apps.responsibilities import services
+from apps.responsibilities.models import PropertyResponsibility
 
 
 class ResponsibilityForm(StyledModelForm):
-    """One recurring cost on a property: what it is called and how often it lands."""
-
     class Meta:
         model = PropertyResponsibility
         fields = ["label", "category", "cycle_months", "is_active", "note"]
@@ -24,87 +21,7 @@ class ResponsibilityForm(StyledModelForm):
         }
 
 
-class UnitAmountsMixin:
-    """The per-unit monthly amounts shared by staging and editing a cycle.
-
-    The amounts are optional, and blank means the share RHP proposes from the property's
-    recorded sizes — the same rule the staging screen has always used, so the two screens
-    cannot disagree (ADR-014). Type a figure where the division is not a formula: the water
-    bill that is not split by floor area, or a unit that is out of the bill, which is a zero.
-
-    The bill is the ceiling. The amounts may add up to *less* than it — a vacant unit's share
-    stays with the owner — but never more, and a form that says otherwise is refused here and
-    again where the shares are written.
-    """
-
-    #: Set by the form that knows the cycle, or the preview the staging form builds.
-    cycle = None
-    units: list = []
-
-    def add_unit_fields(self, units, amounts=None, proposals=None) -> None:
-        self.units = list(units)
-        proposals = proposals or {}
-        for unit in self.units:
-            proposed = proposals.get(unit.pk)
-            self.fields[f"unit_{unit.pk}"] = forms.DecimalField(
-                label=f"{unit.identifier} a month",
-                max_digits=12,
-                decimal_places=2,
-                min_value=Decimal("0"),
-                required=False,
-                initial=(amounts or {}).get(unit.pk),
-                widget=forms.NumberInput(
-                    attrs={"placeholder": f"{proposed:.2f}"} if proposed else None
-                ),
-                help_text=self._unit_help(unit, proposed),
-            )
-
-    def _unit_help(self, unit, proposed=None) -> str:
-        share = unit.share_of_property
-        size = f"{unit.square_feet:,} sq ft" if unit.square_feet else "no size recorded"
-        if share is None:
-            return f"{size}. Left blank, the bill is split evenly."
-        return f"{size}, {share}% of the property. Left blank, that share is charged."
-
-    def proposal_for(self, unit) -> Decimal | None:
-        """What this unit pays if its field is left blank, or ``None`` when RHP cannot say."""
-        if self.cycle is None:
-            return None
-        return responsibility_services.propose_shares(self.cycle).get(unit.pk)
-
-    def amounts(self, units) -> dict[int, Decimal]:
-        """The amounts to save, by unit id: what was typed, else that unit's share.
-
-        Blank no longer means "leave it as it was" — it means the proposed share, which is
-        what the screen has always told the office it means.
-        """
-        typed: dict[int, Decimal] = {}
-        for unit in units:
-            value = self.cleaned_data.get(f"unit_{unit.pk}")
-            if value is not None:
-                typed[unit.pk] = value
-                continue
-            proposed = self.proposal_for(unit)
-            if proposed is not None:
-                typed[unit.pk] = proposed
-        return typed
-
-    def check_monthly_total(self, cap: Decimal) -> None:
-        """Refuse a division that adds up to more than one month of the bill."""
-        if not cap or cap <= Decimal("0"):
-            return
-        total = sum(self.amounts(self.units).values(), Decimal("0"))
-        if total > cap:
-            self.add_error(
-                None,
-                f"The unit amounts add up to {total:,.2f} a month, and this bill is "
-                f"{cap:,.2f} a month to divide. Take {total - cap:,.2f} off the amounts.",
-            )
-
-
-class CycleForm(UnitAmountsMixin, StyledForm):
-    """Enter a property's bill and allocate its monthly amount to units."""
-
+class CycleForm(StyledForm):
     starts_on = forms.DateField(
         label="First month covered",
         widget=forms.DateInput(attrs={"type": "date"}),
@@ -116,56 +33,113 @@ class CycleForm(UnitAmountsMixin, StyledForm):
         max_digits=12,
         decimal_places=2,
         min_value=Decimal("0.01"),
-        help_text="The total billed to the property for this billing period.",
     )
     note = forms.CharField(
         max_length=200, required=False, help_text="The bill's reference, or where it came from."
     )
 
-    def __init__(self, *args, units=(), initial_amounts=None, responsibility=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.responsibility = responsibility
-        self.add_unit_fields(units, initial_amounts)
 
-    def clean(self):
-        """The staging screen checks the ceiling too, against the bill being entered."""
-        cleaned = super().clean()
-        total_amount = cleaned.get("total_amount")
-        months = cleaned.get("months")
-        if total_amount is None or not months or self.responsibility is None:
-            return cleaned
-        # A preview cycle: the proposals need the monthly figure, and nothing is saved to
-        # work it out.
-        self.cycle = ResponsibilityCycle(
-            responsibility=self.responsibility,
-            starts_on=cleaned.get("starts_on") or timezone.localdate(),
-            months=months,
-            total_amount=total_amount,
-        )
-        self.check_monthly_total(self.cycle.monthly_total)
-        return cleaned
-
-
-class SharesForm(UnitAmountsMixin, StyledForm):
-    """Correct the units' monthly amounts on a cycle that is already staged."""
-
+class SharesForm(StyledForm):
+    remainder = forms.ChoiceField(label="Who receives the remainder?", initial="rhp")
     note = forms.CharField(
         max_length=200,
         required=False,
-        help_text="Why the division changed. Recorded with the change.",
+        label="Allocation note",
+        help_text="Explain the allocation or change. Not shown to tenants.",
     )
 
-    def __init__(self, *args, cycle=None, units=(), initial_amounts=None, **kwargs):
+    def __init__(self, *args, cycle, units, initial_amounts=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.cycle = cycle
-        self.add_unit_fields(
-            units,
-            initial_amounts,
-            proposals=responsibility_services.propose_shares(cycle) if cycle else None,
-        )
+        self.units = list(units)
+        self.worksheet = None
+        self.fields["remainder"].choices = [("rhp", "RHP")] + [
+            (str(unit.pk), unit.identifier) for unit in self.units
+        ]
+        for unit in self.units:
+            amount = (initial_amounts or {}).get(unit.pk, Decimal("0.00"))
+            self.fields[f"unit_{unit.pk}"] = forms.DecimalField(
+                label=f"{unit.identifier}: monthly amount",
+                max_digits=12,
+                decimal_places=2,
+                min_value=Decimal("0"),
+                required=False,
+                initial=amount,
+                widget=forms.NumberInput(
+                    attrs={"class": "rhp-field", "step": "0.01", "data-allocation-input": "amount"}
+                ),
+            )
+            self.fields[f"percent_{unit.pk}"] = forms.DecimalField(
+                label=f"{unit.identifier}: percentage",
+                max_digits=6,
+                decimal_places=2,
+                min_value=Decimal("0"),
+                max_value=Decimal("100"),
+                required=False,
+                initial=services.share_percent(amount, cycle.monthly_total),
+                widget=forms.NumberInput(
+                    attrs={"class": "rhp-field", "step": "0.01", "data-allocation-input": "percent"}
+                ),
+            )
+            self.fields[f"basis_{unit.pk}"] = forms.ChoiceField(
+                label=f"{unit.identifier}: calculate using",
+                initial="amount",
+                choices=[
+                    ("amount", "Monthly dollars"),
+                    ("percent", "Percentage"),
+                    ("excluded", "Exclude from this bill"),
+                ],
+                widget=forms.Select(attrs={"class": "rhp-field", "data-allocation-basis": ""}),
+            )
+            recipient = (
+                self.data.get("remainder") if self.is_bound else self.initial.get("remainder")
+            )
+            if str(unit.pk) == str(recipient):
+                for key in (f"unit_{unit.pk}", f"percent_{unit.pk}"):
+                    self.fields[key].widget.attrs["readonly"] = True
 
     def clean(self):
         cleaned = super().clean()
-        if self.cycle is not None:
-            self.check_monthly_total(self.cycle.monthly_total)
+        method = self.data.get("allocation_method", "custom")
+        remainder = cleaned.get("remainder", "rhp")
+        # Only the selected input is authoritative. Stale/half-typed values in
+        # its counterpart, excluded rows, or the remainder row are not inputs.
+        for unit in self.units:
+            basis = cleaned.get(f"basis_{unit.pk}")
+            for key, kind in ((f"unit_{unit.pk}", "amount"), (f"percent_{unit.pk}", "percent")):
+                if method != "custom" or str(unit.pk) == remainder or basis != kind:
+                    self._errors.pop(key, None)
+        if method == "custom":
+            for unit in self.units:
+                if str(unit.pk) == remainder:
+                    continue
+                basis = cleaned.get(f"basis_{unit.pk}")
+                key = f"percent_{unit.pk}" if basis == "percent" else f"unit_{unit.pk}"
+                if (
+                    basis in ("amount", "percent")
+                    and cleaned.get(key) is None
+                    and key not in self.errors
+                ):
+                    self.add_error(key, "Enter a value, or explicitly exclude this unit.")
+        if self.errors:
+            return cleaned
+        try:
+            self.worksheet = services.allocate_monthly(
+                self.cycle,
+                units=self.units,
+                amounts={u.pk: cleaned.get(f"unit_{u.pk}") for u in self.units},
+                percentages={u.pk: cleaned.get(f"percent_{u.pk}") for u in self.units},
+                bases={u.pk: cleaned[f"basis_{u.pk}"] for u in self.units},
+                remainder=remainder,
+                method=method,
+            )
+            if self.worksheet.over:
+                self.add_error(
+                    None, f"Allocations exceed the monthly bill by ${self.worksheet.over:,.2f}."
+                )
+        except forms.ValidationError as exc:
+            self.add_error(None, exc)
         return cleaned
+
+    def amounts(self, units=None):
+        return {row.unit.pk: row.amount for row in self.worksheet.rows}

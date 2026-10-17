@@ -30,6 +30,7 @@ from tests.factories import (
     make_share,
     make_unit,
 )
+from tests.responsibilities.helpers import allocation_page, new_bill_page, payload, reviewed_save
 
 pytestmark = pytest.mark.django_db
 
@@ -108,64 +109,47 @@ def test_proposals_absorb_rounding_so_they_still_add_up():
 
 def test_the_shares_screen_refuses_more_than_the_bill(as_manager, water_bill):
     _property, first, second, _responsibility, cycle = water_bill
-    as_manager.post(
-        reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {f"unit_{first.pk}": "100.00", f"unit_{second.pk}": "600.00", "note": ""},
-    )
-
-    assert not cycle.shares.exists(), "nothing was written"
-
+    page = allocation_page(as_manager, cycle)
     response = as_manager.post(
         reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {f"unit_{first.pk}": "100.00", f"unit_{second.pk}": "600.00", "note": ""},
+        payload(page, action="review", **{f"unit_{first.pk}": "100", f"unit_{second.pk}": "600"}),
     )
-    body = " ".join(response.content.decode().split())
-
-    assert response.status_code == 200, "the form is handed back, not saved"
-    assert "add up to 700.00 a month" in body
-    assert "233.33 a month to divide" in body
-    assert "Take 466.67 off the amounts" in body
+    assert response.status_code == 200
+    assert b"exceed the monthly bill by $466.67" in response.content
     assert not cycle.shares.exists()
 
 
 def test_the_shares_screen_allows_less_and_says_what_is_left(as_admin, water_bill):
     _property, first, second, _responsibility, cycle = water_bill
-
+    page = allocation_page(as_admin, cycle)
     response = as_admin.post(
         reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {f"unit_{first.pk}": "100.00", f"unit_{second.pk}": "0.00", "note": "one unit only"},
+        payload(page, action="review", **{f"unit_{first.pk}": "100", f"unit_{second.pk}": "0"}),
     )
-
-    assert response.status_code == 302
+    assert response.context["step"] == "review"
+    assert response.context["worksheet"].left == Decimal("133.33")
+    saved = as_admin.post(
+        reverse("responsibilities:cycle-shares", args=[cycle.pk]), payload(response, action="save")
+    )
+    assert saved.status_code == 302
     assert shares_of(cycle) == {first.pk: Decimal("100.00")}
-
-    body = " ".join(
-        as_admin.get(reverse("responsibilities:cycle-shares", args=[cycle.pk]))
-        .content.decode()
-        .split()
-    )
-    assert "Set at the moment: $100.00 a month" in body
-    assert "$133.33 left" in body, "the rest stays with RHP, and the screen says so"
 
 
 def test_staging_a_bill_is_held_to_the_same_ceiling(as_admin, water_bill):
     _property, first, second, responsibility, _cycle = water_bill
-
+    page = new_bill_page(
+        as_admin,
+        responsibility,
+        starts_on=TODAY.replace(day=1) + dt.timedelta(days=200),
+        months=3,
+        total_amount="700",
+    )
     response = as_admin.post(
         reverse("responsibilities:cycle-stage", args=[responsibility.pk]),
-        {
-            "starts_on": (TODAY.replace(day=1) + dt.timedelta(days=200)).isoformat(),
-            "months": "3",
-            "total_amount": "700.00",
-            "note": "",
-            f"unit_{first.pk}": "100.00",
-            f"unit_{second.pk}": "600.00",
-        },
+        payload(page, action="review", **{f"unit_{first.pk}": "100", f"unit_{second.pk}": "600"}),
     )
-
-    assert response.status_code == 200
-    assert b"add up to 700.00 a month" in response.content
-    assert responsibility.cycles.count() == 1, "the over-allocated bill was not staged"
+    assert b"exceed the monthly bill by $466.67" in response.content
+    assert responsibility.cycles.count() == 1
 
 
 def test_the_service_refuses_the_ceiling_whatever_the_screen_did(water_bill):
@@ -184,32 +168,24 @@ def test_the_service_refuses_the_ceiling_whatever_the_screen_did(water_bill):
 # --- blank means the share the screen promises -----------------------------
 
 
-def test_a_blank_field_falls_back_to_the_proposed_share(as_admin, water_bill):
-    """The screen says "left blank, that share is charged" — so it is."""
+def test_blank_fields_require_explicit_allocation(as_admin, water_bill):
     _property, first, second, _responsibility, cycle = water_bill
-    make_share(cycle, first, monthly_amount=Decimal("60.00"))
-    make_share(cycle, second, monthly_amount=Decimal("140.00"))
-
+    make_share(cycle, first, monthly_amount=Decimal("60"))
+    make_share(cycle, second, monthly_amount=Decimal("140"))
+    page = allocation_page(as_admin, cycle)
     response = as_admin.post(
         reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {f"unit_{first.pk}": "", f"unit_{second.pk}": "", "note": "back to the sizes"},
+        payload(page, action="review", **{f"unit_{first.pk}": "", f"unit_{second.pk}": ""}),
     )
-
-    assert response.status_code == 302
-    proposals = responsibility_services.propose_shares(cycle)
-    assert shares_of(cycle) == proposals
+    assert response.context["allocation"].errors
+    assert shares_of(cycle) == {first.pk: Decimal("60"), second.pk: Decimal("140")}
 
 
 def test_a_zero_takes_a_unit_out_of_the_bill(as_admin, water_bill):
     _property, first, second, _responsibility, cycle = water_bill
     make_share(cycle, first, monthly_amount=Decimal("98.07"))
     make_share(cycle, second, monthly_amount=Decimal("135.26"))
-
-    response = as_admin.post(
-        reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {f"unit_{first.pk}": "0.00", f"unit_{second.pk}": "", "note": "vacant"},
-    )
-
+    response = reviewed_save(as_admin, cycle, **{f"unit_{first.pk}": "0.00"})
     assert response.status_code == 302
     assert shares_of(cycle) == {second.pk: Decimal("135.26")}
 

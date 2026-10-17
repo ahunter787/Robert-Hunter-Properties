@@ -1237,4 +1237,11 @@ the contract now includes.
 
 | **E4** — retroactive onboarding | A lease carries a **cutover** — the first month RHP bills for — and a live tenancy that began before RHP cannot be charged until somebody places it: either the whole term's charges are raised and one settling payment brings in what was already received, or charging starts at the cutover with a single brought-forward balance (or credit on account). A lease may also be **stated**: its amounts are entered from the paper rather than generated from a rule. | Every RHP tenancy is live now and none began in RHP. Charging them the ordinary way billed years of history as if it were new — on one real lease, 108 charges and a $100,536 "balance" for a tenant who was paid up — and the specification has no notion of a tenancy being *placed*. | [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) |
 
+**E2 calculator clarification, approved October 16, 2026:** entering a bill follows bill
+details → explicit monthly allocation → review and save. The edited dollar or percentage
+input controls its paired value; only the explicitly selected remainder recipient is
+recalculated, with RHP the default. Preview/navigation do not write, final saving revalidates
+the reviewed state, and posted cycles remain locked. Monthly Decimal storage, vacancy
+treatment and rounding are unchanged. See ADR-014's October 16 amendment.
+
 Proposed but **not** approved: E3 (concessions).

@@ -6,6 +6,8 @@
     <title>{% block title %}RHP — Robert Hunter Properties{% endblock %}</title>
     <meta name="description" content="{% block description %}Robert Hunter Properties tenant and management portal.{% endblock %}">
     <link rel="stylesheet" href="{% static 'css/rhp.css' %}?v=20261014">
+    {# Vendored, not built: the share calculator asks the server to recompute as you type. #}
+    <script src="{% static 'js/htmx.min.js' %}?v=2.0.4" defer></script>
   </head>
   <body class="flex min-h-full flex-col overflow-x-hidden bg-surface font-sans text-ink antialiased">
     <a href="#main" class="rhp-skip-link">Skip to content</a>
@@ -25,5 +27,6 @@
     </main>
 
     {% include "components/footer.html" %}
+    {% block scripts %}{% endblock %}
   </body>
 </html>

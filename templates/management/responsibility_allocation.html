@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% load rhp_format static %}
+{% block title %}Allocate {{ responsibility.label }} — RHP{% endblock %}
+{% block content %}
+<div class="mx-auto w-full max-w-3xl space-y-6">
+  <div>
+    <p class="rhp-eyebrow"><a href="{% url 'portfolio:property-detail' property.pk %}">{{ property.name }}</a> · Expense recoveries</p>
+    <h1 class="mt-1 text-2xl font-semibold">{{ responsibility.label }} allocation</h1>
+    <p class="mt-2 text-sm text-ink-muted">Bill details → Allocate monthly amount → Review and save</p>
+  </div>
+  {% if cycle %}
+  <div class="rhp-card">
+    <h2 class="font-semibold">Bill details</h2>
+    <p>{{ cycle.total_amount|money }} over {{ cycle.months }} month{{ cycle.months|pluralize }} · {{ cycle.monthly_total|money }} per month</p>
+    <p class="text-sm text-ink-muted">{{ cycle.starts_on|date:"M j, Y" }} – {{ cycle.ends_on|date:"M j, Y" }}</p>
+  </div>
+  {% endif %}
+  {% if locked %}
+    <div class="rhp-card"><p>This bill has posted charges. Correct those charges with adjustments on the lease ledger; its allocations cannot be changed.</p></div>
+    <a class="rhp-btn rhp-btn-secondary" href="{% url 'portfolio:property-detail' property.pk %}">Back to property</a>
+  {% else %}
+  <form method="post" data-allocation-form class="space-y-6">
+    {% csrf_token %}
+    <input type="hidden" name="baseline" value="{{ baseline }}">
+    {% if step == "details" %}
+      {% for name, value in draft %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endfor %}
+      <div class="rhp-card">
+        <h2 class="mb-4 font-semibold">1. Bill details</h2>
+        {% if bill %}{% include "components/form.html" with form=bill %}{% else %}
+        <p>Confirm the bill above, then review how its monthly amount is allocated.</p>{% endif %}
+      </div>
+      <button class="rhp-btn rhp-btn-primary" name="action" value="allocate">Continue to allocation</button>
+    {% elif step == "review" %}
+      {% if bill %}{% for field in bill %}{{ field.as_hidden }}{% endfor %}{% endif %}
+      {% for field in allocation %}{{ field.as_hidden }}{% endfor %}
+      <input type="hidden" name="review_token" value="{{ review_token }}">
+      <div class="rhp-card space-y-4">
+        <h2 class="font-semibold">3. Review and save</h2>
+        {% for row in review_rows %}
+        <div class="border-b border-line pb-3">
+          <p class="font-medium">{{ row.unit.identifier }}{% if row.vacant %} · Vacant{% endif %}</p>
+          <p>{{ row.amount|money }} per month · {{ row.percent }}%</p>
+          {% if not new_bill %}<p class="text-sm text-ink-muted">Saved: {{ row.saved|money }} · {% if row.change < 0 %}Decrease of {{ row.change|absolute|money }}{% elif row.change > 0 %}Increase of {{ row.change|money }}{% else %}No change{% endif %}</p>{% endif %}
+          {% if row.vacant %}<p class="text-sm text-ink-muted">RHP carries this allocation while the unit is vacant.</p>{% endif %}
+        </div>
+        {% empty %}<p>No units. RHP carries the full bill.</p>{% endfor %}
+        <p>Allocated to units: {{ worksheet.assigned|money }} per month</p>
+        <p>Unallocated: {{ worksheet.left|money }} per month</p>
+        <p class="font-medium">RHP share, including vacant units: {{ rhpshare|money }} per month</p>
+        {% if rounding %}<p class="text-sm text-ink-muted">Monthly rounding difference: allocations over this billing period total {{ rounding|absolute|money }} {% if rounding < 0 %}less{% else %}more{% endif %} than the property bill. Monthly amounts remain unchanged.</p>{% endif %}
+        {% if allocation.note.value %}<p>Allocation note: {{ allocation.note.value }}</p>{% endif %}
+        <p>Saving records these allocations for {{ property.name }}. No tenant charges will be posted. Post due charges separately on each lease account.</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="rhp-btn rhp-btn-primary" name="action" value="save">Save reviewed allocation</button>
+        <button class="rhp-btn rhp-btn-secondary" name="action" value="back">Back to allocation</button>
+      </div>
+    {% else %}
+      {% if bill %}{% for field in bill %}{{ field.as_hidden }}{% endfor %}{% endif %}
+      <div data-allocation-panel class="rhp-card space-y-4">
+        <h2 class="font-semibold">2. Allocate monthly amount</h2>
+        <p class="text-sm text-ink-muted">Unsaved allocation. Enter dollars or a percentage for each unit. Only the selected remainder recipient changes automatically.</p>
+        <div role="status" aria-live="polite" data-allocation-status>
+          {% if worksheet %}<p>Allocated to units: {{ worksheet.assigned|money }} · Unallocated: {{ worksheet.left|money }} per month</p>
+          {% if worksheet.over %}<p class="text-danger">Over the monthly bill by {{ worksheet.over|money }}. Reduce the allocations before continuing.</p>{% endif %}{% endif %}
+        </div>
+        {% for error in allocation.non_field_errors %}<p class="text-danger" role="alert">{{ error }}</p>{% endfor %}
+        <label class="rhp-label" for="{{ allocation.remainder.id_for_label }}">{{ allocation.remainder.label }}</label>
+        {{ allocation.remainder }}{{ allocation.remainder.errors }}
+        <p class="rhp-help">Choose RHP to leave unallocated money with the property. A selected unit receives the monthly amount remaining after all other allocations.</p>
+        <div class="flex flex-wrap gap-2">
+          <button class="rhp-btn rhp-btn-secondary" name="allocation_method" value="size" formnovalidate>Use size-based allocation</button>
+          <button class="rhp-btn rhp-btn-secondary" name="allocation_method" value="equal" formnovalidate>Split equally</button>
+        </div>
+        <p class="rhp-help">These actions replace all unit amounts. Vacant units keep their share; it is not reassigned to occupied units.</p>
+        <h3 class="font-semibold">Custom allocation</h3>
+        <p class="rhp-help">Enter amounts below, or adjust the results of size-based or equal allocation.</p>
+        {% for row in rows %}
+        <fieldset data-allocation-row class="rounded-card border border-line p-3 space-y-3">
+          <legend class="px-1 font-semibold">{{ row.unit.identifier }}{% if row.vacant %} · Vacant{% endif %}</legend>
+          <p class="text-sm text-ink-muted">{% if row.unit.square_feet %}{{ row.unit.square_feet }} sq ft{% else %}Square footage not recorded{% endif %}{% if not new_bill %} · Saved: {{ row.saved|money }} per month{% endif %}</p>
+          {% if row.remainder %}<p class="font-medium">Calculated remainder recipient</p>{% endif %}
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div><label class="rhp-label" for="{{ row.amount.id_for_label }}"><span class="sr-only">{{ row.unit.identifier }}: </span>Monthly amount ($)</label>{{ row.amount }}{{ row.amount.errors }}</div>
+            <div><label class="rhp-label" for="{{ row.percent.id_for_label }}"><span class="sr-only">{{ row.unit.identifier }}: </span>Share of monthly bill (%)</label>{{ row.percent }}{{ row.percent.errors }}</div>
+          </div>
+          {% if row.remainder %}
+          <input type="hidden" name="{{ row.basis.html_name }}" value="amount">
+          {% else %}
+          <label class="rhp-label" for="{{ row.basis.id_for_label }}"><span class="sr-only">{{ row.unit.identifier }}: </span>Calculate using</label>{{ row.basis }}{{ row.basis.errors }}
+          {% endif %}
+          {% if row.remainder %}<p class="rhp-help">This unit's fields are calculated, not used as inputs. Choose RHP or another unit above to enter its amount directly.</p>{% endif %}
+        </fieldset>
+        {% empty %}<p>No units. RHP carries the full bill.</p>{% endfor %}
+        <noscript><p>Select “Monthly dollars,” “Percentage,” or “Exclude from this bill” for each unit, then select Update calculation.</p></noscript>
+        <label class="rhp-label" for="{{ allocation.note.id_for_label }}">{{ allocation.note.label }}</label>{{ allocation.note }}{{ allocation.note.errors }}
+        <p class="rhp-help">{{ allocation.note.help_text }}</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="rhp-btn rhp-btn-primary" name="action" value="review">Review allocation</button>
+        <button class="rhp-btn rhp-btn-secondary" name="action" value="calculate" formnovalidate>Update calculation</button>
+        {% if new_bill %}<button class="rhp-btn rhp-btn-secondary" name="action" value="details" formnovalidate>Back to bill details</button>{% endif %}
+      </div>
+    {% endif %}
+    <a class="rhp-btn rhp-btn-secondary" href="{% url 'portfolio:property-detail' property.pk %}">Cancel</a>
+  </form>
+  <p class="text-sm text-ink-muted">As soon as a month's charge has been posted, its bill becomes history: The correction belongs on the ledger as an adjustment.</p>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/expense-allocation.js' %}" defer></script>{% endblock %}

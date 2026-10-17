@@ -30,6 +30,7 @@ from tests.factories import (
     make_tenant,
     make_unit,
 )
+from tests.responsibilities.helpers import new_bill_page, payload, reviewed_save
 
 pytestmark = pytest.mark.django_db
 
@@ -172,24 +173,25 @@ def test_staging_proposes_the_shares_from_the_sizes(as_admin):
     first = make_unit(for_property=property_obj, identifier="1", square_feet=760)
     second = make_unit(for_property=property_obj, identifier="2", square_feet=240)
     responsibility = make_responsibility(property_obj, label="Water")
-
-    response = as_admin.post(
-        reverse("responsibilities:cycle-stage", args=[responsibility.pk]),
-        {
-            "starts_on": TODAY.replace(day=1).isoformat(),
-            "months": "3",
-            "total_amount": "600.00",
-            "note": "City of Springfield",
-            f"unit_{first.pk}": "",
-            f"unit_{second.pk}": "",
-        },
+    endpoint = reverse("responsibilities:cycle-stage", args=[responsibility.pk])
+    page = new_bill_page(
+        as_admin,
+        responsibility,
+        starts_on=TODAY.replace(day=1),
+        months=3,
+        total_amount="600.00",
+        note="City of Springfield",
     )
-
+    preview = as_admin.post(endpoint, payload(page, allocation_method="size"))
+    assert not responsibility.cycles.exists()
+    review = as_admin.post(endpoint, payload(preview, action="review"))
+    response = as_admin.post(endpoint, payload(review, action="save"))
     assert response.status_code == 302
     cycle = responsibility.cycles.get()
-    shares = {share.unit_id: share.monthly_amount for share in cycle.shares.all()}
-    assert shares[first.pk] == Decimal("152.00")
-    assert shares[second.pk] == Decimal("48.00")
+    assert dict(cycle.shares.values_list("unit_id", "monthly_amount")) == {
+        first.pk: Decimal("152.00"),
+        second.pk: Decimal("48.00"),
+    }
     assert AuditEvent.objects.filter(action=AuditAction.RESPONSIBILITY_CYCLE_STAGED).exists()
 
 
@@ -198,46 +200,36 @@ def test_a_typed_amount_beats_the_proposal(as_admin):
     first = make_unit(for_property=property_obj, identifier="1", square_feet=760)
     second = make_unit(for_property=property_obj, identifier="2", square_feet=240)
     responsibility = make_responsibility(property_obj, label="Water")
-
-    as_admin.post(
-        reverse("responsibilities:cycle-stage", args=[responsibility.pk]),
-        {
-            "starts_on": TODAY.replace(day=1).isoformat(),
-            "months": "3",
-            "total_amount": "600.00",
-            "note": "",
-            f"unit_{first.pk}": "80.00",
-            f"unit_{second.pk}": "",
-        },
+    endpoint = reverse("responsibilities:cycle-stage", args=[responsibility.pk])
+    page = new_bill_page(
+        as_admin, responsibility, starts_on=TODAY.replace(day=1), months=3, total_amount="600.00"
     )
-
+    preview = as_admin.post(endpoint, payload(page, allocation_method="size"))
+    review = as_admin.post(
+        endpoint, payload(preview, action="review", **{f"unit_{first.pk}": "80.00"})
+    )
+    response = as_admin.post(endpoint, payload(review, action="save"))
+    assert response.status_code == 302
     cycle = responsibility.cycles.get()
-    shares = {share.unit_id: share.monthly_amount for share in cycle.shares.all()}
-    assert shares[first.pk] == Decimal("80.00"), "the amount the office typed wins"
-    assert shares[second.pk] == Decimal("48.00"), "the unit it left blank keeps its size share"
-
-    # What the units carry is shown against the bill rather than quietly made to fit.
+    assert dict(cycle.shares.values_list("unit_id", "monthly_amount")) == {
+        first.pk: Decimal("80.00"),
+        second.pk: Decimal("48.00"),
+    }
     body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
     assert "$72.00 a month of this bill is not carried by a unit." in body
 
 
 def test_a_staged_cycle_can_be_re_aimed_at_the_units(as_admin):
-    property_obj, first, second, responsibility, cycle = billed_building()
-    del property_obj
-
-    # Within the bill: 200.00 a month is what this cycle divides.
-    response = as_admin.post(
-        reverse("responsibilities:cycle-shares", args=[cycle.pk]),
-        {
-            f"unit_{first.pk}": "180.00",
-            f"unit_{second.pk}": "0.00",
-            "note": "usage-based",
-        },
+    _property, first, second, _responsibility, cycle = billed_building()
+    response = reviewed_save(
+        as_admin,
+        cycle,
+        **{f"unit_{first.pk}": "180.00", f"basis_{second.pk}": "excluded", "note": "usage-based"},
     )
-
     assert response.status_code == 302
-    shares = {share.unit_id: share.monthly_amount for share in cycle.shares.all()}
-    assert shares == {first.pk: Decimal("180.00")}
+    assert dict(cycle.shares.values_list("unit_id", "monthly_amount")) == {
+        first.pk: Decimal("180.00")
+    }
     assert AuditEvent.objects.filter(action=AuditAction.RESPONSIBILITY_SHARES_SET).exists()
 
 
@@ -264,7 +256,7 @@ def test_a_charged_cycle_refuses_the_change_out_loud(as_admin):
     )
 
     assert response.status_code == 200, "the refusal is shown, not swallowed"
-    assert "already been charged" in text_of(response)
+    assert "posted charges" in text_of(response)
     assert cycle.shares.get(unit=first).monthly_amount == Decimal("152.00")
 
     unused = responsibility.cycles.count()

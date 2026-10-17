@@ -230,6 +230,7 @@ def stage_cycle(
     months: int | None = None,
     note: str = "",
     amounts_by_unit: dict[int, Decimal] | None = None,
+    allocation_note: str = "",
     actor=None,
 ) -> ResponsibilityCycle:
     """Stage a cycle's bill and the units' monthly amounts.
@@ -238,6 +239,8 @@ def stage_cycle(
     been charged. The proposed shares are saved, so the figures the ledger will
     charge are visible and editable rather than re-derived later.
     """
+    # Allocation changes and charge generation share this lock (ADR-014).
+    PropertyResponsibility.objects.select_for_update().get(pk=responsibility.pk)
     months = months or responsibility.cycle_months
     cycle = responsibility.cycles.filter(starts_on=starts_on).first()
     if cycle is not None:
@@ -260,7 +263,7 @@ def stage_cycle(
     # the normal quarterly case is one number to enter and the unusual one is
     # overridden where it differs (ADR-014).
     amounts = {**propose_shares(cycle), **(amounts_by_unit or {})}
-    _apply_shares(cycle, amounts, actor=actor)
+    _apply_shares(cycle, amounts, note=allocation_note, actor=actor)
 
     record(
         _actor(actor),
@@ -276,6 +279,7 @@ def stage_cycle(
         total=cycle.total_amount,
         months=cycle.months,
         starts_on=cycle.starts_on,
+        allocation_note=allocation_note,
     )
     return cycle
 
@@ -285,6 +289,8 @@ def set_shares(
     cycle: ResponsibilityCycle, amounts_by_unit: dict[int, Decimal], *, note: str = "", actor=None
 ) -> list[ResponsibilityShare]:
     """Set the units' monthly amounts for one cycle, and record who did it."""
+    PropertyResponsibility.objects.select_for_update().get(pk=cycle.responsibility_id)
+    cycle = ResponsibilityCycle.objects.get(pk=cycle.pk)
     _refuse_locked(cycle)
     shares = _apply_shares(cycle, amounts_by_unit, note=note, actor=actor)
     record(
@@ -391,3 +397,118 @@ def save_responsibility(
         is_active=responsibility.is_active,
     )
     return responsibility
+
+
+# --- the share worksheet: linked amounts and percentages (2026-10-15) ------
+# The office may type either figure. One is derived from the other, and the remainder
+# cascades down the list so nobody works it out by hand — the owner's rule, and the
+# reason the screen shows every unit as both a dollar amount and a share of the bill.
+
+
+@dataclass
+class ShareLine:
+    """One unit's line on the worksheet: its amount, that amount as a share, and who decided it."""
+
+    unit: Unit
+    #: What the unit pays a month: what the office typed, what is stored, or the proposal.
+    amount: Decimal
+    #: The same figure as a percentage of the month's bill, to two decimals.
+    percent: Decimal
+    #: RHP worked this one out from what is left, rather than the office typing it.
+    suggested: bool = False
+    #: What a blank field means for this unit: the share proposed from the recorded sizes.
+    proposal: Decimal | None = None
+
+
+@dataclass
+class ShareWorksheet:
+    """The whole division, as the screen and the live calculation both read it."""
+
+    rows: list[ShareLine] = field(default_factory=list)
+    cap: Decimal = ZERO
+    #: What the rows add up to.
+    assigned: Decimal = ZERO
+    #: Bill still to divide, never negative.
+    left: Decimal = ZERO
+    #: How far over the bill the rows go, never negative.
+    over: Decimal = ZERO
+
+
+def share_percent(amount, cap) -> Decimal:
+    """An amount as a percentage of one month of the bill, to two decimals."""
+    amount, cap = Decimal(amount or ZERO), Decimal(cap or ZERO)
+    if cap <= ZERO:
+        return ZERO
+    return (amount / cap * HUNDRED).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def share_amount(percent, cap) -> Decimal:
+    """What a percentage of one month of the bill comes to, to the cent."""
+    percent, cap = Decimal(percent or ZERO), Decimal(cap or ZERO)
+    if cap <= ZERO:
+        return ZERO
+    return (percent / HUNDRED * cap).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def allocate_monthly(
+    cycle, *, units, amounts, percentages, bases, remainder="rhp", method="custom"
+):
+    """One explicit allocation, shared by preview, review and save. No writes.
+
+    Dollars never round-trip through their displayed percentage. A missing amount
+    is not a size-based proposal; forms must validate the selected input basis.
+    """
+    units = list(units)
+    cap = cycle.monthly_total
+    valid_ids = {str(unit.pk) for unit in units}
+    if remainder != "rhp" and str(remainder) not in valid_ids:
+        raise ValidationError("Choose a remainder recipient from this property.")
+    if method not in ("custom", "size", "equal"):
+        raise ValidationError("Choose a valid allocation method.")
+    if method == "size" and any(not unit.square_feet for unit in units):
+        raise ValidationError("Record square footage for every unit before allocating by size.")
+    if method != "custom":
+        weight = sum((unit.square_feet if method == "size" else 1) for unit in units)
+        result = {
+            unit.pk: (
+                cap * Decimal(unit.square_feet if method == "size" else 1) / Decimal(weight)
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            for unit in units
+        }
+        result = _absorb_rounding(result, cap)
+    else:
+        result = {}
+        for unit in units:
+            if str(unit.pk) == str(remainder):
+                continue
+            basis = bases.get(unit.pk, "amount")
+            if basis == "excluded":
+                value = ZERO
+            elif basis == "percent":
+                value = share_amount(percentages[unit.pk], cap)
+            elif basis == "amount":
+                value = Decimal(amounts[unit.pk])
+            else:
+                raise ValidationError("Choose dollars, percentage, or exclusion for each unit.")
+            if not value.is_finite() or value < ZERO:
+                raise ValidationError("Unit allocations must be nonnegative amounts.")
+            result[unit.pk] = value
+        if remainder != "rhp":
+            result[int(remainder)] = max(cap - sum(result.values(), ZERO), ZERO)
+    rows = [
+        ShareLine(
+            unit=unit,
+            amount=result[unit.pk],
+            percent=share_percent(result[unit.pk], cap),
+            suggested=str(unit.pk) == str(remainder),
+        )
+        for unit in units
+    ]
+    assigned = sum(result.values(), ZERO)
+    return ShareWorksheet(
+        rows=rows,
+        cap=cap,
+        assigned=assigned,
+        left=max(cap - assigned, ZERO),
+        over=max(assigned - cap, ZERO),
+    )

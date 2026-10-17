@@ -110,6 +110,64 @@ bill and setting what a unit pays are admin acts**, because those figures become
 `RHP_RENT_CHARGE_HORIZON_MONTHS` is renamed **`RHP_CHARGE_HORIZON_MONTHS`**: it has covered rent, NNN and
 now responsibilities since E1, and nothing sets the old name in `.env` or `.env.example`.
 
+### Amended 2026-10-15 — the division is entered in either figure
+
+The owner asked for it in these words: *"If the bill allocates $233.33 and I write $100 for Michael, an
+adjacent field needs to calculate percentage share. Modifying percentage share would modify the 100. It
+would also suggest downstream the remaining percentage share… a downstream calculator of share, which can be
+easily seen and represented as both $ and %. Tidally locked."*
+
+So the screen that sets what each unit pays shows every figure **as both a dollar amount and a share of the
+bill**, and the two follow each other: type either one and the other is worked out. What is left of the bill
+is offered to the **next unit down the list** and marked *Suggested*; the units below that wait their turn
+until one of them is filled in. Nothing is suggested until the office types, and clearing a field still
+falls back to the share the unit's size proposes.
+
+Three things this decides, in the open:
+
+- **The stored figure is still a dollar amount**, one per unit per cycle. A typed share is reconciled into
+  an amount, and where the two disagree the share is the newer figure.
+- **The arithmetic lives on the server** (`apps/responsibilities/services.py`), and the page asks the server
+  to recompute as the office types — HTMX, which ADR-001 chose for interactivity and which no phase had
+  needed until now (see `docs/architecture.md`). A rule in a browser script is a rule no test here can run.
+  The answer is the **whole rows block**, swapped in one piece, rather than out-of-band pieces of it: a block
+  swap is htmx's most exercised path, and it puts the caret back by the field's own id afterwards.
+- **"Calculate the rest" does the same arithmetic as a plain form submit**, so the screen works with
+  JavaScript off or with a browser that will not apply the swap, and the path is tested end to end rather
+  than left to be checked by hand. It saves nothing; the office still presses Save.
+- **A suggestion is a value, not a hint.** What the calculator puts in the fields is what *Save the unit
+  amounts* stores; the marker and the summary say which figures RHP chose.
+
+**Two corrections to this record while it was open.** Staging a bill and setting the unit amounts are
+**manager** acts, not admin ones — every operational act on money moved to the desk in
+[ADR-021](ADR-021-plain-language-interface.md), leaving destructive acts and role changes above it. And
+**`RHP_CHARGE_HORIZON_MONTHS` no longer exists at all**: P4-Q7 removed the charging horizon, so a charge
+falls due on its due date and is raised then.
+
+### Amended 2026-10-16 — explicit allocation and review
+
+Owner-approved replacement for the October 15 cascade: bill details → allocate the monthly
+amount → review and save. Existing bills start with a read-only summary. Preview, Back and
+Cancel do not write; only the reviewed final submission writes, atomically.
+
+Each row explicitly identifies its input basis (dollars, percentage, or excluded). With
+JavaScript, editing either numeric field selects that basis; without JavaScript the office
+selects it. The selected input controls the other value; rounded display percentages never
+override dollars. Size-based and equal allocation are explicit actions, not blank-field rules.
+Existing allocations are preserved on entry; a blank required input is an error.
+
+The remainder recipient is explicitly RHP (the default) or one named unit. Only that unit is
+recalculated when another amount changes. No downstream manual amount is overwritten. Vacant
+units retain their allocation and are not charged; their allocation is carried by RHP.
+
+One server-side calculation drives previews, review and save. A small progressive enhancement
+tracks input basis and serializes previews, discarding stale responses. Plain form submission
+offers the same operations without JavaScript. Final saves recheck the reviewed bill, unit
+roster, saved amounts and posted-cycle lock under database locks; concurrent changes require
+another review. Monthly Decimal storage and rounding remain unchanged, with any period-total
+rounding difference shown on review. No stored allocation presets, new accounting features,
+tenant charges, or migrations are introduced by this correction.
+
 ## Consequences
 
 **Positive**

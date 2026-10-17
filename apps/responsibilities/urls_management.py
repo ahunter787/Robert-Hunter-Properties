@@ -31,4 +31,10 @@ urlpatterns = [
         views.CycleSharesView.as_view(),
         name="cycle-shares",
     ),
+    # The live calculation behind the shares screen: a preview, never a write.
+    path(
+        "responsibilities/cycles/<int:pk>/shares/calculate/",
+        views.CycleShareCalculateView.as_view(),
+        name="cycle-shares-calculate",
+    ),
 ]

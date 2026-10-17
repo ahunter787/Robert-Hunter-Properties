@@ -51,7 +51,18 @@ integration is explicitly Phase 11.
 [ADR-014](../decisions/ADR-014-property-responsibilities.md)). Utilities and maintenance are billed to the
 property, split across its units by share, and charged to each lease as `ChargeKind.RESPONSIBILITY` on a
 cycle. Reaches into Phase 2 (the property's responsibilities and its CAM rate per square foot) and Phase 5
-(the tenant reads one month, not three ledgers).
+(the tenant reads one month, not three ledgers). Since 2026-10-15 the screen that sets the amounts shows each
+unit's figure as both a dollar amount and a share of the bill, linked to each other, with the remainder
+offered to the next unit down the list. **Superseded October 16:** the owner approved guided
+bill details → explicit allocation → review and save, with a named remainder recipient (RHP
+by default), an explicit dollar/percentage basis, no blank-field fallbacks, and concurrency
+checks. See the amendments in [ADR-014](../decisions/ADR-014-property-responsibilities.md).
+
+The replacement is implemented on `rhp-share-calculator`: one allocation service powers
+plain-form and live previews, the named remainder recipient replaces row-order inference,
+and a signed review binds the saved cents to a manager and a fingerprint of the current
+bill, units, shares and tenancy facts. The responsibility row serializes saving and charge
+generation. No migration or existing financial-data change is required.
 
 **P4-E3 — Concessions** (register id `E3`, **Proposed**, no decision record yet). A month forgiven, or
 moved to a later date, recorded as a decision rather than as a deleted charge. **Not built.** Its scope may

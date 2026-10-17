@@ -1160,7 +1160,7 @@ def _create_nnn_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
 
 
 def responsibilities_due(
-    lease: Lease, due: dt.date
+    lease: Lease, due: dt.date, *, lock=False
 ) -> list[tuple[PropertyResponsibility, Decimal]]:
     """The property bills this tenancy carries on one due date (E2).
 
@@ -1173,7 +1173,9 @@ def responsibilities_due(
     due_rows: list[tuple[PropertyResponsibility, Decimal]] = []
     responsibilities = PropertyResponsibility.objects.filter(
         property_id=unit.property_id, is_active=True
-    )
+    ).order_by("pk")
+    if lock:
+        responsibilities = responsibilities.select_for_update()
     for responsibility in responsibilities:
         cycle = responsibility.cycle_covering(due)
         if cycle is None or not cycle.covers(due, lease):
@@ -1188,7 +1190,7 @@ def responsibilities_due(
 def _create_responsibility_charges(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
     """One charge per property responsibility the unit carries this month."""
     created: list[Charge] = []
-    for responsibility, amount in responsibilities_due(lease, due):
+    for responsibility, amount in responsibilities_due(lease, due, lock=True):
         charge, was_created = Charge.objects.get_or_create(
             lease=lease,
             kind=ChargeKind.RESPONSIBILITY,

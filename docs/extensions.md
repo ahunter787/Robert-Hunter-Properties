@@ -151,6 +151,14 @@ is why RHP records it as a rate per square foot and shows the derivation rather 
 - **Each unit's monthly amount, stored per cycle** — proposed from the unit's square-foot share and
   editable, because the division is not always a formula. What the office stores is what the ledger
   charges; no percentage is re-applied later.
+- **Guided bill allocation** (revised 2026-10-16) — bill details, monthly allocation, then
+  review and save. Each unit has linked dollars and percentage inputs with an explicit input
+  basis. Size-based allocation and equal division are explicit actions. The remainder goes
+  only to a named recipient, defaulting to RHP, never implicitly to the next row. Existing
+  amounts remain intact on entry and blank inputs require correction or explicit exclusion.
+  Server-calculated live previews discard stale responses; plain form submissions perform
+  the same calculations without JavaScript. Only the signed final review saves, after
+  concurrency and posted-cycle checks. No tenant charges are posted by saving an allocation.
 - **Charges raised alongside rent and NNN** by the one idempotent generator, each responsibility its own
   entry, so a correction is an adjustment against that cost.
 - **The month card** — the tenant's statement groups a month's charges into one openable card: rent, NNN,
@@ -160,6 +168,16 @@ is why RHP records it as a rate per square foot and shows the derivation rather 
   into base rent, so it never becomes a charge of its own.
 - **Locking** — a cycle whose months have been charged cannot be restaged or re-divided; the correction is
   an adjustment, as everywhere else.
+
+### Calculator correction — approved 2026-10-16
+
+The October 15 cascade is superseded by a guided bill-details, allocation, and review workflow.
+Existing monthly amounts are preserved. Dollars or percentages explicitly control each row;
+size-based allocation, equal allocation and exclusion are explicit actions. RHP is the default
+remainder recipient; a named unit receives it only when selected. No other manual amount is
+overwritten. Preview and navigation write nothing; only final review saves. Concurrent edits
+and posted charges invalidate a review. Decimal monthly amounts and vacancy treatment remain
+unchanged. See ADR-014's October 16 amendment for the full contract.
 
 ### Decisions taken (recorded in ADR-014)
 
