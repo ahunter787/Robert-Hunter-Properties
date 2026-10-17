@@ -5,9 +5,8 @@ retroactive onboarding and the plain-language interface — all four are in `mai
 branches until they were folded. **The tenancy-and-money work is built** too, but it is *not* an extension: it
 is a specification amendment (the states and what they mean for money), recorded below and in
 [ADR-017](decisions/ADR-017-charge-lifecycle.md) and
-[ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is built** on
-`rhp-6-documents`, awaiting the owner's fold into `main`; it is the phase E6 was waiting for, so **E6 is
-no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
+[ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is complete and in `main`**;
+it is the phase E6 was waiting for, so **E6 is no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
 (concessions) is proposed**, re-scoped by the owner's own 2022 example; **E7 (a unit's ledger history)
 and E8 (early termination) are proposed; E10 (property accounting) is future work.**
 

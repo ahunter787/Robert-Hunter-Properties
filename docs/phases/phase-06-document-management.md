@@ -1,6 +1,6 @@
 # Phase 6 — Document management
 
-**Status:** Built — awaiting the owner's fold
+**Status:** Complete
 **Milestone:** 4 — Documents and maintenance requests work end to end
 **Specification:** `docs/harness/master-spec.md`, `PHASE 6 — DOCUMENT MANAGEMENT`
 
@@ -13,8 +13,8 @@ is emphatic on one point: **never expose an uploaded document by guessing a publ
 
 ## What exists today
 
-Built on `rhp-6-documents`, awaiting the fold into `main`. The decision is
-[ADR-022](../decisions/ADR-022-documents.md); the code is `apps/documents/` and `apps/common/files.py`.
+Complete and in `main`. The decision is [ADR-022](../decisions/ADR-022-documents.md); the code is
+`apps/documents/` and `apps/common/files.py`.
 
 - **One row per file.** `Document` (`apps/documents/models.py`) carries `title`, `category` (the seven
   the specification names), `file`, `original_name`, optional `lease`/`property`/`tenant` links (at

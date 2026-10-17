@@ -18,8 +18,8 @@ lives. For the long-horizon view — which later phase will change something tha
 | 3 | Lease management | **Complete** |
 | 4 | Rent ledger | **Complete** |
 | 5 | Tenant dashboard | **Complete** |
-| 6 | Document management | **Built — awaiting the owner's fold** |
-| 7 | Maintenance system | Not started |
+| 6 | Document management | **Complete** |
+| 7 | Maintenance system | **Next** |
 | 8 | Communications (announcements) | Not started |
 | 9 | Admin dashboard | Not started |
 | 10 | Reporting and search | Not started |
@@ -252,9 +252,8 @@ Review round, added while the phase was open (ADR-010 revision, ADR-011, ADR-012
 
 ## Phase 6 — Document management
 
-**Status note:** implemented on the `rhp-6-documents` branch, awaiting the owner's fold into `main`. The
-decision is [ADR-022](decisions/ADR-022-documents.md) and the working detail is in the
-[Phase 6 record](phases/phase-06-document-management.md).
+**Status note:** complete and in `main`. The decision is [ADR-022](decisions/ADR-022-documents.md) and the
+working detail is in the [Phase 6 record](phases/phase-06-document-management.md).
 
 Delivered: an app of its own (`apps/documents`) with one row per file — title, category, the file, the
 name it arrived with, optional links to a tenancy, a property and a tenant, a document date, an office
