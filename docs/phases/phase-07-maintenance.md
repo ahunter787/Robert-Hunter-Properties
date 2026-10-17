@@ -63,13 +63,41 @@ maintenance request inside RHP, and no record of what was done to a unit.
 
 ## Open questions for the owner
 
+The table is the index — those are the ids the plan tooling reads. **The answers are the bullets
+below it**, so an answer can run as long as the question deserves without being squeezed into a
+cell.
+
 | # | Question | My recommendation | Your answer |
 | --- | --- | --- | --- |
-| P7-Q1 | Is a request about a **unit**, a **tenancy**, or a **property** (a shared roof, a parking lot)? | The request names a unit or a property; a common-area request is property-level. Tying it to a tenancy hides it the moment the tenant moves out. | *(awaiting)* |
-| P7-Q2 | Should a maintenance **cost** be recorded in RHP, and should it be rechargeable to the tenant? | Record the cost on the request and let it *offer* a recharge — charged as a one-off ledger charge, linked back to the request. That link is what P4-E2's cycles cannot express. | *(awaiting)* |
-| P7-Q3 | Who may add an internal note versus a tenant-visible update, and can a manager edit the other's? | Any staff role may add either; internal notes are visible to staff only and never editable by a tenant. An edit leaves the audit trail. | *(awaiting)* |
-| P7-Q4 | Do you want vendors as records (name, contact, trades), or just a free-text name? | Records, but minimal: name, contact, trades, active. Reuse them from the request and report on them in Phase 10. | *(awaiting)* |
-| P7-Q5 | Do you want notification email to the tenant, or is seeing it in the portal enough? | Email on submission and on each tenant-visible update; the tenant can be told to reply in the portal. The mail sink makes this safe to develop. | *(awaiting)* |
+| P7-Q1 | Is a request about a **unit**, a **tenancy**, or a **property** (a shared roof, a parking lot)? | The request names a unit or a property; a common-area request is property-level. Tying it to a tenancy hides it the moment the tenant moves out. | *(below)* |
+| P7-Q2 | Should a maintenance **cost** be recorded in RHP, and should it be rechargeable to the tenant? | Record the cost on the request and let it *offer* a recharge — charged as a one-off ledger charge, linked back to the request. That link is what P4-E2's cycles cannot express. | *(below)* |
+| P7-Q3 | Who may add an internal note versus a tenant-visible update, and can a manager edit the other's? | Any staff role may add either; internal notes are visible to staff only and never editable by a tenant. An edit leaves the audit trail. | *(below)* |
+| P7-Q4 | Do you want vendors as records (name, contact, trades), or just a free-text name? | Records, but minimal: name, contact, trades, active. Reuse them from the request and report on them in Phase 10. | *(below)* |
+| P7-Q5 | Do you want notification email to the tenant, or is seeing it in the portal enough? | Email on submission and on each tenant-visible update; the tenant can be told to reply in the portal. The mail sink makes this safe to develop. | *(below)* |
+
+### The answers, in full
+
+- **P7-Q1 — Is a request about a unit, a tenancy, or a property (a shared roof, a parking lot)?**
+
+  *(awaiting)*
+
+- **P7-Q2 — Should a maintenance cost be recorded in RHP, and should it be rechargeable to the
+  tenant?**
+
+  *(awaiting)*
+
+- **P7-Q3 — Who may add an internal note versus a tenant-visible update, and can a manager edit
+  the other's?**
+
+  *(awaiting)*
+
+- **P7-Q4 — Do you want vendors as records (name, contact, trades), or just a free-text name?**
+
+  *(awaiting)*
+
+- **P7-Q5 — Do you want notification email to the tenant, or is seeing it in the portal enough?**
+
+  *(awaiting)*
 
 ## How to verify it
 
