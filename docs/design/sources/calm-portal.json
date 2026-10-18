@@ -1,0 +1,1743 @@
+{
+  "title": "C - Calm portal",
+  "pages": [
+    {
+      "title": "C - Calm portal / Staff queue",
+      "subtitle": "Desktop layout study - not a shipped screen",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 90,
+          "w": 732,
+          "h": 460,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 44,
+          "y": 113,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 666,
+          "y": 113,
+          "text": "Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 30,
+          "y": 128,
+          "x2": 762,
+          "y2": 128,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 48,
+          "y": 151,
+          "text": "Overview       Portfolio       Work       Rent & Payments       Documents",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 48,
+          "y": 166,
+          "x2": 744,
+          "y2": 166,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 189,
+          "text": "Maintenance     Requests     Vendors",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 222,
+          "text": "Maintenance",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 245,
+          "text": "3 active requests / 1 needs follow-up",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 260,
+          "w": 140,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 73,
+          "y": 278,
+          "text": "Create request",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 313,
+          "text": "Property: All    Status: Active    Assignment: All    More filters",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 339,
+          "text": "Request / Location",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 535,
+          "y": 339,
+          "text": "Status / Priority / Age",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 350,
+          "w": 664,
+          "h": 44,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 367,
+          "text": "Kitchen leak",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 384,
+          "text": "Maple Court / Unit A",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 535,
+          "y": 374,
+          "text": "Waiting / High / 2 days",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 401,
+          "w": 664,
+          "h": 44,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 418,
+          "text": "Entry light",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 435,
+          "text": "Maple Court / Unit A",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 535,
+          "y": 425,
+          "text": "Open / Normal / 1 day",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 452,
+          "w": 664,
+          "h": 44,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 469,
+          "text": "Roof inspection",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 486,
+          "text": "Maple Court / Unit A",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 535,
+          "y": 476,
+          "text": "Scheduled / Normal / 3 days",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Staff queue",
+      "subtitle": "Phone layout study - not a shipped screen",
+      "width": 612,
+      "height": 792,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 148,
+          "y": 81,
+          "w": 316,
+          "h": 638,
+          "fill": "#ffffff",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 105,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 352,
+          "y": 105,
+          "text": "Menu   Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 117,
+          "x2": 454,
+          "y2": 117,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 137,
+          "text": "Manage / Maintenance",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 167,
+          "text": "Maintenance",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 190,
+          "text": "3 active requests / 1 needs follow-up",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 205,
+          "w": 140,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 167,
+          "y": 223,
+          "text": "Create request",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 258,
+          "text": "Filters: Property / Status / More",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 276,
+          "w": 296,
+          "h": 84,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 298,
+          "text": "Kitchen leak",
+          "size": 12,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 320,
+          "text": "Maple Court / Unit A",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 341,
+          "text": "High / Waiting / 2 days",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 376,
+          "w": 296,
+          "h": 84,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 398,
+          "text": "Entry light",
+          "size": 12,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 420,
+          "text": "Maple Court / Unit A",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 441,
+          "text": "Normal / Open / 1 day",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 476,
+          "w": 296,
+          "h": 84,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 498,
+          "text": "Roof inspection",
+          "size": 12,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 520,
+          "text": "Maple Court / Unit A",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 170,
+          "y": 541,
+          "text": "Normal / Scheduled / 3 days",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 604,
+          "text": "Sorted by urgency, then age",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Request detail",
+      "subtitle": "Desktop layout study - not a shipped screen",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 90,
+          "w": 732,
+          "h": 460,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 44,
+          "y": 113,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 666,
+          "y": 113,
+          "text": "Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 30,
+          "y": 128,
+          "x2": 762,
+          "y2": 128,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 48,
+          "y": 151,
+          "text": "Overview       Portfolio       Work       Rent & Payments       Documents",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 48,
+          "y": 166,
+          "x2": 744,
+          "y2": 166,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 189,
+          "text": "Maintenance     Requests     Vendors",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 222,
+          "text": "Kitchen leak",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 245,
+          "text": "Maple Court / Unit A / Request 104",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 261,
+          "w": 664,
+          "h": 53,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 281,
+          "text": "Waiting - replacement part",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 300,
+          "text": "Assigned: RHP team / Follow-up: reviewed",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 334,
+          "text": "Tenant-authorized entry: Yes",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 354,
+          "text": "RHP staff and assigned repair professionals",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 369,
+          "w": 115,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 73,
+          "y": 387,
+          "text": "Add update",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 192,
+          "y": 369,
+          "w": 116,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 201,
+          "y": 387,
+          "text": "Manage work",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 429,
+          "text": "Conversation",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 452,
+          "text": "Oct 17 / Tenant / Water below the sink.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 473,
+          "text": "Oct 17 / RHP / Part ordered; update tomorrow.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 64,
+          "y": 488,
+          "x2": 728,
+          "y2": 488,
+          "dash": true
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 509,
+          "text": "Staff only: Internal notes (1)    |    Work history (2)",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 531,
+          "text": "+ Expenses and recharges    + Email delivery and revisions",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Request detail",
+      "subtitle": "Phone layout study - not a shipped screen",
+      "width": 612,
+      "height": 792,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 148,
+          "y": 81,
+          "w": 316,
+          "h": 638,
+          "fill": "#ffffff",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 105,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 352,
+          "y": 105,
+          "text": "Menu   Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 117,
+          "x2": 454,
+          "y2": 117,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 137,
+          "text": "Manage / Maintenance",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 167,
+          "text": "Kitchen leak",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 190,
+          "text": "Maple Court / Unit A / Request 104",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 206,
+          "w": 296,
+          "h": 53,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 226,
+          "text": "Waiting - replacement part",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 245,
+          "text": "Assigned: RHP team / Follow-up: reviewed",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 279,
+          "text": "Tenant-authorized entry: Yes",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 299,
+          "text": "RHP staff and assigned repair professionals",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 314,
+          "w": 115,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 167,
+          "y": 332,
+          "text": "Add update",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 286,
+          "y": 314,
+          "w": 116,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 295,
+          "y": 332,
+          "text": "Manage work",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 374,
+          "text": "Conversation",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 397,
+          "text": "Oct 17 / Tenant / Water below the sink.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 418,
+          "text": "Oct 17 / RHP / Part ordered; update tomorrow.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 451,
+          "text": "Work history: Open > Waiting",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 471,
+          "x2": 454,
+          "y2": 471,
+          "dash": true
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 493,
+          "text": "Staff only / Internal notes (1)",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 519,
+          "text": "+ Expenses and recharges",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 545,
+          "text": "+ Email delivery and revisions",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Tenant maintenance",
+      "subtitle": "Desktop layout study - not a shipped screen",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 90,
+          "w": 732,
+          "h": 460,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 44,
+          "y": 113,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 666,
+          "y": 113,
+          "text": "Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 30,
+          "y": 128,
+          "x2": 762,
+          "y2": 128,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 48,
+          "y": 151,
+          "text": "Home     Lease     Payments     Documents     Maintenance",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 48,
+          "y": 164,
+          "x2": 744,
+          "y2": 164,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 68,
+          "y": 191,
+          "text": "Maintenance",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 68,
+          "y": 218,
+          "text": "1 active request",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 68,
+          "y": 234,
+          "w": 159,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 77,
+          "y": 252,
+          "text": "Request maintenance",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 68,
+          "y": 282,
+          "w": 656,
+          "h": 53,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 78,
+          "y": 302,
+          "text": "Kitchen leak - Waiting",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 78,
+          "y": 321,
+          "text": "Unit A / Updated Oct 17, 2026",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 79,
+          "y": 357,
+          "text": "Part ordered. RHP will update you tomorrow.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 68,
+          "y": 376,
+          "w": 120,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 77,
+          "y": 394,
+          "text": "View request",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 68,
+          "y": 430,
+          "x2": 724,
+          "y2": 430,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 68,
+          "y": 458,
+          "text": "+ Completed request history (3)",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 68,
+          "y": 500,
+          "text": "Not emergency dispatch. For immediate danger, call 911. Contact RHP for urgent problems.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Tenant maintenance",
+      "subtitle": "Phone layout study - not a shipped screen",
+      "width": 612,
+      "height": 792,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 148,
+          "y": 81,
+          "w": 316,
+          "h": 638,
+          "fill": "#ffffff",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 105,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 352,
+          "y": 105,
+          "text": "Menu   Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 117,
+          "x2": 454,
+          "y2": 117,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 137,
+          "text": "Home / Maintenance",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 167,
+          "text": "Maintenance",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 194,
+          "text": "1 active request",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 210,
+          "w": 159,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 167,
+          "y": 228,
+          "text": "Request maintenance",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 258,
+          "w": 296,
+          "h": 53,
+          "fill": "#fff3cd",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 278,
+          "text": "Kitchen leak - Waiting",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 297,
+          "text": "Unit A / Updated Oct 17, 2026",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 169,
+          "y": 333,
+          "text": "Part ordered. RHP will update you tomorrow.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 352,
+          "w": 120,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 167,
+          "y": 370,
+          "text": "View request",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 406,
+          "x2": 454,
+          "y2": 406,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 434,
+          "text": "+ Completed request history (3)",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 488,
+          "text": "Not an emergency-dispatch service.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 507,
+          "text": "For immediate danger, call 911.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 526,
+          "text": "Contact RHP directly for urgent problems.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Lease ledger",
+      "subtitle": "Desktop layout study - not a shipped screen",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 90,
+          "w": 732,
+          "h": 460,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 44,
+          "y": 113,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 666,
+          "y": 113,
+          "text": "Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 30,
+          "y": 128,
+          "x2": 762,
+          "y2": 128,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 48,
+          "y": 151,
+          "text": "Overview       Portfolio       Work       Rent & Payments       Documents",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 48,
+          "y": 166,
+          "x2": 744,
+          "y2": 166,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 189,
+          "text": "Lease account     Transactions     History",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 222,
+          "text": "Lease account / Unit A",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 245,
+          "text": "Maple Court / Example tenancy / Active / Open",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64.0,
+          "y": 276,
+          "text": "Due now",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64.0,
+          "y": 298,
+          "text": "$0.00",
+          "size": 15,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 230.0,
+          "y": 276,
+          "text": "Past due",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 230.0,
+          "y": 298,
+          "text": "$0.00",
+          "size": 15,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 396.0,
+          "y": 276,
+          "text": "Upcoming",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 396.0,
+          "y": 298,
+          "text": "$840.00",
+          "size": 15,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 562.0,
+          "y": 276,
+          "text": "Account balance",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 562.0,
+          "y": 298,
+          "text": "$840.00",
+          "size": 15,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 321,
+          "text": "Upcoming Nov 5, 2026 / Account balance includes upcoming charges",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 64,
+          "y": 337,
+          "w": 130,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 73,
+          "y": 355,
+          "text": "Record payment",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 206,
+          "y": 337,
+          "w": 151,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 215,
+          "y": 355,
+          "text": "Add one-time charge",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 395,
+          "text": "Date / Description",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 476,
+          "y": 395,
+          "text": "Charge     Payment/credit     Balance",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 64,
+          "y": 405,
+          "x2": 728,
+          "y2": 405,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 426,
+          "text": "Nov 1 / Rent / Upcoming",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 476,
+          "y": 426,
+          "text": "$840.00               -              $840.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 448,
+          "text": "Original $900.00 / Credit adjustment -$60.00",
+          "size": 9,
+          "bold": false,
+          "fill": "#236744"
+        },
+        {
+          "type": "text",
+          "x": 74,
+          "y": 465,
+          "text": "Nov 2 / Agreed repair concession",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 64,
+          "y": 477,
+          "x2": 728,
+          "y2": 477,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 64,
+          "y": 504,
+          "text": "+ Corrections and audit history",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "C - Calm portal / Lease ledger",
+      "subtitle": "Phone layout study - not a shipped screen",
+      "width": 612,
+      "height": 792,
+      "elements": [
+        {
+          "type": "rect",
+          "x": 148,
+          "y": 81,
+          "w": 316,
+          "h": 638,
+          "fill": "#ffffff",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 105,
+          "text": "RHP",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 352,
+          "y": 105,
+          "text": "Menu   Account",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 158,
+          "y": 117,
+          "x2": 454,
+          "y2": 117,
+          "dash": false
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 137,
+          "text": "Manage / Rent & Payments",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 167,
+          "text": "Lease account / Unit A",
+          "size": 18,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 190,
+          "text": "Maple Court / Example tenancy / Active / Open",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 226,
+          "text": "Due now: $0.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 250,
+          "text": "Past due: $0.00",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 274,
+          "text": "Upcoming: $840.00 / Nov 5, 2026",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 298,
+          "text": "Account balance: $840.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 322,
+          "text": "Includes upcoming charges",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 158,
+          "y": 341,
+          "w": 140,
+          "h": 27,
+          "fill": "#f4f4f4",
+          "stroke": "#555555"
+        },
+        {
+          "type": "text",
+          "x": 167,
+          "y": 359,
+          "text": "Record payment",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 398,
+          "text": "Transactions",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 427,
+          "text": "Nov 1 / Rent / Upcoming",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 448,
+          "text": "Charge $900.00 / Corrected $840.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 470,
+          "text": "Credit adjustment -$60.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#236744"
+        },
+        {
+          "type": "text",
+          "x": 168,
+          "y": 490,
+          "text": "Nov 2 / Agreed repair concession",
+          "size": 9,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 517,
+          "text": "Running balance: $840.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 158,
+          "y": 561,
+          "text": "+ Corrections and audit history",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    }
+  ]
+}

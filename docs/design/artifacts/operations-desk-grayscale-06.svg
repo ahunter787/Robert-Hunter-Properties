@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="612pt" height="792pt" viewBox="0 0 612 792">
+<title>B - Operations desk / Tenant maintenance</title>
+<rect width="612" height="792" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">B - Operations desk / Tenant maintenance</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Phone layout study - not a shipped screen</text>
+<rect x="148" y="81" width="316" height="638" fill="#ffffff" stroke="#555555"/>
+<text x="158" y="105" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">RHP</text>
+<text x="352" y="105" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Menu   Account</text>
+<line x1="158" y1="117" x2="454" y2="117" stroke="#9b9b9b"/>
+<text x="158" y="137" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Home / Maintenance</text>
+<text x="158" y="167" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">Maintenance</text>
+<text x="158" y="194" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">1 active request</text>
+<rect x="158" y="210" width="159" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="167" y="228" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Request maintenance</text>
+<rect x="158" y="258" width="296" height="53" fill="#f3f3f3" stroke="#c4c4c4"/>
+<text x="168" y="278" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Kitchen leak - Waiting</text>
+<text x="168" y="297" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Unit A / Updated Oct 17, 2026</text>
+<text x="169" y="333" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Part ordered. RHP will update you tomorrow.</text>
+<rect x="158" y="352" width="120" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="167" y="370" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">View request</text>
+<line x1="158" y1="406" x2="454" y2="406" stroke="#9b9b9b"/>
+<text x="158" y="434" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">+ Completed request history (3)</text>
+<text x="158" y="488" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Not an emergency-dispatch service.</text>
+<text x="158" y="507" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">For immediate danger, call 911.</text>
+<text x="158" y="526" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Contact RHP directly for urgent problems.</text>
+<text x="30" y="775" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 6</text>
+</svg>

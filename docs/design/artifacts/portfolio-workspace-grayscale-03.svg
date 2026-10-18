@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>A - Portfolio workspace / Request detail</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">A - Portfolio workspace / Request detail</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Desktop layout study - not a shipped screen</text>
+<rect x="30" y="90" width="732" height="460" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="44" y="113" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">RHP</text>
+<text x="666" y="113" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Account</text>
+<line x1="30" y1="128" x2="762" y2="128" stroke="#9b9b9b"/>
+<line x1="175" y1="128" x2="175" y2="550" stroke="#9b9b9b"/>
+<text x="44" y="159" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Overview</text>
+<text x="44" y="192" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Properties</text>
+<text x="44" y="225" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Leases</text>
+<text x="44" y="258" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Rent &amp; Payments</text>
+<text x="44" y="291" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Maintenance</text>
+<text x="44" y="324" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Documents</text>
+<text x="44" y="357" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Tenants</text>
+<text x="196" y="151" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Maintenance / Maple Court</text>
+<text x="196" y="183" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">Kitchen leak</text>
+<text x="196" y="206" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Maple Court / Unit A / Request 104</text>
+<rect x="196" y="222" width="544" height="53" fill="#f3f3f3" stroke="#c4c4c4"/>
+<text x="206" y="242" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Waiting - replacement part</text>
+<text x="206" y="261" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Assigned: RHP team / Follow-up: reviewed</text>
+<text x="196" y="295" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Tenant-authorized entry: Yes</text>
+<text x="196" y="315" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP staff and assigned repair professionals</text>
+<rect x="196" y="330" width="115" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="205" y="348" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Add update</text>
+<rect x="324" y="330" width="116" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="333" y="348" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Manage work</text>
+<text x="196" y="390" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#232323">Conversation</text>
+<text x="196" y="413" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Oct 17 / Tenant / Water below the sink.</text>
+<text x="196" y="434" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Oct 17 / RHP / Part ordered; update tomorrow.</text>
+<line x1="196" y1="449" x2="740" y2="449" stroke="#9b9b9b" stroke-dasharray="3 3"/>
+<text x="196" y="470" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Staff only: Internal notes (1)    |    Work history (2)</text>
+<text x="196" y="492" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">+ Expenses and recharges    + Email delivery and revisions</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 3</text>
+</svg>

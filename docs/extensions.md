@@ -1,4 +1,4 @@
-# RHP — extensions E1–E10
+# RHP — extensions E1–E12
 
 **Where this stands:** **E1, E2, E4 and E9 are built** — lease templates, property responsibilities,
 retroactive onboarding and the plain-language interface — all four are in `main` now, on their own
@@ -32,6 +32,7 @@ parser accepts the longer form.
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md) |
 | **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | Future — outside the rent-ledger scope |
+| **E11** | **Design study and visual language** — Operations desk + persistent sidebar interactive prototype; RHP domain rules preserved, menus and task flows redesigned | Presentation | Building — isolated prototype authorized October 18, 2026; [review guide](design/prototype.md); production rollout requires separate approval |
 
 ## 1. How a change to the specification is handled
 

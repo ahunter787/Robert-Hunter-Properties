@@ -122,6 +122,11 @@ publishes build output.
 
 ## Design language
 
+The owner-approved [E11 design study](design/README.md) evaluates role-aware navigation and
+information density without changing this production shell. Sources and printable vector
+artifacts live under `docs/design/`, with scoped review copies in Outline's Design collection.
+The project diagram skill is development tooling only; no new application dependency is added.
+
 Professional property-management portal, not a SaaS marketing site: warm neutral surfaces, charcoal
 text, restrained forest-green primary, muted gray structure, generous whitespace, restrained cards,
 accessible contrast, and mobile-first single-column layouts for tenants. Desktop management screens

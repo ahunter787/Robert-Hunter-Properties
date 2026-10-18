@@ -1,0 +1,87 @@
+{
+  "collection": "http://10.60.0.227:8090/collection/design-WvKnrBMvGT",
+  "documents": {
+    "README.md": {
+      "id": "712e49bb-c1a6-4a0b-a57d-5d3334587336",
+      "url": "http://10.60.0.227:8090/doc/rhp-design-0tQffpBfEc",
+      "sha256": "61b923493d73d9401813d59e21fe8a492843370707a0cc82d2917b4dfb19091d",
+      "published_text_sha256": "718eed556b18ca6bcf24e77de29b2fa7a798a6841871246be8be95dc08aae2d7"
+    },
+    "principles.md": {
+      "id": "a55f858e-9e53-4000-a552-f58f964e12c5",
+      "url": "http://10.60.0.227:8090/doc/design-principles-and-visual-language-IpOgqb9ejg",
+      "sha256": "9cc88362eea6037744b14abfa3b4124104c774e78a1e807be5d8382e92b02d76",
+      "published_text_sha256": "ad6f00e9a3b1dcf1e53275e30dbc2d8ec91ac05efb80174b2933c61e6f07145f"
+    },
+    "case-study.md": {
+      "id": "dd975d7d-1818-4da7-87d1-3a34ed9b7873",
+      "url": "http://10.60.0.227:8090/doc/current-interface-audit-and-case-study-tphVi533jA",
+      "sha256": "dfd830c1bcc36721b454b346c379f32e871651e50d9b158c41f5d246f340b0bc",
+      "published_text_sha256": "a3ba3510d5b8c5d7a346bc9e8fa85d246c08a69d553122ae512816683fc4575f"
+    },
+    "navigation.md": {
+      "id": "02b21a31-d8a8-4559-aeb6-28bf148757d6",
+      "url": "http://10.60.0.227:8090/doc/navigation-maps-and-maintenance-workflow-2GynfzjTpM",
+      "sha256": "ea804e9978ade119df6024dd5682877c34a10437517697661d44bfe5942ad281",
+      "published_text_sha256": "6a39e4d367eab5136e8822809096b86453e2437d073c61572b09810c558b6f9b"
+    },
+    "screenshots.md": {
+      "id": "2c905f31-9038-4ecc-9056-df4568dfcefe",
+      "url": "http://10.60.0.227:8090/doc/screenshots-and-annotated-observations-5LeE4MBxKQ",
+      "sha256": "fae4ce008d333f9e06cbe96ecbc2c8cf6d1fe611288865bdf971e5c492a6d86a",
+      "published_text_sha256": "7aee856fc2418791e5732e9adc6b535d42175380b36f978eb6a70652fa4981fa"
+    },
+    "concepts.md": {
+      "id": "666848b5-baea-434c-850a-5354677c8d24",
+      "url": "http://10.60.0.227:8090/doc/three-interface-concepts-GuUCxLW6vO",
+      "sha256": "e5c502a090f3e450d26e70ed2f957409bc4809c1a8afa9c16ecf638b10eac527",
+      "published_text_sha256": "ebb84f8b975a316ebfa335e1bf67942f5f35f8811cabf2baa4e892a324f94b19"
+    },
+    "decisions.md": {
+      "id": "852bac51-8cbc-45a4-8d1c-9cad694def87",
+      "url": "http://10.60.0.227:8090/doc/design-decisions-and-owner-feedback-4FhrxLKu5j",
+      "sha256": "e1da735944f71d3446d44a365806d7f0a55b0f329ca1076b205d8abae8cc6b90",
+      "published_text_sha256": "e82cccbc91144709c792601acb47179f81c6a40c26d0dcaa3050ce34d30a441b"
+    },
+    "publication.md": {
+      "id": "8a1b75e4-1e10-4428-b230-792a0103dc98",
+      "url": "http://10.60.0.227:8090/doc/design-publication-and-reproducibility-XXbXaQ3KJf",
+      "sha256": "fb074b21555e206ebce75a1103311c3063a602f0e19676a8d7704d88a67408ee",
+      "published_text_sha256": "9035878b5e40fa659396d0fefa809e0aad2b77e83dd3d2af3544b008b6cc1e2d"
+    },
+    "prototype.md": {
+      "id": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+      "url": "http://10.60.0.227:8090/doc/operations-desk-interactive-prototype-VHoelpO6PQ",
+      "sha256": "defdf265982becac227d93b6f9a764a91adc54bbc0d01024e804528f10e4bb64",
+      "published_text_sha256": "c079b15e79a8b0ec0634d2744d9233fb95bb90985c3b79bdd97b1b0f64467dc4"
+    },
+    "prototype-revision-02.md": {
+      "id": "e72215bc-76c0-4e1f-b538-df4a428b9cdb",
+      "url": "http://10.60.0.227:8090/doc/operations-desk-revision-2-review-0YpoaJf6k3",
+      "sha256": "419aa3459043d56fd0f0449f06974e55441e92f1ee0069350b1401186d163e39",
+      "published_text_sha256": "9331396bf911420918b856cf12c41f987fdc05e9df39f6779943627a2ab8f4b5"
+    }
+  },
+  "galleries": {
+    "d5db2950-3eab-4d95-a73f-acf980bedd4c": {
+      "title": "Design exports - C - Calm portal",
+      "url": "http://10.60.0.227:8090/doc/design-exports-c-calm-portal-uifYfNvQrs",
+      "published_text_sha256": "4468b632da1a59f46b6fb481b9d4fa383a8795d62a7766e4c56704fa4c01d398"
+    },
+    "a4e08fbf-74b9-4c2e-8c61-f979c1107520": {
+      "title": "Design exports - A - Portfolio workspace",
+      "url": "http://10.60.0.227:8090/doc/design-exports-a-portfolio-workspace-XeKzr3NDHZ",
+      "published_text_sha256": "ba46d0c64f8725c7583d271c8e9969084424d00af83fad541ed8d29eccffc57f"
+    },
+    "0e12fe23-d4ef-490d-bf93-1c6daacc3394": {
+      "title": "Design exports - Navigation and workflow",
+      "url": "http://10.60.0.227:8090/doc/design-exports-navigation-and-workflow-74wSUqJvJk",
+      "published_text_sha256": "d9822ca0625426e7aa666ee7a29ec34f8af047cf1946955dcf48b606083d7929"
+    },
+    "de562a13-cc8c-42d9-9031-7e96eb9bbebe": {
+      "title": "Design exports - B - Operations desk",
+      "url": "http://10.60.0.227:8090/doc/design-exports-b-operations-desk-vDcUG2sul4",
+      "published_text_sha256": "a5a81f4d81173e0a1d2c60b9046440fcde8d69d8a983e534d2befc4e023fa266"
+    }
+  }
+}

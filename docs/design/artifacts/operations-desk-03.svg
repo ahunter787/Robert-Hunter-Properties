@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>B - Operations desk / Request detail</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#202326">B - Operations desk / Request detail</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Desktop layout study - not a shipped screen</text>
+<rect x="30" y="90" width="732" height="460" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="44" y="113" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#202326">RHP</text>
+<text x="666" y="113" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Account</text>
+<line x1="30" y1="128" x2="762" y2="128" stroke="#9b9b9b"/>
+<text x="48" y="151" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#202326">Overview     Portfolio     Rent &amp; Payments     Work     Documents</text>
+<line x1="48" y1="164" x2="744" y2="164" stroke="#9b9b9b"/>
+<line x1="219" y1="164" x2="219" y2="550" stroke="#9b9b9b"/>
+<text x="44" y="191" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#202326">Work queue</text>
+<text x="44" y="217" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">3 active / 1 follow-up</text>
+<rect x="40" y="234" width="168" height="58" fill="#fff3cd" stroke="#c4c4c4"/>
+<text x="49" y="253" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Kitchen leak</text>
+<text x="49" y="273" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<rect x="40" y="303" width="168" height="58" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="49" y="322" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Entry light</text>
+<text x="49" y="342" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<rect x="40" y="372" width="168" height="58" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="49" y="391" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Roof inspection</text>
+<text x="49" y="411" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<text x="239" y="193" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#202326">Kitchen leak</text>
+<text x="239" y="216" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Maple Court / Unit A / Request 104</text>
+<rect x="239" y="232" width="501" height="53" fill="#fff3cd" stroke="#c4c4c4"/>
+<text x="249" y="252" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#202326">Waiting - replacement part</text>
+<text x="249" y="271" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Assigned: RHP team / Follow-up: reviewed</text>
+<text x="239" y="305" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#202326">Tenant-authorized entry: Yes</text>
+<text x="239" y="325" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">RHP staff and assigned repair professionals</text>
+<rect x="239" y="340" width="115" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="248" y="358" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Add update</text>
+<rect x="367" y="340" width="116" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="376" y="358" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Manage work</text>
+<text x="239" y="400" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#202326">Conversation</text>
+<text x="239" y="423" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Oct 17 / Tenant / Water below the sink.</text>
+<text x="239" y="444" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Oct 17 / RHP / Part ordered; update tomorrow.</text>
+<line x1="239" y1="459" x2="740" y2="459" stroke="#9b9b9b" stroke-dasharray="3 3"/>
+<text x="239" y="480" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Staff only: Internal notes (1)    |    Work history (2)</text>
+<text x="239" y="502" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">+ Expenses and recharges    + Email delivery and revisions</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">RHP Design | Proposal | Synthetic data | 3</text>
+</svg>

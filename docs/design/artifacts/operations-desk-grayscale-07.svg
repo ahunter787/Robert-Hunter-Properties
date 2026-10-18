@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>B - Operations desk / Lease ledger</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">B - Operations desk / Lease ledger</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Desktop layout study - not a shipped screen</text>
+<rect x="30" y="90" width="732" height="460" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="44" y="113" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">RHP</text>
+<text x="666" y="113" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Account</text>
+<line x1="30" y1="128" x2="762" y2="128" stroke="#9b9b9b"/>
+<text x="48" y="151" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Overview     Portfolio     Rent &amp; Payments     Work     Documents</text>
+<line x1="48" y1="164" x2="744" y2="164" stroke="#9b9b9b"/>
+<text x="54" y="193" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">Lease account / Unit A</text>
+<text x="54" y="216" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Maple Court / Example tenancy / Active / Open</text>
+<text x="54.0" y="247" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Due now</text>
+<text x="54.0" y="269" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#232323">$0.00</text>
+<text x="224.5" y="247" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Past due</text>
+<text x="224.5" y="269" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#232323">$0.00</text>
+<text x="395.0" y="247" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Upcoming</text>
+<text x="395.0" y="269" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#232323">$840.00</text>
+<text x="565.5" y="247" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Account balance</text>
+<text x="565.5" y="269" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#232323">$840.00</text>
+<text x="54" y="292" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Upcoming Nov 5, 2026 / Account balance includes upcoming charges</text>
+<rect x="54" y="308" width="130" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="63" y="326" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Record payment</text>
+<rect x="196" y="308" width="151" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="205" y="326" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Add one-time charge</text>
+<text x="54" y="366" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Date / Description</text>
+<text x="484" y="366" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Charge     Payment/credit     Balance</text>
+<line x1="54" y1="376" x2="736" y2="376" stroke="#9b9b9b"/>
+<text x="54" y="397" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Nov 1 / Rent / Upcoming</text>
+<text x="484" y="397" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">$840.00               -              $840.00</text>
+<text x="64" y="419" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#565656">Original $900.00 / Credit adjustment -$60.00</text>
+<text x="64" y="436" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Nov 2 / Agreed repair concession</text>
+<line x1="54" y1="448" x2="736" y2="448" stroke="#9b9b9b"/>
+<text x="54" y="475" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">+ Corrections and audit history</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 7</text>
+</svg>

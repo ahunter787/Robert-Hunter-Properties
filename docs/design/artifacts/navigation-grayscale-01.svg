@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>RHP navigation map</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">RHP navigation map</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Proposal - synthetic data</text>
+<text x="40" y="108" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">Different roles, different navigation</text>
+<rect x="40" y="130" width="340" height="170" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="55" y="154" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#232323">Manager / Administrator</text>
+<text x="55" y="185" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Portfolio: properties, units, leases</text>
+<text x="55" y="212" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Money: Rent &amp; Payments, recoveries</text>
+<text x="55" y="239" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Work: maintenance, vendors</text>
+<text x="55" y="266" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Documents and tenant operations</text>
+<rect x="412" y="130" width="340" height="170" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="427" y="154" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#232323">Tenant</text>
+<text x="427" y="185" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Home and current lease</text>
+<text x="427" y="212" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Payments statement and documents</text>
+<text x="427" y="239" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Maintenance: active + history</text>
+<text x="427" y="266" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Account controls</text>
+<line x1="210" y1="302" x2="210" y2="346" stroke="#9b9b9b"/>
+<line x1="582" y1="302" x2="582" y2="346" stroke="#9b9b9b"/>
+<rect x="40" y="346" width="712" height="74" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="55" y="372" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#232323">Object context: Overview / Conversation / Work / Evidence</text>
+<text x="55" y="397" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Show only authorized sections. Worker access remains assigned-work only.</text>
+<text x="40" y="463" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Global menu = domain. Local menu = current object. Account = separate controls.</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 1</text>
+</svg>

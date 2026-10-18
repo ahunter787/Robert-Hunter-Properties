@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>C - Calm portal / Staff queue</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">C - Calm portal / Staff queue</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Desktop layout study - not a shipped screen</text>
+<rect x="30" y="90" width="732" height="460" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="44" y="113" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">RHP</text>
+<text x="666" y="113" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Account</text>
+<line x1="30" y1="128" x2="762" y2="128" stroke="#9b9b9b"/>
+<text x="48" y="151" font-family="Arial, sans-serif" font-size="11" font-weight="normal" fill="#232323">Overview       Portfolio       Work       Rent &amp; Payments       Documents</text>
+<line x1="48" y1="166" x2="744" y2="166" stroke="#9b9b9b"/>
+<text x="64" y="189" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Maintenance     Requests     Vendors</text>
+<text x="64" y="222" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">Maintenance</text>
+<text x="64" y="245" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">3 active requests / 1 needs follow-up</text>
+<rect x="64" y="260" width="140" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="73" y="278" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Create request</text>
+<text x="64" y="313" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Property: All    Status: Active    Assignment: All    More filters</text>
+<text x="64" y="339" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Request / Location</text>
+<text x="535" y="339" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Status / Priority / Age</text>
+<rect x="64" y="350" width="664" height="44" fill="#f3f3f3" stroke="#c4c4c4"/>
+<text x="74" y="367" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Kitchen leak</text>
+<text x="74" y="384" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="535" y="374" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Waiting / High / 2 days</text>
+<rect x="64" y="401" width="664" height="44" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="74" y="418" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Entry light</text>
+<text x="74" y="435" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="535" y="425" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Open / Normal / 1 day</text>
+<rect x="64" y="452" width="664" height="44" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="74" y="469" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Roof inspection</text>
+<text x="74" y="486" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="535" y="476" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Scheduled / Normal / 3 days</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 1</text>
+</svg>

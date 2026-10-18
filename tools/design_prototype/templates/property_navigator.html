@@ -1,0 +1,10 @@
+<aside class="record-rail" aria-label="Property and unit selection">
+<details class="location-picker" open><summary>Choose property or unit</summary>
+{% for p in properties %}<article class="browser-property {% if property.id == p.id %}current-property{% endif %}" id="property-{{ p.id }}">
+<a class="browser-property-header" href="{{ p.workspace_url }}" {% if property.id == p.id and not unit %}aria-current="page"{% endif %}>
+{% include 'entity_image.html' with entity=p kind='property' %}
+<span><small>{{ p.type }} property</small><strong>{{ p.name }}</strong><small>{{ p.address }}</small><small>{{ p.occupied }} of {{ p.units|length }} units occupied</small></span></a>
+<a class="property-toggle" href="{{ p.toggle_url }}#property-{{ p.id }}" aria-expanded="{{ p.is_open|yesno:'true,false' }}" aria-controls="property-content-{{ p.id }}">{% if p.is_open %}<span aria-hidden="true">▾</span> Collapse{% else %}<span aria-hidden="true">▸</span> Expand{% endif %} {{ p.name }} units</a>
+{% if p.is_open %}<div class="browser-property-content" id="property-content-{{ p.id }}"><h3>Units & tenants</h3>{% for u in p.units %}<a class="rail-unit {% if u.id == unit.id %}selected{% endif %}" href="{{ u.workspace_url }}" {% if u.id == unit.id %}aria-current="page"{% endif %}>{% include 'entity_image.html' with entity=u kind='unit' %}<span><strong>{{ u.name }}</strong><small>{{ u.lease.tenant_names|default:'No current tenant' }}</small><small>{% if u.occupied %}Occupied{% else %}Vacant{% endif %}</small></span></a>{% empty %}<p>No units recorded for this property.</p>{% endfor %}
+<nav class="browser-shortcuts" aria-label="{{ p.name }} sections">{% for tab in p.workspace_section_urls %}<a href="{{ tab.url }}">{{ tab.label }}</a>{% endfor %}</nav></div>{% endif %}
+</article>{% empty %}<p>No properties recorded.</p>{% endfor %}</details></aside>

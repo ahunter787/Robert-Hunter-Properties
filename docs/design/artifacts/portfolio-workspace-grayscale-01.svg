@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="792pt" height="612pt" viewBox="0 0 792 612">
+<title>A - Portfolio workspace / Staff queue</title>
+<rect width="792" height="612" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">A - Portfolio workspace / Staff queue</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Desktop layout study - not a shipped screen</text>
+<rect x="30" y="90" width="732" height="460" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="44" y="113" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#232323">RHP</text>
+<text x="666" y="113" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Account</text>
+<line x1="30" y1="128" x2="762" y2="128" stroke="#9b9b9b"/>
+<line x1="175" y1="128" x2="175" y2="550" stroke="#9b9b9b"/>
+<text x="44" y="159" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Overview</text>
+<text x="44" y="192" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Properties</text>
+<text x="44" y="225" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Leases</text>
+<text x="44" y="258" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Rent &amp; Payments</text>
+<text x="44" y="291" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Maintenance</text>
+<text x="44" y="324" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Documents</text>
+<text x="44" y="357" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Tenants</text>
+<text x="196" y="151" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">Maintenance / Maple Court</text>
+<text x="196" y="183" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#232323">Maintenance</text>
+<text x="196" y="206" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#232323">3 active requests / 1 needs follow-up</text>
+<rect x="196" y="221" width="140" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="205" y="239" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Create request</text>
+<text x="196" y="274" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Property: All    Status: Active    Assignment: All    More filters</text>
+<text x="196" y="300" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Request / Location</text>
+<text x="547" y="300" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#232323">Status / Priority / Age</text>
+<rect x="196" y="311" width="544" height="44" fill="#f3f3f3" stroke="#c4c4c4"/>
+<text x="206" y="328" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Kitchen leak</text>
+<text x="206" y="345" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="547" y="335" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Waiting / High / 2 days</text>
+<rect x="196" y="362" width="544" height="44" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="206" y="379" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Entry light</text>
+<text x="206" y="396" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="547" y="386" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Open / Normal / 1 day</text>
+<rect x="196" y="413" width="544" height="44" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="206" y="430" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#232323">Roof inspection</text>
+<text x="206" y="447" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Maple Court / Unit A</text>
+<text x="547" y="437" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">Scheduled / Normal / 3 days</text>
+<text x="30" y="595" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#232323">RHP Design | Proposal | Synthetic data | 1</text>
+</svg>

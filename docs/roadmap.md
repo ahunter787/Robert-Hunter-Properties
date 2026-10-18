@@ -44,6 +44,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
 | E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
 | E10 | RHP property accounting — general-ledger style books | Future | — | — |
+| E11 | Design study — Operations desk + persistent sidebar prototype | Building — isolated interactive review | [Prototype guide](design/prototype.md) | prototype only; no rollout |
 
 ## Milestones
 

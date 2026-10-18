@@ -1,0 +1,4 @@
+<span class="entity-image {{ kind|default:'property' }} {{ image_class }}" role="img" aria-label="{{ entity.name|default:'Record' }}{% if entity.image %} · synthetic sample photo{% endif %}">
+<span class="image-fallback" aria-hidden="true">{% if kind == 'person' %}{{ entity.name|first }}{% elif kind == 'unit' %}▦{% else %}⌂{% endif %}</span>
+{% if entity.image %}<img src="{{ entity.image }}" alt="" loading="lazy" width="160" height="100">{% endif %}
+</span>

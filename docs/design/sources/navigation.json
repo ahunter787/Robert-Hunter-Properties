@@ -1,0 +1,179 @@
+{
+  "title": "Role-aware navigation",
+  "pages": [
+    {
+      "title": "RHP navigation map",
+      "elements": [
+        {
+          "type": "text",
+          "x": 40,
+          "y": 108,
+          "text": "Different roles, different navigation",
+          "size": 14,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 130,
+          "w": 340,
+          "h": 170,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 154,
+          "text": "Manager / Administrator",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 185,
+          "text": "Portfolio: properties, units, leases",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 212,
+          "text": "Money: Rent & Payments, recoveries",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 239,
+          "text": "Work: maintenance, vendors",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 266,
+          "text": "Documents and tenant operations",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 412,
+          "y": 130,
+          "w": 340,
+          "h": 170,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 427,
+          "y": 154,
+          "text": "Tenant",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 427,
+          "y": 185,
+          "text": "Home and current lease",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 427,
+          "y": 212,
+          "text": "Payments statement and documents",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 427,
+          "y": 239,
+          "text": "Maintenance: active + history",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 427,
+          "y": 266,
+          "text": "Account controls",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "line",
+          "x": 210,
+          "y": 302,
+          "x2": 210,
+          "y2": 346,
+          "dash": false
+        },
+        {
+          "type": "line",
+          "x": 582,
+          "y": 302,
+          "x2": 582,
+          "y2": 346,
+          "dash": false
+        },
+        {
+          "type": "rect",
+          "x": 40,
+          "y": 346,
+          "w": 712,
+          "h": 74,
+          "fill": "#ffffff",
+          "stroke": "#c4c4c4"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 372,
+          "text": "Object context: Overview / Conversation / Work / Evidence",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 55,
+          "y": 397,
+          "text": "Show only authorized sections. Worker access remains assigned-work only.",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 40,
+          "y": 463,
+          "text": "Global menu = domain. Local menu = current object. Account = separate controls.",
+          "size": 11,
+          "bold": false,
+          "fill": "#202326"
+        }
+      ]
+    }
+  ]
+}

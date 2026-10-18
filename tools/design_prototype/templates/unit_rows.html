@@ -1,0 +1,6 @@
+{% for u in property.units %}
+<a class="unit-row" href="{{ u.workspace_url }}">
+{% include 'entity_image.html' with entity=u kind='unit' %}
+<span class="unit-identity"><strong>{{ u.name }}</strong><small>{{ u.lease.tenant_names|default:'No current tenant' }}</small></span>
+<span class="badge {% if u.occupied %}green{% else %}neutral{% endif %}">{% if u.occupied %}Occupied{% else %}Vacant{% endif %}</span><span aria-hidden="true">→</span></a>
+{% empty %}<p>No units recorded for this property.</p>{% endfor %}

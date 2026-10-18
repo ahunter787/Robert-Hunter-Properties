@@ -1,0 +1,282 @@
+{
+  "docs/design/artifacts/calm-portal-1.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "74f58c40-9f72-40bd-9eca-5a888b7d3908",
+    "sha256": "cc36fff156a3f49833ab266d04c917a79e3c1c926757028a76a77b26f2570d09"
+  },
+  "docs/design/artifacts/calm-portal-2.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "78be5a1e-fd1b-4f4e-ad5f-f27827e6f42f",
+    "sha256": "18d9c402d24673016d9790d011f0271bac15af82f5a449d7569ece3bf0b2597b"
+  },
+  "docs/design/artifacts/calm-portal-3.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "28d9d2d7-5049-406c-84e1-12e8740fe53c",
+    "sha256": "566e0f69123cc4dfef7ea25b2312d32258a701b28f19791a505d06da6fd05139"
+  },
+  "docs/design/artifacts/calm-portal-4.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "c377da9f-1e5f-481d-a37d-33cbe23fb847",
+    "sha256": "c0a2ebdc4c6e2a9740197dc255e3661ad0be1e6b802b1830fc9e34b06aa1015a"
+  },
+  "docs/design/artifacts/calm-portal-5.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "409c7b50-e5f9-40c0-8d04-f160f9d0ffe6",
+    "sha256": "14888d443f45eeb82915b4f0e319ff71e4fe396151bc7ff42b5397a0f7796968"
+  },
+  "docs/design/artifacts/calm-portal-6.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "1c316b1f-2e8e-4132-9907-36ce93c88f7f",
+    "sha256": "50a1b1f8ace7960c07c382e47310155d2d3fe13058066505e84e58b0511265c6"
+  },
+  "docs/design/artifacts/calm-portal-7.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "3c5118ce-a0ad-4d7f-806b-c91f6347474d",
+    "sha256": "b029497f4ec51967864ebbd0bb4e0c779f1258c51b1aa81742fb7b59ec78ea6b"
+  },
+  "docs/design/artifacts/calm-portal-8.png": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "ce935ea4-23ec-4d1b-99ab-a26eb317516f",
+    "sha256": "f5b0c5b0ddaf06b9f6792fb9fe114f37aff927c77d3fc24147b10ae04b8d2402"
+  },
+  "docs/design/artifacts/calm-portal-grayscale.pdf": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "261f0458-7c0c-460c-8526-2e38dea3f6de",
+    "sha256": "899eaf6b4256264caaad38e8b0fb7174943fa854966dba204dabad466a5b5fff"
+  },
+  "docs/design/artifacts/calm-portal.pdf": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "96043158-b85c-430c-bff6-a512cce8721d",
+    "sha256": "584a72cfb66c42ec3bcb29f8cf31d2b96838cb8adeea76f4635a9c70e9f439c0"
+  },
+  "docs/design/artifacts/entry-manager-desktop.jpg": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "df53caed-542c-414c-aac4-b7f49a4a56ff",
+    "sha256": "d6dde17c9d4384597b49077d3c37ec381aadc46e352c81a1a9633b96ad905e03"
+  },
+  "docs/design/artifacts/entry-tenant-phone.jpg": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "3498009b-f27c-420c-b512-a13b6fa7a611",
+    "sha256": "e0c0e61adb3026525038d2df6a47af04d8922d314710aacdc5af9267fdbafb8f"
+  },
+  "docs/design/artifacts/maintenance-workflow-01.svg": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "5f4c9abf-da22-4ef8-869d-66dcdc1c2d10",
+    "sha256": "36074b9e806dbd267d8b91f87a333edb0d16e423c30073e7304798e086e647ea"
+  },
+  "docs/design/artifacts/maintenance-workflow-1.png": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "eca7b571-8abc-43b7-b7fa-128320b13d73",
+    "sha256": "93c4042d069a2f77f954cd89849d21610275148765b4b15c4252f455855a508e"
+  },
+  "docs/design/artifacts/maintenance-workflow-grayscale.pdf": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "2aa3f873-2749-4b5c-90e6-d003f9adc48d",
+    "sha256": "820fffd3b53e9fb85675332503701ae0aa0641eb49295df251ebbc92488617c0"
+  },
+  "docs/design/artifacts/maintenance-workflow.pdf": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "23917ed4-9fbe-4eb2-9d93-b7f7e9774983",
+    "sha256": "718c79bd1dc818f58565fbe4cbe7e4856142b08d96a31619ad4d9e549b94c670"
+  },
+  "docs/design/artifacts/navigation-01.svg": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "8ef321fd-7eb1-4a9c-81b0-03afe19c0af6",
+    "sha256": "2a4f853f6e74bf7ba188b4e38285c94505b02efa151baa0dca18fbbab963edfb"
+  },
+  "docs/design/artifacts/navigation-1.png": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "3169537a-672a-4c6b-b240-5225ad034b65",
+    "sha256": "89164835baabb219cc53acbd4eef0338687023a8fbe57c861e39e78d26484c4d"
+  },
+  "docs/design/artifacts/navigation-grayscale.pdf": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "1fa6df0e-2f5f-490b-a6bc-66e08bb8f289",
+    "sha256": "8a352a1b5558bc7d1b975cbce5150c2e39466d1d9335adeb6595e826ba3bb736"
+  },
+  "docs/design/artifacts/navigation.pdf": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "4ec47c01-e0f2-4acb-9905-41f4ac919307",
+    "sha256": "e5f98136d667803d67e0d7b7ab4b308601681d21bef7c716098cb3e34578ad9e"
+  },
+  "docs/design/artifacts/operations-desk-1.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "86a089f6-a505-4c65-bef5-3aae91802e92",
+    "sha256": "8fa74b04e96454f38f56f1456ad25dd851bc124116613f6a2e226682ed2e29c1"
+  },
+  "docs/design/artifacts/operations-desk-2.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "a31bb4a4-53ea-43f5-9015-174ba3c0acc4",
+    "sha256": "502c41e46215c40f2224768571717329e7132b6471f9bfa81c62fb39aab5d459"
+  },
+  "docs/design/artifacts/operations-desk-3.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "4a5b9222-0ac1-4683-aa28-d4b943601076",
+    "sha256": "599d286a606d7e9323e73f1fa7e16c0073c50568a73327c9fb033e51c51e3a5e"
+  },
+  "docs/design/artifacts/operations-desk-4.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "508768c8-b962-46da-9176-00dde60bd9ab",
+    "sha256": "db4da6f9406b7f6ebc12fee2c4e0f6a4bb77d3fe50dfc8891ac812bd124a3b21"
+  },
+  "docs/design/artifacts/operations-desk-5.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "539e6bd2-f92a-4d48-a0fe-b1027fe84319",
+    "sha256": "43770e5962dce0ce80d0f9f4fe7187ede9f0e96d8c0f87ffaae60de750fca18c"
+  },
+  "docs/design/artifacts/operations-desk-6.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "6c3cf6cf-702b-46e3-9833-62cf317b3fe0",
+    "sha256": "babb09e4927798175387f71dc9ffe3d4f51711be9a8b8394d8c2b38c09485772"
+  },
+  "docs/design/artifacts/operations-desk-7.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "3ae14131-7e71-4af1-9523-9cdc8d8c4ea6",
+    "sha256": "fc51973102884ddd8c2a0fd6b6979aa54dcccf419a77f859a0478cbae807279e"
+  },
+  "docs/design/artifacts/operations-desk-8.png": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "5e52a863-b45a-4392-bb28-a41d1f914661",
+    "sha256": "81fc86f8d28013f5c051e3a9c6cb6fe3c030ea2fd548176981baea28d19fecb0"
+  },
+  "docs/design/artifacts/operations-desk-grayscale.pdf": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "2a873297-1ee3-45b8-b42f-806d08707cae",
+    "sha256": "38f6bd92c69505d907d6963fb721c5523cf490d0ad962fd9cb038a419020d1e8"
+  },
+  "docs/design/artifacts/operations-desk.pdf": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "d8e63a12-0de1-467f-bede-791640ab22f1",
+    "sha256": "67e41ac167d250fad1ade197c47d7bc0e443e6e8505cdc734b51c04530418e58"
+  },
+  "docs/design/artifacts/portfolio-workspace-1.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "c335696a-b066-4ab5-88e1-1acd048e8a62",
+    "sha256": "641b364892db54ddf830a602659e4d6f45326e1cdf059efee4cd782b8350f18a"
+  },
+  "docs/design/artifacts/portfolio-workspace-2.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "afb841f4-c063-409f-83c5-4fae5d23f401",
+    "sha256": "68904cf053200879addfb8c34b2c57f168d292a47632ce6f69a690fbfe2b3f96"
+  },
+  "docs/design/artifacts/portfolio-workspace-3.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "3b391c4f-9fa4-41e9-b737-96e77b9bb17d",
+    "sha256": "388b46e318b518a1e02fcfb852e6dc8957b723444f6a9ef3df24bc2ce035d64f"
+  },
+  "docs/design/artifacts/portfolio-workspace-4.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "a4403eab-88be-49ef-a600-d243e06b62e6",
+    "sha256": "1a8dd7d4aa522b6955c6b7de1b092bc823bbe0071d12e63cae84c8781a3551ff"
+  },
+  "docs/design/artifacts/portfolio-workspace-5.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "0247f63e-070d-4c55-b730-97f27be9d880",
+    "sha256": "eb3f0f2e97bd1f886bc9a0fbc0c4145f31519820388a7e2421a7cc45ad7a26b1"
+  },
+  "docs/design/artifacts/portfolio-workspace-6.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "a006e72d-2ed0-4798-9ee3-7bda681a7a02",
+    "sha256": "2304898df5b8008d8a66fbd6bfcee8c2bf2493c3695f29c9326a12486f3b6c2c"
+  },
+  "docs/design/artifacts/portfolio-workspace-7.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "11736762-3f96-4360-9698-d0cd2eb489b0",
+    "sha256": "366d28656ba818402cb9fa6c93a6c63b8948cf7d8e3fc7c5bb0002831494581e"
+  },
+  "docs/design/artifacts/portfolio-workspace-8.png": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "0a055ca0-156e-4f05-b799-28ccbd5705d4",
+    "sha256": "0c03f0a24ba7020aa8f02492b5fc5ab8f6083884179662dd07a5bd42847f20cb"
+  },
+  "docs/design/artifacts/portfolio-workspace-grayscale.pdf": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "c98ae15c-1c0e-4dbe-80cd-6229ce5e4530",
+    "sha256": "3d206472e3f6e5ccc402a95015fa5a828e8258f5487483bc56eca8da1ea5b6a5"
+  },
+  "docs/design/artifacts/portfolio-workspace.pdf": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "fc48240c-ce0c-45cb-b7fb-26b4c1013f18",
+    "sha256": "b00a958702ce490827a9c8103260545848a16ff2e2af1f24d1fc132834d8299a"
+  },
+  "docs/design/artifacts/prototype-allocation-desktop.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "7f5d9a55-b69b-4134-b24f-47bec57012d1",
+    "sha256": "da414a37537ee5aac9f3e12aec7dd772a28c4fbf3c66f7744019cf5508139866"
+  },
+  "docs/design/artifacts/prototype-dashboard-desktop.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "f7ce6c98-bfbc-4d50-bddf-543ebdaa13d1",
+    "sha256": "76b20c5ff1b2af9a4ecd1fdc1b6ac28be83121a6207d48b32b02e32ece536877"
+  },
+  "docs/design/artifacts/prototype-ledger-desktop.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "d0b34fa2-cd55-4b50-90c2-a5024d837028",
+    "sha256": "b1f0cdae65546fb8e2867fb443ea065a758c79434ee2e81976dd2f27fb215769"
+  },
+  "docs/design/artifacts/prototype-maintenance-phone.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "b957e35f-876b-4603-85a5-13ee6f4b93e7",
+    "sha256": "2ddc2aa9cbd4c05c0f341a45cdef8b02c8593cf1ea6c69ccc33c1110536feef1"
+  },
+  "docs/design/artifacts/prototype-navigation-cleanup.jpg": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "08f3c1b8-54c8-485d-8164-975bcb270fa0",
+    "sha256": "fbac6daf6971fe5f6171cb72ecf9afe3e8acc1ebae66d7020b6d5fcebcc14e79"
+  },
+  "docs/design/artifacts/prototype-tenant-phone.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "213b0e36-51e4-400b-a208-94d798f906f1",
+    "sha256": "67d989acc5b939586d702fe6a4b0b618923eec830a464212a41bbcfa382e6067"
+  },
+  "docs/design/artifacts/prototype-unit-desktop.png": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "31d4c6f3-c121-48aa-87b4-347e41930010",
+    "sha256": "a8efcdbb614ac82496052b5cc1353ad44bcf66f1ea7a7d5fe7bc81366bac5249"
+  },
+  "docs/design/artifacts/prototype-v2-allocation-review.jpg": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "875e6e21-a80a-4bb3-af13-27c7bf099ab8",
+    "sha256": "6b3232609b53d6d33772240e941ee2d7ae7bae9824b72439e292ca9e47d032f0"
+  },
+  "docs/design/artifacts/prototype-v2-properties-desktop.jpg": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "434cc8ea-1cc8-4718-8724-dd53544a37fe",
+    "sha256": "0871c879719fe665ec05ba52a471b09162666bab5fab44a9d9d9dca63d8f2394"
+  },
+  "docs/design/artifacts/prototype-v2-unit-desktop.jpg": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "4bcdb391-c441-4b6e-81b9-bdf9d24420a3",
+    "sha256": "0cd762c6438a0f9d903bff3720ee3c5d63337e491275ee972f7ded630416c613"
+  },
+  "docs/design/artifacts/prototype-v2-unit-phone.jpg": {
+    "document": "a14bf23c-5964-4114-91ae-074f631d0bcc",
+    "id": "b4aa3550-9d81-42f6-aab1-5eaa1f01222d",
+    "sha256": "b8143934df94426ff87cac2003c1b29ffb48801c0a1777eb669f8ff4e9ae9dcb"
+  },
+  "docs/design/sources/calm-portal.json": {
+    "document": "d5db2950-3eab-4d95-a73f-acf980bedd4c",
+    "id": "d5eb4433-0211-4560-8dae-d4ddabac9f27",
+    "sha256": "b79b751dc7b32da4deb7016ec4d28ce243aa1ce5471cbc5785ff221a2e9fcc33"
+  },
+  "docs/design/sources/maintenance-workflow.json": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "daec3165-df2e-48ae-91c4-614a65b1031a",
+    "sha256": "1cf522ec564522a62f80b9a23fae3cc3aaaf46e56d19dd15792155f9d87e2405"
+  },
+  "docs/design/sources/navigation.json": {
+    "document": "0e12fe23-d4ef-490d-bf93-1c6daacc3394",
+    "id": "34de7a11-52bf-4466-9690-7ae636e60410",
+    "sha256": "543736211b90e18382122e253eb10e2c790ab36c0ac3383f62613c8eb92286c3"
+  },
+  "docs/design/sources/operations-desk.json": {
+    "document": "de562a13-cc8c-42d9-9031-7e96eb9bbebe",
+    "id": "16ddd027-d2c0-4f6f-be96-4922250ad72c",
+    "sha256": "4ee8cede044571c6feb0bb7f38cb60c17f77b15cfcf8670cd186ea1d6eb9f9d1"
+  },
+  "docs/design/sources/portfolio-workspace.json": {
+    "document": "a4e08fbf-74b9-4c2e-8c61-f979c1107520",
+    "id": "7d0fe341-7316-46fb-9881-8e9b3501376f",
+    "sha256": "1f2d59d2e4234f2dfa0a3701f276c092a86306616dc823b6c926b299605593b8"
+  }
+}

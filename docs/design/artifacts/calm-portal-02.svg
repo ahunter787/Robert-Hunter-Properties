@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="612pt" height="792pt" viewBox="0 0 612 792">
+<title>C - Calm portal / Staff queue</title>
+<rect width="612" height="792" fill="white"/>
+<text x="30" y="44" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#202326">C - Calm portal / Staff queue</text>
+<text x="30" y="63" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Phone layout study - not a shipped screen</text>
+<rect x="148" y="81" width="316" height="638" fill="#ffffff" stroke="#555555"/>
+<text x="158" y="105" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#202326">RHP</text>
+<text x="352" y="105" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Menu   Account</text>
+<line x1="158" y1="117" x2="454" y2="117" stroke="#9b9b9b"/>
+<text x="158" y="137" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">Manage / Maintenance</text>
+<text x="158" y="167" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#202326">Maintenance</text>
+<text x="158" y="190" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">3 active requests / 1 needs follow-up</text>
+<rect x="158" y="205" width="140" height="27" fill="#f4f4f4" stroke="#555555"/>
+<text x="167" y="223" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#202326">Create request</text>
+<text x="158" y="258" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Filters: Property / Status / More</text>
+<rect x="158" y="276" width="296" height="84" fill="#fff3cd" stroke="#c4c4c4"/>
+<text x="170" y="298" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#202326">Kitchen leak</text>
+<text x="170" y="320" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<text x="170" y="341" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">High / Waiting / 2 days</text>
+<rect x="158" y="376" width="296" height="84" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="170" y="398" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#202326">Entry light</text>
+<text x="170" y="420" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<text x="170" y="441" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Normal / Open / 1 day</text>
+<rect x="158" y="476" width="296" height="84" fill="#ffffff" stroke="#c4c4c4"/>
+<text x="170" y="498" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#202326">Roof inspection</text>
+<text x="170" y="520" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Maple Court / Unit A</text>
+<text x="170" y="541" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Normal / Scheduled / 3 days</text>
+<text x="158" y="604" font-family="Arial, sans-serif" font-size="10" font-weight="normal" fill="#202326">Sorted by urgency, then age</text>
+<text x="30" y="775" font-family="Arial, sans-serif" font-size="9" font-weight="normal" fill="#202326">RHP Design | Proposal | Synthetic data | 2</text>
+</svg>

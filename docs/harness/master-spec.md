@@ -1252,3 +1252,9 @@ the reviewed state, and posted cycles remain locked. Monthly Decimal storage, va
 treatment and rounding are unchanged. See ADR-014's October 16 amendment.
 
 Proposed but **not** approved: E3 (concessions).
+
+**E11 design study, approved October 17, 2026:** evaluate role-aware navigation and information
+density through three comparable desktop/phone concepts. Keep editable, predominantly monochrome
+diagrams and print exports in `docs/design/` and scoped copies in Outline Design; use semantic
+color intentionally and preserve grayscale meaning. This approves the study and project diagram
+skill, not a production shell rollout. Owner selection is recorded in the Design decisions.
