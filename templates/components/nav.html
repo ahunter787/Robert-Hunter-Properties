@@ -15,6 +15,7 @@
         {% if user.is_authenticated %}
           {% if user.is_rhp_staff %}
             <li><a href="{% url 'manage:home' %}" class="rhp-nav-link">Management</a></li>
+            <li><a href="{% url 'maintenance:list' %}" class="rhp-nav-link">Maintenance</a></li>
           {% endif %}
           {% if user.is_manager_or_above %}
             <li><a href="{% url 'portfolio:property-list' %}" class="rhp-nav-link">Properties</a></li>
@@ -29,6 +30,7 @@
             <li><a href="{% url 'tenancy:lease' %}" class="rhp-nav-link">Lease</a></li>
             <li><a href="{% url 'tenant_documents:list' %}" class="rhp-nav-link">Documents</a></li>
             <li><a href="{% url 'payments:home' %}" class="rhp-nav-link">Payments</a></li>
+            <li><a href="{% url 'tenant_maintenance:list' %}" class="rhp-nav-link">Maintenance</a></li>
           {% endif %}
           <li>
             <a href="{% url 'accounts:profile' %}" class="rhp-nav-link">

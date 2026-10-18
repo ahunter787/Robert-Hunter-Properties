@@ -14,7 +14,7 @@ import pytest
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.usefixtures("restore_schema")]
 
 #: The state just before the documents app reads Lease.lease_file: the column exists
 #: on leases/0009 and the Document model exists at documents/0001.

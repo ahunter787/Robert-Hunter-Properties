@@ -76,6 +76,7 @@
                   <td class="py-3 pr-4">
                     <span class="font-medium">{{ row.entry_type }}</span>
                     <span class="block text-xs text-ink-muted">{{ row.description }}</span>
+                    {% if row.charge_entry.maintenance_recharge %}<a class="block text-xs rhp-link" href="{% url 'maintenance:detail' row.charge_entry.maintenance_recharge.cost.request.public_id %}">View maintenance expense and reviewed charge</a>{% endif %}
                     {% for adjustment in row.adjustments %}
                       <span class="mt-1 block border-l-2 border-primary pl-2 text-xs text-ink-muted">
                         Adjusted {% if adjustment.direction == "DECREASE" %}down{% else %}up{% endif %}

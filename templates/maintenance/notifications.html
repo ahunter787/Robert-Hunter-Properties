@@ -1,0 +1,14 @@
+<section class="rhp-card space-y-3 p-5">
+  <h2 class="text-lg font-semibold">Email delivery — managers only</h2>
+  {% for notice in notices %}
+    <div class="space-y-2 border-t border-surface-muted pt-3">
+      <p>{{ notice.recipient.display_name }} · {{ notice.status|title }} · {{ notice.attempts }} attempt{{ notice.attempts|pluralize }}</p>
+      <p class="text-sm text-ink-muted">For the update posted {{ notice.update.created_at|date:'M j, Y, g:i A' }}</p>
+      {% if notice.last_error %}<p>{{ notice.last_error }}</p>{% endif %}
+      {% if notice.status == 'FAILED' or notice.status == 'PENDING' %}<a class="rhp-link" href="{% url 'maintenance:retry' notice.pk %}">Review email retry</a>{% endif %}
+      <details><summary class="rhp-link">Delivery attempts</summary><ul>
+        {% for attempt in notice.deliveries.all %}<li>{{ attempt.attempted_at|date:'M j, Y, g:i A' }} · {{ attempt.outcome|title }}{% if attempt.error %} · {{ attempt.error }}{% endif %}</li>{% empty %}<li>No attempt recorded yet.</li>{% endfor %}
+      </ul></details>
+    </div>
+  {% empty %}<p>No tenant emails queued. Internal notes are not emailed.</p>{% endfor %}
+</section>

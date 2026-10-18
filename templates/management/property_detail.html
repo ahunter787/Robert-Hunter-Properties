@@ -4,6 +4,7 @@
 {% block title %}{{ property.name }} — RHP{% endblock %}
 
 {% block content %}
+  {% include "maintenance/summary.html" %}
   <div class="mx-auto w-full max-w-4xl space-y-6">
     {% if property.has_banner %}
       <div class="overflow-hidden rounded-card border border-surface-muted bg-white">

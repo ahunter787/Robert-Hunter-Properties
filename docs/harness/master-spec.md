@@ -729,6 +729,13 @@ Acceptance criteria:
 PHASE 7 — MAINTENANCE SYSTEM
 ----------------------------
 
+Owner-approved clarification (October 16, 2026): ADR-023 governs implementation. Requests
+belong to properties/units with separate reporting tenancies, explicit sharing and private
+tenancy conversations. No financial responsibility is inferred. Managers control closure
+and reopening; tenants flag unresolved work. Record immutable repair costs and prepare
+explicit, reviewed manual recharge splits through the existing ledger. Notifications are
+persisted and sent after commit. General-ledger accounting remains outside this phase.
+
 Goal:
 Create a complete maintenance workflow.
 

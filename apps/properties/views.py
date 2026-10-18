@@ -102,6 +102,9 @@ class PropertyDetailView(ManagerRequiredMixin, DetailView):
         # The bills this property carries and who is carrying them (E2).
         context["responsibilities"] = responsibility_services.property_overview(self.object)
         context["can_manage_responsibilities"] = self.request.user.is_manager_or_above
+        from apps.maintenance.summary import maintenance_summary
+
+        context["maintenance"] = maintenance_summary(self.request.user, property=self.object)
         # Only meaningful when at least one unit records a size; the template hides
         # the line rather than showing "0 sq ft".
         context["total_square_feet"] = sum(unit.square_feet or 0 for unit in units) or None
@@ -319,6 +322,13 @@ class UnitDetailView(ManagerRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Unit.objects.select_related("property")
+
+    def get_context_data(self, **kwargs):
+        from apps.maintenance.summary import maintenance_summary
+
+        context = super().get_context_data(**kwargs)
+        context["maintenance"] = maintenance_summary(self.request.user, unit=self.object)
+        return context
 
 
 class UnitUpdateView(ManagerRequiredMixin, UpdateView):

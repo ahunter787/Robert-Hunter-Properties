@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.responsibilities",
     "apps.documents",
     "apps.audit",
+    "apps.maintenance",
 ]
 
 MIDDLEWARE = [

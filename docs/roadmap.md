@@ -19,7 +19,7 @@ lives. For the long-horizon view — which later phase will change something tha
 | 4 | Rent ledger | **Complete** |
 | 5 | Tenant dashboard | **Complete** |
 | 6 | Document management | **Complete** |
-| 7 | Maintenance system | **Next** |
+| 7 | Maintenance system | **Complete** |
 | 8 | Communications (announcements) | Not started |
 | 9 | Admin dashboard | Not started |
 | 10 | Reporting and search | Not started |
@@ -270,9 +270,15 @@ downloads that are never reachable by guessing a URL.
 
 ## Phase 7 — Maintenance system
 
-Tenant submission (category, title, description, photos, permission to enter) and a staff queue with
-assignment, priority, status transitions (open → acknowledged → scheduled → in progress → waiting →
-completed → closed), and a timeline that separates tenant-visible updates from internal notes.
+Built and verified on `rhp-7`, accepted by the owner October 18, 2026 for local merge. The governing decision is
+[ADR-023](decisions/ADR-023-maintenance.md); the [phase record](phases/phase-07-maintenance.md) preserves
+all owner answers and verification evidence. Local baseline commits and merge are authorized; no push.
+
+Tenant/property/unit requests, explicit tenancy sharing, assigned-worker access, seven work statuses,
+entry permission, unresolved follow-up, immutable note revisions, private photos/invoices, reusable
+vendors, append-only repair expenses, separately reviewed manual tenant recharges, and durable
+after-commit email delivery attempts. Dashboards and property/unit pages link to scoped requests.
+No financial liability is inferred, and existing occupancy/account locks remain authoritative.
 
 ## Phase 8 — Communications
 

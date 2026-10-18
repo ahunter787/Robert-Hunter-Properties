@@ -95,8 +95,8 @@ class TenantDashboardView(LoginRequiredMixin, View):
     Everything shown is derived: the balance and the activity come from
     `apps.ledger.services.build_ledger`, the same definition the staff ledger
     reads, and the lease comes from `Lease.objects.visible_for` — so a tenant can
-    only ever see their own tenancy. Maintenance and announcements belong to
-    Phases 7 and 8, and the page says so rather than showing a dead button.
+    only ever see their own tenancy. Maintenance reads explicitly shared history,
+    independently of the currently displayed lease; announcements belong to Phase 8.
     """
 
     template_name = "account/dashboard.html"
@@ -107,6 +107,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
 
         lease = leases_visible_for(request.user)
         ledger = ledger_services.build_ledger(lease) if lease else None
+        from apps.maintenance.summary import maintenance_summary
 
         return render(
             request,
@@ -116,6 +117,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
                 "ledger": ledger,
                 "activity_limit": settings.RHP_LEDGER_ACTIVITY_LIMIT,
                 "lease_days_remaining": _days_remaining(lease),
+                "maintenance": maintenance_summary(request.user),
             },
         )
 
@@ -220,6 +222,9 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
         user = self.request.user
         context["is_admin"] = user.is_admin_or_above
         context["is_manager"] = user.is_manager_or_above
+        from apps.maintenance.summary import maintenance_summary
+
+        context["maintenance"] = maintenance_summary(user)
 
         if user.is_manager_or_above:
             context["property_active_count"] = Property.objects.active().count()

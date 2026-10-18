@@ -5,8 +5,6 @@ Three surfaces: the public landing page and health probe, the account area
 remains available for the back office.
 """
 
-from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 
@@ -25,11 +23,9 @@ urlpatterns = [
     path("lease/", include("apps.leases.urls_tenant")),
     path("lease/", include("apps.documents.urls_tenant")),
     path("payments/", include("apps.ledger.urls_tenant")),
+    path("maintenance/", include("apps.maintenance.urls_tenant")),
+    path("manage/maintenance/", include("apps.maintenance.urls_management")),
     path("admin/", admin.site.urls),
 ]
 
-if settings.DEBUG:
-    # Development convenience only. Tenant documents must never be reachable by
-    # guessing a media URL: production serves media through permission-checked
-    # views (Phase 6), never through the web server or the proxy.
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Private uploads are served only by authorized download views, including in development.

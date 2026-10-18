@@ -62,7 +62,7 @@ Things that will be revisited, and by which phase. This is the quickest way to s
 | Money fields | Phase 3 | Phase 4, 11 | Phase 4 reads them in the ledger; Phase 11 reconciles provider payments against entries |
 | Balance and charge states | Phase 4 | Phase 9, 10, 11 | Reported on in the dashboard and the money reports; a provider may need payments applied to named charges rather than oldest-first (P11-Q3). Phase 5's review split the one balance into what is due now, what is past due and what is coming due (ADR-008, ADR-012) |
 | Audit trail | Phase 4 | Phase 9, 12 | Phase 9 adds the audit browser; Phase 12 decides retention (P12-Q4) |
-| Property responsibilities vs maintenance cost | P4-E2 | Phase 7 | A cycle recovers a recurring cost; a Phase 7 request is work done. If one repair should be both fixed and recharged, that link is Phase 7's design (P7-Q2) |
+| Expense recoveries vs maintenance cost | P4-E2 | Phase 7 | Recurring cycles remain separate. ADR-023 links reviewed one-time repair costs directly to ordinary ledger charges, without inferring liability (P7-Q2 answered) |
 
 ## Questions deliberately left open
 

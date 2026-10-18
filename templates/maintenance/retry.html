@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Retry maintenance email · RHP{% endblock %}
+{% block content %}<div class="space-y-5"><h1 class="text-2xl font-semibold">Retry maintenance email</h1><p>Send a portal-link notification for “{{ ticket.title }}” to {{ notice.recipient.display_name }}. Access will be checked again before sending. No internal notes or repair costs will be included.</p><form method="post">{% csrf_token %}<button class="rhp-btn rhp-btn-primary" type="submit">Retry email</button><a class="rhp-link" href="{% url 'maintenance:detail' ticket.public_id %}">Cancel</a></form></div>{% endblock %}

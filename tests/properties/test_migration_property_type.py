@@ -9,7 +9,7 @@ import pytest
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.usefixtures("restore_schema")]
 
 BEFORE = ("properties", "0002_unit_type_map_pin_and_banner")
 AFTER = ("properties", "0003_property_type_square_feet_and_amenities")

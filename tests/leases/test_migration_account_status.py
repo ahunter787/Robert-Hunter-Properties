@@ -9,7 +9,7 @@ from django.db.migrations.executor import MigrationExecutor
 
 from apps.audit.models import AuditEvent
 
-pytestmark = pytest.mark.django_db(transaction=True)
+pytestmark = [pytest.mark.django_db(transaction=True), pytest.mark.usefixtures("restore_schema")]
 
 BEFORE = ("leases", "0005_lease_end_reason_lease_end_reason_note_and_more")
 AFTER = ("leases", "0006_lease_account_status_lease_settled_at_and_more")

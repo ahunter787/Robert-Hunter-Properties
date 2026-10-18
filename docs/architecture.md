@@ -5,9 +5,9 @@ Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](deci
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a
 small property-management business, and it can move from a local VM to a cloud VPS unchanged.
 
-**Status: Phase 2.** The foundation (configuration, database, container topology, health endpoint,
-tests, design system), the identity layer (sign-in, roles, invitations, password reset, account page),
-and the portfolio (properties and units) are in place. Domain apps arrive one phase at a time
+**Status: Phase 7 complete and owner-accepted for local merge.** Identity, portfolio,
+leases, the rent ledger, tenant pages and documents are established; maintenance adds private
+tenancy conversations, assigned work, repair expenses and reviewed recharges. Domain apps arrive one phase at a time
 ([`roadmap.md`](roadmap.md)).
 
 ## System shape
@@ -42,6 +42,12 @@ and the portfolio (properties and units) are in place. Domain apps arrive one ph
 
 ## Request flow
 
+Phase 7 adds `apps/maintenance`: physical requests, explicit tenancy audiences, scoped
+timeline updates and attachments, vendors, immutable cost entries and ledger recharge links.
+An integer identity integrates with audit events while public routes use UUIDs. Request
+locks serialize mutations and signed recharge reviews. Notification rows persist delivery
+attempts and are dispatched after commit without another service. See ADR-023.
+
 ```
 browser → caddy (TLS, /static/*) → gunicorn → Django middleware → view → ORM → PostgreSQL
                                      │
@@ -68,6 +74,7 @@ apps/                   domain apps, one per phase
   ledger/                 accounting: charges, payments, balances (Phase 4)
   audit/                  the audit trail: who changed what (Phase 4)
   documents/              documents: one row per uploaded file, and its screens (Phase 6)
+  maintenance/            requests, private conversations, work, costs, recharge reviews and email (Phase 7)
   common/                 shared, domain-neutral building blocks (form styling, dates, filters, the file rules)
 templates/              base layout, components/, account/, management/, tenancy/
 assets/css/input.css    Tailwind v4 entry point and the RHP design tokens
@@ -217,11 +224,12 @@ account, which is exactly how the owner found it.
   deletes the row and the bytes while recording a `DOCUMENT_REMOVED` event.
 - **Tests** exercise behavior through the public HTTP surface and the ORM, against PostgreSQL.
 
-## Not in Phase 5
+## Historical Phase 5 boundary
 
 Documents (6), maintenance (7), communications (8), the full admin dashboard (9), reporting (10), payment
 integration (11), production hardening — MFA, monitoring, proxy-level rate limiting (12). The dashboard
-shows two labelled panels for the maintenance and announcements work it cannot yet answer.
+originally stopped at lease and financial information. Phase 6 added documents; Phase 7 adds a scoped
+maintenance summary and navigation. Development-placeholder panels have been removed.
 
 ## What Phase 5 changed in earlier work
 

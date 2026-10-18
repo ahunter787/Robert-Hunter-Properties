@@ -1,0 +1,15 @@
+{{ form.non_field_errors }}
+{% for field in form %}
+{% if field.is_hidden %}{{ field }}{{ field.errors }}{% else %}
+<div class="space-y-1">
+  {{ field.errors }}
+  {% if field.field.widget.input_type == "checkbox" %}
+  <label class="flex items-start gap-3" for="{{ field.id_for_label }}">{{ field }} <span>{{ field.label }}</span></label>
+  {% else %}
+  <label class="rhp-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} <span class="text-ink-muted">(required)</span>{% endif %}</label>
+  <div class="maintenance-field">{{ field }}</div>
+  {% endif %}
+  {% if field.help_text %}<p class="rhp-help" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}
+</div>
+{% endif %}
+{% endfor %}

@@ -56,6 +56,19 @@
 }
 
 @layer components {
+  .maintenance-field input:not([type="checkbox"]):not([type="file"]),
+  .maintenance-field select,
+  .maintenance-field textarea,
+  .rhp-input {
+    @apply block w-full rounded-card border border-ink-muted bg-white px-3 py-2 text-base;
+    min-width: 0;
+  }
+  .maintenance-field input[type="file"] {
+    max-width: 100%;
+  }
+  .errorlist {
+    @apply text-sm text-danger;
+  }
   /* --- Structure ------------------------------------------------------- */
   .rhp-card {
     @apply rounded-card border border-surface-muted bg-white p-5 shadow-sm sm:p-6;

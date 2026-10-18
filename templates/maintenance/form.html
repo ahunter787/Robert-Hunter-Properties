@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · RHP{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <a class="rhp-link" href="{% if ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">← {% if ticket %}Back to request{% else %}Maintenance{% endif %}</a>
+  <h1 class="text-2xl font-semibold">{{ title }}</h1>
+  {% if ticket %}<p>{{ ticket.property.name }}{% if ticket.unit %} · {{ ticket.unit.identifier }}{% endif %} · {{ ticket.title }}</p>{% endif %}
+  {% if publication %}<div class="rhp-card border-l-4 border-warning p-4"><p class="font-semibold">This note will become visible to the selected tenancy.</p><p class="whitespace-pre-wrap">{{ publication.body }}</p><p>Other conversations and attachments will not be shared.</p></div>{% endif %}
+  {% if cost %}<div class="rhp-card p-4"><p>Recorded repair expense: {{ cost.description }} · ${{ cost.net_amount|floatformat:2 }}</p><p>Choose tenant charges manually. Recording an expense does not make a tenant responsible. Review before posting.</p></div>{% endif %}
+  {% if not ticket %}<p class="rounded-card bg-surface-muted p-4">This portal is not an emergency-dispatch service. For immediate danger, call 911. Contact RHP directly for urgent problems that cannot wait.</p>{% endif %}
+  {% if error %}<p role="alert" class="text-danger">{{ error }}</p>{% endif %}
+  {% if location_summary %}<div class="rhp-card p-4"><p>{{ location_summary.property.name }} · {% if location_summary.unit %}{{ location_summary.unit.identifier }}{% else %}Property-wide request{% endif %}</p><a class="rhp-link" href="{% url 'maintenance:create' %}">Choose a different location</a><p class="rhp-help">Changing location starts a new form; unsaved details and photos are not kept.</p></div>{% endif %}
+  {% if permission_form %}
+    <p>This records the tenant's permission for this request. It does not replace any required entry notice.</p>
+    {% if form.fields.audience.queryset.count > 1 %}
+    <form method="get" class="rhp-card space-y-3 p-4">
+      <label class="rhp-label" for="audience-picker">Tenancy</label>
+      <div class="maintenance-field"><select id="audience-picker" name="audience" hx-get="{{ request.path }}" hx-target="#permission-panel" hx-select="#permission-panel" hx-swap="outerHTML" hx-sync="this:replace">
+        {% for audience in form.fields.audience.queryset %}<option value="{{ audience.pk }}" {% if form.selected_audience.pk == audience.pk %}selected{% endif %}>{{ audience.lease.unit.label }} · {{ audience.lease.tenant_names }}</option>{% endfor %}
+      </select></div>
+      <button type="submit" class="rhp-btn rhp-btn-secondary">Load entry permission</button>
+    </form>
+    {% endif %}
+  {% endif %}
+  <div id="permission-panel">
+  {% if permission_form %}<p class="mb-3">{% if form.selected_audience %}{{ form.selected_audience.lease.unit.label }} · {{ form.selected_audience.lease.tenant_names }}{% else %}Select an authorized tenancy before updating permission.{% endif %}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="rhp-card space-y-5 p-5">
+    {% csrf_token %}
+    {% if formset %}
+      {{ formset.management_form }}{{ formset.non_form_errors }}
+      <p>Fill in one row per tenancy. Leave unused rows blank. Reviewing does not post charges; you will confirm them on the next page.</p>
+      {% for allocation in formset %}<fieldset class="space-y-3 border-b border-surface-muted pb-5"><legend class="font-semibold">Proposed charge {{ forloop.counter }}</legend>{% include "maintenance/fields.html" with form=allocation %}</fieldset>{% endfor %}
+    {% else %}{% include "maintenance/fields.html" %}{% endif %}
+    <div class="flex flex-wrap gap-3"><button class="rhp-btn rhp-btn-primary" type="submit">{{ button }}</button><a class="rhp-btn rhp-btn-secondary" href="{% if ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">Cancel</a></div>
+  </form>
+  </div>
+</div>
+{% endblock %}

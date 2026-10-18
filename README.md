@@ -9,7 +9,7 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 6 (documents) is built, awaiting the owner's fold; Phase 7 (maintenance) is next.**
+**Current status: Phase 7 (maintenance) is owner-accepted for local merge. E11's approved Operations Desk design is next; Phase 8 remains unbuilt.**
 RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
 tenants are created by staff and invited, roles gate every route server-side, the portfolio can be
@@ -22,8 +22,10 @@ and triple net — with a stepped term's rent worked out when the lease is activ
 each year; **E2** records the bills a property carries (utilities, maintenance), divides them between its
 units the way the office decides, charges each tenancy its share, and reads a tenant's month as one card
 ([`docs/extensions.md`](docs/extensions.md)).
-Properties carry a map pin and a banner photo; units are residential or commercial. Documents and
-maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
+Properties carry a map pin and a banner photo; property type determines residential or commercial use.
+Documents are private, permission-checked records. Maintenance now includes explicitly shared tenancy
+conversations, assigned work, repair expenses, reviewed tenant recharges, and durable email attempts
+([`docs/roadmap.md`](docs/roadmap.md), [ADR-023](docs/decisions/ADR-023-maintenance.md)).
 
 ## Accounts and access
 
@@ -32,13 +34,15 @@ maintenance are still to come ([`docs/roadmap.md`](docs/roadmap.md)).
 | `SUPERADMIN` | everything, including role changes and deletion |
 | `ADMIN` | manager capabilities plus destructive deletion and site administration |
 | `MANAGER` | full portfolio operations: properties, units, leases, schedules, expense recoveries, tenant activation, settlement, and financial corrections |
-| `MAINTENANCE` | management area (assigned work arrives in Phase 7) |
+| `MAINTENANCE` | assigned maintenance requests and necessary work context only; no portfolio or financial access |
 | `TENANT` | their own account, contact details, their own lease, and their own balance |
 
 | URL | What it is |
 | --- | --- |
 | `/account/login/` | sign-in for tenants and staff (rate limited) |
 | `/account/profile/` | the account page: details, contact information, password change |
+| `/maintenance/` | tenant requests and their own tenancy conversations; former tenants retain read-only history |
+| `/manage/maintenance/` | staff queue, work tracking, explicit sharing, manager-only expenses and reviewed recharges |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
 | `/manage/` | staff landing page with portfolio, occupancy and money counters |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |

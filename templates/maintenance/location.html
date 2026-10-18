@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Choose maintenance location · RHP{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <a class="rhp-link" href="{% url 'maintenance:list' %}">← Maintenance</a>
+  <h1 class="text-2xl font-semibold">Choose maintenance location</h1>
+  <p>Select a property, then choose a unit or leave it as a property-wide request. No request is saved until you submit its details.</p>
+  <form method="get" class="rhp-card space-y-5 p-5">
+    {% include "maintenance/fields.html" %}
+    <p class="rhp-help">After changing the property, use “Show units” if the unit list does not update automatically.</p>
+    <div class="flex flex-wrap gap-3">
+      <button class="rhp-btn rhp-btn-secondary" name="load_units" value="1" type="submit">Show units</button>
+      <button class="rhp-btn rhp-btn-primary" name="continue" value="1" type="submit">Continue to request details</button>
+      <a class="rhp-link" href="{% url 'maintenance:list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

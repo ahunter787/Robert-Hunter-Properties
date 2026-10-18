@@ -6,6 +6,13 @@ phase onward. Phase 12 adds the operational layer (backups, monitoring, MFA, pen
 
 ## Authorization
 
+Maintenance entry permission records a tenant's request-specific authorization for RHP staff
+and assigned repair professionals, not landlord self-authorization or an exemption from entry
+notice requirements. Manager-recorded offline authorization/withdrawal requires a source note
+enforced by the service. The note is append-only audit metadata, never a tenant timeline body
+or email; the public change retains the recording actor and permission state. Property/unit
+selectors are scoped in forms as well as checked by the request-creation service.
+
 Roles (defined in the master specification): `SUPERADMIN`, `ADMIN`, `MANAGER`, `MAINTENANCE`, `TENANT`.
 
 Rules:
@@ -37,14 +44,21 @@ Rules:
    record (ADR-005). Managers can take a property or unit out of service but cannot delete it, and a
    property with units cannot be deleted at all: `on_delete=PROTECT` makes that a database refusal
    rather than a UI convention.
-8. **Reading is not the same as changing.** Managers may read tenant records to do their job; creating
-   accounts, inviting, deactivating, and changing roles remain with admins, and the views enforce that
-   independently of whether the buttons are rendered.
+8. **Operations are not site administration.** Managers can create/invite tenant accounts, maintain
+   tenant details and activate/deactivate them. Role changes, Django administration, site configuration
+   and destructive deletion remain administrator duties. Maintenance workers cannot use tenant-account
+   administration or read general portfolio documents; their access is assigned-request context only.
 
 ## Identifiers and enumeration
 
+Maintenance routes use UUID public identifiers. Managers see the portfolio; employees see
+assigned requests only. Tenant visibility is an explicit tenancy audience, never inferred
+from a current unit occupant. Audience-specific replies/files cannot leak across tenancies.
+Costs, invoices and recharge controls are manager-only; raw audits never enter tenant views.
+Services enforce these boundaries for every mutation. See ADR-023.
+
 Externally exposed resources that a tenant could enumerate (maintenance requests, attachments, lease
-files) use `UUIDField` primary keys or a random slug, and sequential integer ids stay internal where a
+files) use separate UUID public identifiers or a random slug, and sequential integer ids stay internal where a
 new surface can afford it. Authorization is enforced regardless — unguessable ids are defense in depth,
 not the control.
 
@@ -79,7 +93,7 @@ photos arrive in Phase 7:
   `documents/<uuid4hex><ext>`); never reuse the client-supplied name on disk.
 - Never execute uploaded content; never serve it with a content type that browsers execute.
 - **Every download is permission-checked.** Uploaded files are never reachable through a static file
-  handler or the reverse proxy, and `MEDIA_URL` is only wired up in development. Banners are served by
+  handler or the reverse proxy, including in development. Banners are served by
   `PropertyBannerView`, tenant photos by `TenantPhotoView`/`OwnPhotoView` (each with its own small
   response helper), and documents by `DocumentDownloadView` (staff, any id) and
   `TenantDocumentDownloadView` (the tenant, through `Document.objects.visible_to`); each checks its

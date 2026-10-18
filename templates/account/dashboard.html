@@ -4,6 +4,7 @@
 {% block title %}Dashboard — RHP{% endblock %}
 
 {% block content %}
+  {% include "maintenance/summary.html" %}
   <div class="mx-auto w-full max-w-3xl space-y-6">
     <section class="rhp-card py-3">
       {% if lease %}

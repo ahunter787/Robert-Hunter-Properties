@@ -63,8 +63,8 @@ cannot drift away from the rows.
 
 **Uploads.** A banner lives in `MEDIA_ROOT` (the `media_data` volume) under a randomised filename in
 `property_banners/`, never the client's name. A tenant photo lives in `tenant_photos/` under the same
-rules. Both are served by permission-checked views, not by a public media path — `MEDIA_URL` is only
-wired up in development — and both use the one validator in `apps/common/images.py`. An image upload
+rules. Both are served by permission-checked views, not by a public media path, even in development,
+and both use the one validator in `apps/common/images.py`. An image upload
 requires Pillow, which is why it is a runtime dependency (ADR-006, ADR-009).
 
 ## Lease tables (Phase 3)
@@ -115,6 +115,28 @@ original stays visible. `Charge`/`Payment` are registered read-only in the Djang
 
 **Money in the audit trail** is stored as a string in `metadata`, for the same reason money is
 `DecimalField` everywhere else: a float in an audit row is still a float.
+
+## Maintenance tables (Phase 7, ADR-023)
+
+All ten tables use integer primary keys for audit compatibility. `maintenance_maintenancerequest`
+and `maintenance_attachment` also have unique public UUIDs used in their URLs.
+
+| Table | Purpose and constraints |
+| --- | --- |
+| `maintenance_maintenancerequest` | Physical property/unit location, separate reporting lease/reporter, assignment, priority, seven statuses, schedule and concurrency revision. Scheduled work requires a date/time or time window. No deletion interface. |
+| `maintenance_audience` | Unique request/lease audience, entry permission with actor/time, unresolved follow-up flag. Sharing never follows a unit's new occupants. |
+| `maintenance_update` | Chronological internal note (null lease) or tenancy-specific conversation. Audience and identity cannot be edited; publication creates a separate row. |
+| `maintenance_revision` | Append-only previous text, correcting actor, reason and timestamp. Never projected into tenant views. |
+| `maintenance_attachment` | Exactly one update or cost parent; randomized stored name, readable original name, public UUID and retained administrative-removal metadata. |
+| `maintenance_vendor` | Reusable contact/trades/active state; protected references retain used vendors. |
+| `maintenance_cost` | Positive `Decimal(12,2)` expenses and signed-effect corrections linked to the original cost. No stored totals or balances. |
+| `maintenance_recharge` | Immutable cost/lease/charge link; unique cost/batch/lease and one-to-one ledger charge make reviewed confirmation idempotent. Net recoveries include ledger adjustments. |
+| `maintenance_notification` | Unique update/recipient delivery state and attempt count; fresh authorization before sending, after commit. |
+| `maintenance_notificationattempt` | Append-only outcomes, safe error summaries and timestamps; failed attempts remain after successful retry. |
+
+Phase 7 adds tables and audit-action choices only: existing leases, documents and ledger entries are
+not transformed. Request-row and lease-row locks bind a signed recharge review to current data;
+tenant charges still go through the existing ledger service and account-state guards.
 
 ## Modeling conventions
 

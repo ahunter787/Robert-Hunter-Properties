@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+{% block title %}Review tenant charges · RHP{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <h1 class="text-2xl font-semibold">Review tenant charges</h1>
+  <p>{{ ticket.property.name }} · {{ ticket.title }}</p>
+  <div class="rhp-card space-y-2 p-5">
+    <p>Recorded repair expense, including corrections: {{ cost.net_amount|money }}</p>
+    <p>Previous net tenant charges: {{ previous|money }}</p>
+    <p>Proposed new charges: {{ proposed|money }}</p>
+    <p class="font-semibold {% if difference %}text-warning{% endif %}">
+      {% if difference < 0 %}Total tenant charges will be {{ difference|absolute|money }} below the recorded expense.
+      {% elif difference > 0 %}Total tenant charges will be {{ difference|money }} above the recorded expense.
+      {% else %}Total tenant charges will match the recorded expense.{% endif %}
+    </p>
+    <p>This comparison is not a determination of tenant responsibility or a reimbursement limit.
+      Confirm the reasons and amounts before posting.</p>
+  </div>
+  <ul class="space-y-3">
+    {% for row in rows %}
+      <li class="rhp-card p-4">
+        <p class="font-semibold">{{ row.tenancy.unit.label }} · {{ row.tenancy.tenant_names }}</p>
+        <p>{{ row.amount|money }} due {{ row.due|date:'M j, Y' }} · {{ row.reason }}</p>
+        <p>Result: a new charge will be posted to this tenancy’s open lease account.</p>
+      </li>
+    {% endfor %}
+  </ul>
+  <form method="post" class="flex flex-wrap gap-4">
+    {% csrf_token %}
+    <input type="hidden" name="review" value="{{ review }}">
+    <button class="rhp-btn rhp-btn-primary" type="submit" name="confirm" value="yes">Post reviewed charges</button>
+    <button class="rhp-btn rhp-btn-secondary" type="submit" name="back" value="yes">Back to allocations</button>
+    <a class="rhp-link" href="{% url 'maintenance:detail' ticket.public_id %}">Cancel without posting</a>
+  </form>
+</div>
+{% endblock %}

@@ -28,3 +28,15 @@ def media_root(tmp_path):
     """
     with override_settings(MEDIA_ROOT=tmp_path / "media"):
         yield tmp_path / "media"
+
+
+@pytest.fixture
+def restore_schema(django_db_setup, django_db_blocker):
+    """Historical migration tests must not leave later transactional tests on an old schema."""
+    yield
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+
+    with django_db_blocker.unblock():
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
