@@ -824,15 +824,23 @@ Announcements may target:
 - everyone
 - one property
 
-Later:
-evaluate direct tenant/management messaging.
+Owner-approved scope extension, October 17, 2026 — E12 / P8-E1:
+Include saved tenant/management conversations, explicit authorized participants, private attachments,
+per-user unread state and durable email alerts to tenants and managers. Announcements remain one-way;
+follow-up opens a private conversation, not public comments. Optional open-page refresh uses the
+existing Django/HTMX stack, with complete plain-form operation. No native mobile app, push notifications,
+SMS, general group/community chat, presence/typing indicators or new queue/realtime service is required.
 
-Do not build a giant chat system prematurely.
+The capability specification and unresolved access/lifecycle choices are in
+`docs/phases/phase-08-communications.md`. Messaging scope is approved but unbuilt; recommendations
+in that record are not owner answers. An implementation ADR and resolved choices are required before
+code. Presentation remains the separate E11 decision; no layout or visual language is selected here.
 
 Acceptance criteria:
 - announcement appears only to intended tenants
 - expired announcement disappears from normal tenant view
 - important announcement can be highlighted
+- private messaging, attachments, unread state and delivery retries preserve authorized tenancy boundaries
 
 
 PHASE 9 — ADMIN DASHBOARD

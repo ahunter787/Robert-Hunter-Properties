@@ -38,7 +38,7 @@ Things that will be revisited, and by which phase. This is the quickest way to s
 
 | Element | Built in | Revisited by | What changes |
 | --- | --- | --- | --- |
-| Tenant dashboard | Phase 5 | Phase 6, 7, 8, 9 | Phase 6 added the documents page and its link on `/lease/`; live maintenance and announcements are next, and Phase 9 consolidates the dashboards |
+| Tenant dashboard | Phase 5 | Phase 6, 7, 8, 9 | Documents are available; Phase 7 adds scoped maintenance summaries/navigation. Announcements remain Phase 8, and Phase 9 consolidates dashboards |
 | Reading money as a tenant | Phase 5 review | Phase 10, 11 | The statement nets corrections and pages; reports and a payment provider will each need their own reading of the same records (ADR-011) |
 | Tenant payment history | Phase 5 | Phase 11 | May gain a "pay now" action once a provider is chosen |
 | Single lease file | Phase 3 | **Done — Phase 6** | `Document` rows replaced it: categories, visibility, many files per tenancy, and the old single file migrated in place (ADR-022) |
@@ -101,8 +101,9 @@ view of them.
 - **Invoices, statements and receipts** — P6-Q3 and P10-Q1. Nothing in the ledger produces a document
   yet. Phase 6 is built, so a receipt can be filed by hand like any other document today; generating one
   from a recorded payment is Phase 10, and whether RHP wants it is your call.
-- **Direct messaging** — P8-Q4 and the Phase 8 record: announcements cover the real need; a chat system is a
-  much bigger commitment and is explicitly deferred.
+- **Direct messaging** — E12 / P8-E1, scope approved October 17, 2026: bounded tenant–RHP conversations,
+  attachments, unread state and email, without native apps or push. Phase 8 remains unbuilt; its access/
+  lifecycle questions need answers and E11 presentation selection is independent.
 - **Payment provider** — P11-Q1. Phase 11 waits for your decision, and nothing else is blocked by it.
 - **How much tenants should see** — P5-Q1. Phase 4 shows a tenant their balance, the next amount and
   activity, but not the audit trail behind it. Whether a tenant ever sees the history of changes to their own

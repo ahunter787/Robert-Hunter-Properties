@@ -33,6 +33,7 @@ parser accepts the longer form.
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md) |
 | **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | Future — outside the rent-ledger scope |
 | **E11** | **Design study and visual language** — Operations desk + persistent sidebar interactive prototype; RHP domain rules preserved, menus and task flows redesigned | Presentation | Building — isolated prototype authorized October 18, 2026; [review guide](design/prototype.md); production rollout requires separate approval |
+| **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | Approved scope — unbuilt; access/lifecycle answers pending in [Phase 8](phases/phase-08-communications.md) |
 
 ## 1. How a change to the specification is handled
 
