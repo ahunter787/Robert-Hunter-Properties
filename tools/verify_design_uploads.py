@@ -34,6 +34,9 @@ def main():
     revision = published.get("documents", {}).get("prototype-revision-02.md")
     if revision:
         ids.append(str(UUID(revision["id"])))
+    implementation = published.get("documents", {}).get("implementation.md")
+    if implementation:
+        ids.append(str(UUID(implementation["id"])))
     placeholders = ",".join(f"'{value}'" for value in ids)
     query = (  # noqa: S608 - every interpolated value parsed through UUID above
         'SELECT json_agg(row_to_json(a)) FROM (SELECT id, key, "documentId" '  # noqa: S608

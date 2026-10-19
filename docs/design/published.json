@@ -4,8 +4,9 @@
     "README.md": {
       "id": "712e49bb-c1a6-4a0b-a57d-5d3334587336",
       "url": "http://10.60.0.227:8090/doc/rhp-design-0tQffpBfEc",
-      "sha256": "61b923493d73d9401813d59e21fe8a492843370707a0cc82d2917b4dfb19091d",
-      "published_text_sha256": "718eed556b18ca6bcf24e77de29b2fa7a798a6841871246be8be95dc08aae2d7"
+      "sha256": "053d560c71423b105dd36500f4a94956866387c2b35f9464c964dc046a51d99c",
+      "published_text_sha256": "af48d0b05db756464631055bc137d3ebda6ec685ae9cbb094c705f39d37e0b51",
+      "published_source_text_sha256": "af48d0b05db756464631055bc137d3ebda6ec685ae9cbb094c705f39d37e0b51"
     },
     "principles.md": {
       "id": "a55f858e-9e53-4000-a552-f58f964e12c5",
@@ -22,8 +23,8 @@
     "navigation.md": {
       "id": "02b21a31-d8a8-4559-aeb6-28bf148757d6",
       "url": "http://10.60.0.227:8090/doc/navigation-maps-and-maintenance-workflow-2GynfzjTpM",
-      "sha256": "ea804e9978ade119df6024dd5682877c34a10437517697661d44bfe5942ad281",
-      "published_text_sha256": "6a39e4d367eab5136e8822809096b86453e2437d073c61572b09810c558b6f9b"
+      "sha256": "ff17e31cbb63163280c2d2974f429105a32ead5d70353e898dec84b198f61de1",
+      "published_text_sha256": "ac2a7529fad242e40956daeb5c3b80d98c4eec7341586924be7bc77e4827d444"
     },
     "screenshots.md": {
       "id": "2c905f31-9038-4ecc-9056-df4568dfcefe",
@@ -40,8 +41,9 @@
     "decisions.md": {
       "id": "852bac51-8cbc-45a4-8d1c-9cad694def87",
       "url": "http://10.60.0.227:8090/doc/design-decisions-and-owner-feedback-4FhrxLKu5j",
-      "sha256": "e1da735944f71d3446d44a365806d7f0a55b0f329ca1076b205d8abae8cc6b90",
-      "published_text_sha256": "e82cccbc91144709c792601acb47179f81c6a40c26d0dcaa3050ce34d30a441b"
+      "sha256": "713f446772052b1d4dbe55569b7692f261283ddeb3a696ea7a4603b8d6151250",
+      "published_text_sha256": "9f301c46f5d8f9b3be3f0f519ed1607fb17f54cd215b34e3742061682c0ba98d",
+      "published_source_text_sha256": "9f301c46f5d8f9b3be3f0f519ed1607fb17f54cd215b34e3742061682c0ba98d"
     },
     "publication.md": {
       "id": "8a1b75e4-1e10-4428-b230-792a0103dc98",
@@ -60,6 +62,20 @@
       "url": "http://10.60.0.227:8090/doc/operations-desk-revision-2-review-0YpoaJf6k3",
       "sha256": "419aa3459043d56fd0f0449f06974e55441e92f1ee0069350b1401186d163e39",
       "published_text_sha256": "9331396bf911420918b856cf12c41f987fdc05e9df39f6779943627a2ab8f4b5"
+    },
+    "implementation.md": {
+      "id": "81ee5d31-acae-4bd8-a048-5431fd5643ee",
+      "url": "http://10.60.0.227:8090/doc/operations-desk-application-migration-Ktebwbu29U",
+      "sha256": "dea19898362ff7c7027f906ffcf8bc3592aa6c098055471f1ba42459a4a6ca22",
+      "published_text_sha256": "f157f18c43462b0d62c98429fd0932391adcde6e9f46724c535900652be46360",
+      "published_source_text_sha256": "6a5359e67189845cba82e6bccffc0d0aa0566e8dbc99293a417c6d75dc68051f"
+    },
+    "prior-activity-calculator.md": {
+      "id": "cbbb7973-43f7-448d-b720-fe17817b3fcc",
+      "url": "http://10.60.0.227:8090/doc/prior-lease-activity-calculator-scoped-proposal-pbJMKr6Ttm",
+      "sha256": "7cce409dbdf35f55bc2403e2b623fba82605fffe8013d716ee71a9f012dcf014",
+      "published_text_sha256": "a3d6c5c73e7af8bcd9fdeb04a2b9c9a2f2e5ad1363b762b7d877a6b486321528",
+      "published_source_text_sha256": "a3d6c5c73e7af8bcd9fdeb04a2b9c9a2f2e5ad1363b762b7d877a6b486321528"
     }
   },
   "galleries": {

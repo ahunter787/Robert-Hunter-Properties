@@ -55,8 +55,11 @@
           <tbody class="divide-y divide-surface-muted">
             {% for lease in leases %}
               <tr>
-                <td class="py-3 pr-4 font-medium">{{ lease.unit.identifier }}</td>
-                <td class="py-3 pr-4">{{ lease.tenant_names }}</td>
+                <td class="py-3 pr-4 font-medium">
+                  {% if lease.unit.photo %}{% url 'portfolio:unit-photo' lease.unit.pk as thumbnail %}{% else %}{% firstof '' as thumbnail %}{% endif %}
+                  <div class="flex items-center gap-3">{% include "components/location_image.html" with image_url=thumbnail image_label=lease.unit.label %}<div>{{ lease.unit.identifier }}<span class="block text-xs text-ink-muted">{{ lease.unit.property.name }}</span></div></div>
+                </td>
+                <td class="py-3 pr-4"><div class="grid gap-2">{% for link in lease.lease_tenants.all %}{% include "components/tenant_identity.html" with person=link.tenant only %}{% empty %}No tenants{% endfor %}</div></td>
                 <td class="py-3 pr-4 text-ink-muted">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</td>
                 <td class="py-3 pr-4">{{ lease.monthly_rent|money }}</td>
                 <td class="py-3 pr-4">
@@ -80,7 +83,7 @@
                   {% endif %}
                 </td>
                 <td class="py-3 text-right">
-                  <a href="{% url 'leases:lease-detail' lease.pk %}"
+                  <a href="{% url 'leases:lease-detail' lease.pk %}?q={{ search|urlencode }}&amp;status={{ status|urlencode }}&amp;expiring={{ expiring|urlencode }}&amp;page={{ page_obj.number }}"
                      class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
                 </td>
               </tr>

@@ -1,0 +1,17 @@
+{% load rhp_format %}
+{% if workspace_section == 'maintenance' %}
+<section class="workspace-section"><div class="section-heading"><h2>Maintenance</h2><a href="{% url 'maintenance:list' %}?{% if unit %}unit={{ unit.pk }}{% else %}property={{ property.pk }}{% endif %}">Open portfolio maintenance</a></div>
+{% for ticket in workspace_requests %}<a class="workspace-row" href="{% url 'maintenance:detail' ticket.public_id %}"><strong>{{ ticket.title }}</strong><span>{{ ticket.get_status_display }}</span><span>{{ ticket.get_priority_display }} priority</span></a>{% empty %}<p>No maintenance requests for this location.</p>{% endfor %}</section>
+{% elif workspace_section == 'documents' %}
+<section class="workspace-section"><div class="section-heading"><h2>Documents</h2><a href="{% url 'documents:list' %}?property={{ workspace_location.pk }}{% if unit %}&amp;unit={{ unit.pk }}{% endif %}">Open portfolio documents</a></div>
+{% for document in workspace_documents %}<a class="workspace-row" href="{% url 'documents:download' document.pk %}"><strong>{{ document.title }}</strong><span>{{ document.get_category_display }}</span><span>{% if document.tenant_visible %}Shared with tenant{% else %}Staff only{% endif %}</span></a>{% empty %}<p>No documents filed for this location.</p>{% endfor %}</section>
+{% elif workspace_section == 'recoveries' %}
+<section class="workspace-section"><div class="section-heading"><h2>Expense recoveries</h2><a href="{% url 'responsibilities:responsibility-create' workspace_location.pk %}">Add expense recovery</a></div>
+{% if workspace_location.cam_rate %}<p>CAM {{ workspace_location.cam_rate|money }} a square foot{% if total_square_feet %} · {{ total_square_feet }} sq ft recorded{% endif %}</p>{% endif %}
+{% for row in workspace_recoveries %}<div class="workspace-row"><div><strong>{{ row.responsibility.label }}</strong>{% if not row.responsibility.is_active %}<span class="workspace-badge">Stopped</span>{% endif %}<p>{{ row.responsibility.note }}</p>
+{% with cycle=row.current_cycle|default:row.next_cycle %}{% if cycle %}<p>{% if row.current_cycle %}Current{% else %}Upcoming{% endif %} billing period · {{ cycle.starts_on|date:'M j, Y' }} – {{ cycle.ends_on|date:'M j, Y' }}</p><p>{{ cycle.total_amount|money }} · {{ cycle.monthly_total|money }} a month to divide</p>{% else %}<p>No billing period has been scheduled.</p>{% endif %}{% endwith %}
+{% for share in row.shares %}<p>{{ share.unit.identifier }} · {{ share.monthly_amount|money }} monthly{% if share.share_of_property != None %} · {{ share.share_of_property }}% of property size{% endif %}{% if not share.has_lease %} · Funded by RHP{% endif %}</p>{% endfor %}
+{% if not unit and row.landlord_monthly %}<p>RHP share: {{ row.landlord_monthly|money }} a month of this bill is not carried by a unit.</p>{% endif %}
+</div><div><a href="{% url 'responsibilities:cycle-stage' row.responsibility.pk %}">Enter bill</a> · <a href="{% url 'responsibilities:responsibility-update' row.responsibility.pk %}">Edit</a>{% if row.next_cycle %}<p><a href="{% url 'responsibilities:cycle-shares' row.next_cycle.pk %}">Change unit amounts</a></p>{% elif row.current_cycle %}<p><a href="{% url 'responsibilities:cycle-shares' row.current_cycle.pk %}">Review unit amounts</a></p>{% endif %}</div></div>{% empty %}<p>No expense recoveries for this property.</p>{% endfor %}
+<a href="{% url 'responsibilities:overview' %}">Open portfolio expense recoveries</a></section>
+{% endif %}

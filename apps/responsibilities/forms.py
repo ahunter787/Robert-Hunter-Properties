@@ -40,7 +40,7 @@ class CycleForm(StyledForm):
 
 
 class SharesForm(StyledForm):
-    remainder = forms.ChoiceField(label="Who receives the remainder?", initial="rhp")
+    remainder = forms.ChoiceField(label="Send the remaining monthly amount to…", initial="rhp")
     note = forms.CharField(
         max_length=200,
         required=False,

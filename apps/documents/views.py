@@ -7,6 +7,7 @@ refusal that admits the document exists.
 """
 
 import logging
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -24,7 +25,7 @@ from apps.documents import services
 from apps.documents.forms import DocumentForm, DocumentRemoveForm
 from apps.documents.models import Document, DocumentCategory
 from apps.leases.models import Lease
-from apps.properties.models import Property
+from apps.properties.models import Property, Unit
 
 logger = logging.getLogger("apps.documents")
 
@@ -33,10 +34,16 @@ def _presets(request):
     """What the document is being filed against, from the screen it was opened from."""
     lease = property_obj = tenant = None
     if pk := request.GET.get("lease") or request.POST.get("lease"):
+        if not str(pk).isdigit():
+            raise Http404
         lease = get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
     if pk := request.GET.get("property") or request.POST.get("property"):
+        if not str(pk).isdigit():
+            raise Http404
         property_obj = get_object_or_404(Property, pk=pk)
     if pk := request.GET.get("tenant") or request.POST.get("tenant"):
+        if not str(pk).isdigit():
+            raise Http404
         tenant = get_object_or_404(User, pk=pk)
     return lease, property_obj, tenant
 
@@ -44,9 +51,9 @@ def _presets(request):
 def _back_to(request, lease=None, property_obj=None, tenant=None) -> str:
     """Where the office came from, so filing a document does not lose their place."""
     if lease is not None:
-        return reverse("leases:lease-detail", args=[lease.pk])
+        return reverse("leases:lease-detail", args=[lease.pk]) + "?section=documents"
     if property_obj is not None:
-        return reverse("portfolio:property-detail", args=[property_obj.pk])
+        return reverse("portfolio:property-detail", args=[property_obj.pk]) + "?section=documents"
     if tenant is not None:
         return reverse("manage:account-detail", args=[tenant.pk])
     return reverse("documents:list")
@@ -75,8 +82,20 @@ class DocumentListView(ManagerRequiredMixin, ListView):
         elif self.request.GET.get("visibility") == "staff":
             documents = documents.filter(tenant_visible=False)
         if property_id := self.request.GET.get("property"):
-            documents = documents.filter(property_id=property_id)
-        return documents
+            if not property_id.isdigit():
+                raise Http404
+            property_obj = get_object_or_404(Property, pk=property_id)
+            documents = documents.filter(
+                Q(property=property_obj) | Q(lease__unit__property=property_obj)
+            )
+        if unit_id := self.request.GET.get("unit"):
+            if not unit_id.isdigit():
+                raise Http404
+            unit = get_object_or_404(
+                Unit, pk=unit_id, **({"property_id": property_id} if property_id else {})
+            )
+            documents = documents.filter(lease__unit=unit)
+        return documents.distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -89,6 +108,14 @@ class DocumentListView(ManagerRequiredMixin, ListView):
                 "categories": DocumentCategory.choices,
                 "properties": Property.objects.active().order_by("name"),
                 "can_remove": self.request.user.is_admin_or_above,
+                "unit_id": self.request.GET.get("unit", ""),
+                "filter_query": urlencode(
+                    {
+                        key: self.request.GET[key]
+                        for key in ("q", "category", "visibility", "property", "unit")
+                        if key in self.request.GET
+                    }
+                ),
             }
         )
         return context
@@ -106,6 +133,7 @@ class DocumentUploadView(ManagerRequiredMixin, View):
             "property": property_obj,
             "tenant": tenant,
             "attachment": lease or property_obj or tenant,
+            "back_url": _back_to(self.request, lease, property_obj, tenant),
         }
 
     def get(self, request):

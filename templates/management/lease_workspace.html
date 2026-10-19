@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="properties-workspace">
+  <aside>
+    <details class="location-picker" open>
+      <summary>Lease sections</summary>
+      <nav class="lease-sections" aria-label="Lease sections">
+        {% if lease.unit.photo %}{% url 'portfolio:unit-photo' lease.unit.pk as lease_image %}{% else %}{% firstof '' as lease_image %}{% endif %}
+        {% include "components/location_image.html" with image_url=lease_image image_label=lease.unit.label image_class="lease-thumbnail" %}
+        <h2>{{ lease.unit.identifier }}</h2>
+        <p class="px-3 text-sm text-ink-muted">{{ lease.unit.property.name }}<br>{{ lease.tenant_names }}</p>
+        {% for tab in lease_tabs %}<a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+        <a href="{% url 'portfolio:unit-detail' lease.unit.pk %}">Unit workspace</a>
+        <a href="{% url 'ledger:lease-ledger' lease.pk %}">Full-width ledger</a>
+      </nav>
+    </details>
+  </aside>
+  <div class="properties-content space-y-6">
+    <div class="text-sm flex flex-wrap gap-3"><span>Occupancy: {{ lease.get_status_display }}</span><span>Financial account: {{ lease.get_account_status_display }}</span></div>
+    {% if lease.status == "ENDED" %}<p class="text-sm text-ink-muted">This lease is kept as a record. Occupancy ended {{ lease.stopped_on|date:"M j, Y" }} · {{ lease.get_end_reason_display }}</p>{% endif %}
+    {% block lease_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

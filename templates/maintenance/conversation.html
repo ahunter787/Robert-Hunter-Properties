@@ -1,0 +1,12 @@
+  <section class="space-y-3" aria-label="Request updates">
+    {% for update in updates %}<article class="rhp-card space-y-3 border-l-4 {% if not update.lease_id %}border-warning bg-surface-muted{% else %}border-primary{% endif %} p-5">
+      <p class="text-sm font-semibold">{% if not update.lease_id %}Internal note — staff only{% elif user.is_tenant %}Your tenancy conversation{% else %}Visible to {{ update.lease.unit.label }} tenancy{% endif %}</p>
+      <p class="whitespace-pre-wrap break-words">{{ update.body }}</p><p class="text-sm text-ink-muted">{{ update.author.display_name }} · {{ update.created_at|date:'M j, Y, g:i A' }}{% if update.edited_at %} · Corrected {{ update.edited_at|date:'M j, Y, g:i A' }}{% endif %}</p>
+      {% include "maintenance/attachments.html" with attachments=update.attachments.all %}
+      {% if user.is_rhp_staff %}
+        {% if not update.author.is_tenant %}{% if user.is_manager_or_above or update.author_id == user.pk %}<a class="rhp-link" href="{% url 'maintenance:update-action' ticket.public_id update.pk 'edit' %}">Correct update</a>{% endif %}{% endif %}
+        {% if user.is_manager_or_above and not update.lease_id %}<a class="rhp-link" href="{% url 'maintenance:update-action' ticket.public_id update.pk 'publish' %}">Publish a copy to a tenancy</a>{% endif %}
+        {% for revision in update.revisions.all %}<details><summary class="rhp-link">Previous version · {{ revision.created_at|date:'M j, Y, g:i A' }}</summary><p class="whitespace-pre-wrap">{{ revision.previous_body }}</p><p>Corrected by {{ revision.actor.display_name }}: {{ revision.reason }}</p></details>{% endfor %}
+      {% endif %}
+    </article>{% empty %}<p>No updates yet.</p>{% endfor %}
+  </section>

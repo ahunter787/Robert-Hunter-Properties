@@ -1,42 +1,26 @@
 {% extends "base.html" %}
 {% block title %}{{ ticket.title }} · Maintenance · RHP{% endblock %}
 {% block content %}
-<div class="space-y-6">
-  <a class="rhp-link" href="{% url namespace|add:':list' %}">← Maintenance</a>
-  <header class="space-y-2"><p class="text-sm text-ink-muted">{{ ticket.property.name }} · {% if ticket.unit %}Unit {{ ticket.unit.identifier }}{% else %}Property area{% endif %}</p><h1 class="text-2xl font-semibold">{{ ticket.title }}</h1><p>{{ ticket.get_category_display }} · {{ ticket.get_status_display }} · {{ ticket.get_priority_display }} priority</p><p>Opened {{ ticket.created_at|date:'M j, Y' }}{% if ticket.assigned_to %} · Assigned to {{ ticket.assigned_to.display_name }}{% endif %}</p>{% if ticket.scheduled_for %}<p>Scheduled {{ ticket.scheduled_for|date:'M j, Y, g:i A' }} {{ ticket.schedule_window }}</p>{% endif %}</header>
-  <p class="text-sm text-ink-muted">{{ ticket.property.address_line }}</p>
-  {% if ticket.schedule_window and not ticket.scheduled_for %}<p>Scheduled window: {{ ticket.schedule_window }}</p>{% endif %}
-  <div class="flex flex-wrap gap-3">
-    {% if can_write %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'update' %}">Add update</a>{% endif %}
-    {% if user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'work' %}">Manage work</a>{% elif user.is_rhp_staff and ticket.status != 'COMPLETED' and ticket.status != 'CLOSED' %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'work' %}">Record progress</a>{% endif %}
-    {% if user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'share' %}">Share with tenancy</a><a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'cost' %}">Record repair expense</a>{% endif %}
-    {% if user.is_tenant and can_write %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'follow-up' %}">Report unresolved work</a>{% endif %}
-    {% if can_write %}{% if user.is_tenant or user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'permission' %}">Update entry permission</a>{% endif %}{% endif %}
-  </div>
-  <section class="rhp-card space-y-3 p-5" aria-labelledby="access-heading"><h2 id="access-heading" class="text-lg font-semibold">{% if user.is_tenant %}Your tenancy{% else %}Shared tenancies and entry permission{% endif %}</h2>
-  {% for audience in audiences %}<div><p>{{ audience.lease.unit.label }} · Tenant-authorized entry: <strong>{{ audience.permission_to_enter|yesno:'Yes,No' }}</strong></p><p class="text-sm text-ink-muted">For RHP staff and assigned repair professionals on this request. Recorded by {{ audience.permission_by.display_name }} on {{ audience.permission_at|date:'M j, Y, g:i A' }}</p>{% if audience.unresolved %}<p class="font-semibold text-danger">Unresolved follow-up — needs manager review</p>{% if user.is_manager_or_above %}<a class="rhp-link" href="{% url 'maintenance:action' ticket.public_id 'review-follow-up' %}">Respond and mark reviewed</a>{% endif %}{% endif %}</div>{% empty %}<p>Staff only. Share with a tenancy to give its tenants access. No tenant is responsible for a cost just because a request is shared.</p>{% endfor %}</section>
-  <section class="space-y-3" aria-labelledby="timeline-heading"><h2 id="timeline-heading" class="text-lg font-semibold">Request timeline</h2>
-    {% for update in updates %}<article class="rhp-card space-y-3 border-l-4 {% if not update.lease_id %}border-warning bg-surface-muted{% else %}border-primary{% endif %} p-5">
-      <p class="text-sm font-semibold">{% if not update.lease_id %}Internal note — staff only{% elif user.is_tenant %}Your tenancy conversation{% else %}Visible to {{ update.lease.unit.label }} tenancy{% endif %}</p>
-      <p class="whitespace-pre-wrap break-words">{{ update.body }}</p><p class="text-sm text-ink-muted">{{ update.author.display_name }} · {{ update.created_at|date:'M j, Y, g:i A' }}{% if update.edited_at %} · Corrected {{ update.edited_at|date:'M j, Y, g:i A' }}{% endif %}</p>
-      {% include "maintenance/attachments.html" with attachments=update.attachments.all %}
-      {% if user.is_rhp_staff %}
-        {% if not update.author.is_tenant %}{% if user.is_manager_or_above or update.author_id == user.pk %}<a class="rhp-link" href="{% url 'maintenance:update-action' ticket.public_id update.pk 'edit' %}">Correct update</a>{% endif %}{% endif %}
-        {% if user.is_manager_or_above and not update.lease_id %}<a class="rhp-link" href="{% url 'maintenance:update-action' ticket.public_id update.pk 'publish' %}">Publish a copy to a tenancy</a>{% endif %}
-        {% for revision in update.revisions.all %}<details><summary class="rhp-link">Previous version · {{ revision.created_at|date:'M j, Y, g:i A' }}</summary><p class="whitespace-pre-wrap">{{ revision.previous_body }}</p><p>Corrected by {{ revision.actor.display_name }}: {{ revision.reason }}</p></details>{% endfor %}
-      {% endif %}
-    </article>{% empty %}<p>No updates yet.</p>{% endfor %}
-  </section>
-  {% if user.is_manager_or_above %}
-  <section class="rhp-card space-y-4 p-5" aria-labelledby="cost-heading"><h2 id="cost-heading" class="text-lg font-semibold">Repair expenses — managers only</h2><p>Total recorded expenses: ${{ total|floatformat:2 }}. Expenses do not automatically create tenant charges.</p>
-    {% for cost in costs %}<article class="space-y-2 border-t border-surface-muted pt-4"><h3 class="font-semibold">{{ cost.description }}</h3><p>{{ cost.incurred_on|date:'M j, Y' }} · ${{ cost.net_amount|floatformat:2 }}{% if cost.vendor %} · {{ cost.vendor.name }}{% endif %} · {{ cost.reference }}</p>
-    {% include "maintenance/attachments.html" with attachments=cost.attachments.all %}
-    {% for correction in cost.corrections.all %}<div class="pl-4"><p>Correction {{ correction.incurred_on|date:'M j, Y' }}: ${{ correction.effect|floatformat:2 }} · {{ correction.reason }} · {{ correction.actor.display_name }}</p>{% include "maintenance/attachments.html" with attachments=correction.attachments.all %}</div>{% endfor %}
-    <p>Net tenant charges posted: ${{ cost.recharged|floatformat:2 }}</p><a class="rhp-link" href="{% url 'maintenance:recharge' ticket.public_id cost.pk %}">Prepare tenant recharge</a>
-    {% for recharge in cost.recharges.all %}<p><a class="rhp-link" href="{% url 'ledger:lease-ledger' recharge.lease_id %}">Lease ledger · {{ recharge.lease.unit.label }}</a> · Charge #{{ recharge.charge_id }}</p>{% endfor %}</article>{% empty %}<p>No repair expenses recorded. Use “Record repair expense” when an invoice or receipt is available.</p>{% endfor %}
-  </section>
-  {% include "maintenance/notifications.html" %}
-  {% endif %}
-  <p class="text-sm text-ink-muted">This portal is not an emergency-dispatch service. For immediate danger, call 911.</p>
-</div>
-{% endblock %}
+<div class="properties-workspace">{% include "components/record_navigation.html" with navigation_label="Request sections" %}<div class="properties-content space-y-6">
+{% include "maintenance/location_header.html" %}
+<header><h1 class="text-2xl font-semibold">{{ ticket.title }}</h1><p>{{ ticket.get_category_display }} · {{ ticket.get_status_display }} · {% if ticket.priority == 4 %}<strong class="text-danger">Urgent priority</strong>{% else %}{{ ticket.get_priority_display }} priority{% endif %}</p><p>Opened {{ ticket.created_at|date:"M j, Y" }}{% if ticket.assigned_to %} · Assigned to {{ ticket.assigned_to.display_name }}{% endif %}</p>{% if ticket.scheduled_for or ticket.schedule_window %}<p>Scheduled {% if ticket.scheduled_for %}{{ ticket.scheduled_for|date:"M j, Y, g:i A" }}{% endif %} {{ ticket.schedule_window }}</p>{% endif %}</header>
+{% for audience in audiences %}{% if audience.unresolved %}<p class="rhp-alert border-danger text-danger"><strong>Unresolved follow-up — needs manager review</strong> · {{ audience.lease.unit.label }}{% if user.is_manager_or_above %} · <a class="rhp-link" href="{% url 'maintenance:action' ticket.public_id 'review-follow-up' %}?audience={{ audience.pk }}">Respond and mark reviewed</a>{% endif %}</p>{% endif %}{% endfor %}
+{% if request_section == "conversations" %}
+{% if audiences|length > 1 %}<form method="get" data-auto-filters class="workspace-filters"><input type="hidden" name="section" value="conversations"><label>Tenancy conversation<select class="rhp-field" name="audience">{% for audience in audiences %}<option value="{{ audience.pk }}" {% if audience.pk == selected_audience.pk %}selected{% endif %}>{{ audience.lease.unit.label }} · {{ audience.lease.tenant_names }} · {{ audience.lease.start_date|date:"M j, Y" }} – {{ audience.lease.end_date|date:"M j, Y" }}</option>{% endfor %}</select></label><button class="rhp-btn rhp-btn-secondary">Open conversation</button></form>{% endif %}
+{% if selected_audience %}<h2 class="text-lg font-semibold">{% if user.is_tenant %}Your tenancy conversation{% else %}Conversation · {{ selected_audience.lease.unit.label }}{% endif %}</h2>{% else %}<p>This request has not been shared with a tenancy.</p>{% endif %}
+{% if selected_audience %}<p class="text-sm text-ink-muted">Lease {{ selected_audience.lease.start_date|date:"M j, Y" }} – {{ selected_audience.lease.end_date|date:"M j, Y" }}</p>{% endif %}
+{% if can_write and selected_audience %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'update' %}{{ audience_query }}">Add update</a>{% endif %}
+{% if user.is_tenant and can_write %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'follow-up' %}{{ audience_query }}">Report unresolved work</a>{% endif %}
+{% if selected_audience %}<details class="workspace-section"><summary class="cursor-pointer font-semibold">Tenant-authorized entry: {{ selected_audience.permission_to_enter|yesno:'Yes,No' }}</summary><p>Recorded by {{ selected_audience.permission_by.display_name }} on {{ selected_audience.permission_at|date:"M j, Y, g:i A" }}</p>{% if can_write %}{% if user.is_tenant or user.is_manager_or_above %}<a class="rhp-link" href="{% url namespace|add:':action' ticket.public_id 'permission' %}{{ audience_query }}">Update entry permission</a>{% endif %}{% endif %}</details>{% endif %}
+{% include "maintenance/conversation.html" %}
+{% elif request_section == "internal" %}<h2 class="text-lg font-semibold">Internal notes — staff only</h2><a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'update' %}?internal=1">Add internal note</a>{% include "maintenance/conversation.html" %}
+{% elif request_section == "work" %}
+<section class="workspace-section space-y-4"><h2 class="text-lg font-semibold">Work details</h2>{% if not user.is_tenant %}<p class="whitespace-pre-wrap">{{ ticket.description }}</p>{% endif %}
+{% if user.is_manager_or_above %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'work' %}">Manage work</a><a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'share' %}">Share with tenancy</a>{% elif user.is_rhp_staff and ticket.status != 'COMPLETED' and ticket.status != 'CLOSED' %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'work' %}">Record progress</a>{% endif %}
+{% if selected_audience and can_write %}{% if user.is_tenant or user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url namespace|add:':action' ticket.public_id 'permission' %}{{ audience_query }}">Update entry permission</a>{% endif %}{% endif %}</section>
+{% include "maintenance/access.html" %}
+{% elif request_section == "costs" %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':action' ticket.public_id 'cost' %}">Record repair expense</a>{% include "maintenance/expenses.html" %}
+{% elif request_section == "history" %}{% include "maintenance/notifications.html" %}<section class="workspace-section"><h2 class="text-lg font-semibold">Administrative history</h2>{% for event in history %}<p class="mt-3">{{ event.summary }} · {{ event.actor.display_name|default:"RHP system" }} · {{ event.created_at|date:"M j, Y, g:i A" }}</p>{% empty %}<p>No administrative changes recorded.</p>{% endfor %}</section>{% endif %}
+{% if milestones %}<details class="workspace-section"><summary class="cursor-pointer font-semibold">Status and entry-permission history</summary>{% include "maintenance/conversation.html" with updates=milestones %}</details>{% endif %}
+<p class="text-sm text-ink-muted">This portal is not an emergency-dispatch service. For immediate danger, call 911.</p>
+</div></div>{% endblock %}

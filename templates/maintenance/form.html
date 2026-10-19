@@ -2,7 +2,7 @@
 {% block title %}{{ title }} · RHP{% endblock %}
 {% block content %}
 <div class="space-y-6">
-  <a class="rhp-link" href="{% if ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">← {% if ticket %}Back to request{% else %}Maintenance{% endif %}</a>
+  <a class="rhp-link" href="{% if back_url %}{{ back_url }}{% elif ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">← {% if ticket %}Back to request{% else %}Maintenance{% endif %}</a>
   <h1 class="text-2xl font-semibold">{{ title }}</h1>
   {% if ticket %}<p>{{ ticket.property.name }}{% if ticket.unit %} · {{ ticket.unit.identifier }}{% endif %} · {{ ticket.title }}</p>{% endif %}
   {% if publication %}<div class="rhp-card border-l-4 border-warning p-4"><p class="font-semibold">This note will become visible to the selected tenancy.</p><p class="whitespace-pre-wrap">{{ publication.body }}</p><p>Other conversations and attachments will not be shared.</p></div>{% endif %}
@@ -31,7 +31,7 @@
       <p>Fill in one row per tenancy. Leave unused rows blank. Reviewing does not post charges; you will confirm them on the next page.</p>
       {% for allocation in formset %}<fieldset class="space-y-3 border-b border-surface-muted pb-5"><legend class="font-semibold">Proposed charge {{ forloop.counter }}</legend>{% include "maintenance/fields.html" with form=allocation %}</fieldset>{% endfor %}
     {% else %}{% include "maintenance/fields.html" %}{% endif %}
-    <div class="flex flex-wrap gap-3"><button class="rhp-btn rhp-btn-primary" type="submit">{{ button }}</button><a class="rhp-btn rhp-btn-secondary" href="{% if ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">Cancel</a></div>
+    <div class="flex flex-wrap gap-3"><button class="rhp-btn rhp-btn-primary" type="submit">{{ button }}</button><a class="rhp-btn rhp-btn-secondary" href="{% if back_url %}{{ back_url }}{% elif ticket %}{% url namespace|add:':detail' ticket.public_id %}{% else %}{% url namespace|add:':list' %}{% endif %}">Cancel</a></div>
   </form>
   </div>
 </div>

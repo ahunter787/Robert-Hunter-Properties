@@ -1,10 +1,7 @@
-{% extends "base.html" %}
+{% extends "management/lease_workspace.html" %}
 {% load rhp_format %}
-
 {% block title %}Lease — {{ lease.unit.label }} — RHP{% endblock %}
-
-{% block content %}
-  <div class="mx-auto w-full max-w-4xl space-y-6">
+{% block lease_content %}
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="rhp-eyebrow">Leasing</p>
@@ -34,6 +31,11 @@
       </div>
     </div>
 
+
+{% if lease_section == "ledger" %}
+{% if lease.needs_onboarding %}<p class="text-sm"><a class="rhp-btn rhp-btn-secondary" href="{% url 'leases:onboard' lease.pk %}" title="Enter earlier charges and payments, or an opening balance.">Set up prior lease activity</a></p>{% endif %}
+{% include "management/lease_ledger_content.html" %}
+{% elif lease_section == "terms" %}
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Terms</h2>
@@ -58,8 +60,8 @@
             <p class="mt-1 text-ink-muted">The financial account is settled and locked. Reopen it before recording a payment or correction.</p>
           {% else %}
             <p class="mt-1 text-ink-muted">
-              The tenancy has ended, but its money is still open: payments and corrections are
-              recorded as normal, and nothing new can be charged on it.
+              Occupancy has ended. The financial account remains open for payments and corrections;
+              new charges are not permitted.
             </p>
           {% endif %}
         </div>
@@ -129,6 +131,8 @@
       {% endwith %}
     {% endif %}
 
+
+{% elif lease_section == "rent" %}
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Rent</h2>
@@ -253,9 +257,9 @@
             {% endif %}
             <span class="text-sm text-ink-muted">
               {% if lease.is_stated %}
-                This lease states its amounts: RHP records what you enter and never invents one.
+                Enter the monthly rent amounts stated in the lease.
               {% else %}
-                Amounts you add by hand are never removed by working the schedule out again.
+                Manual rent amounts are preserved when you regenerate the schedule.
               {% endif %}
             </span>
           </div>
@@ -263,13 +267,15 @@
       {% endif %}
     </section>
 
+
+{% elif lease_section == "tenants" %}
     <section class="rhp-card">
       <h2 class="text-sm font-semibold">Tenants</h2>
       {% if lease.lease_tenants.all %}
         <ul class="mt-3 space-y-2 text-sm">
           {% for link in lease.lease_tenants.all %}
             <li class="flex flex-wrap items-center gap-2">
-              <span class="font-medium">{{ link.tenant.display_name }}</span>
+              {% include "components/tenant_identity.html" with person=link.tenant only %}
               {% if link.is_primary %}
                 <span class="rounded bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Primary contact</span>
               {% endif %}
@@ -288,6 +294,8 @@
       {% endif %}
     </section>
 
+
+{% elif lease_section == "documents" %}
     <section class="rhp-card">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-sm font-semibold">Documents</h2>
@@ -322,53 +330,6 @@
       {% endif %}
     </section>
 
-    <section class="rhp-card">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold">Ledger</h2>
-      </div>
 
-      {% if lease.status == "DRAFT" %}
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          A draft lease has no ledger: its rent and term can still change. Activate the lease and its
-          due rent charges can be posted.
-        </p>
-      {% else %}
-        <div class="mt-4">{% include "components/amounts_due.html" %}</div>
-        {% if ledger.balance_due == 0 %}<p class="mt-2 text-sm text-success">Paid in full</p>{% endif %}
-        {% if ledger.activity %}
-          <ul class="mt-4 divide-y divide-surface-muted text-sm">
-            {% for row in ledger.activity|slice:":5" %}
-              <li class="flex items-center justify-between gap-4 py-2">
-                <span>
-                  <span class="text-ink-muted">{{ row.date|date:"M j, Y" }}</span>
-                  <span class="ml-2">{{ row.label }}</span>
-                </span>
-                <span class="font-medium">
-                  {% if row.amount > 0 %}+{% else %}−{% endif %}{{ row.amount|absolute|money }}
-                </span>
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-            No transactions yet. {% if lease.needs_onboarding %}Set up prior lease activity to begin
-            tracking this account.{% else %}Open the ledger to post due charges or record a payment.{% endif %}
-          </p>
-        {% endif %}
-        <a href="{% url 'ledger:lease-ledger' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">
-          Open the ledger
-        </a>
-      {% endif %}
-    </section>
-
-    {% if lease.status == "ENDED" %}
-      <section class="rhp-card">
-        <h2 class="text-sm font-semibold">History</h2>
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          This lease has ended and is kept as a record. It is no longer editable, so the history stays
-          intact. The ledger above stays open: an ended tenancy can still owe money.
-        </p>
-      </section>
-    {% endif %}
-  </div>
+{% endif %}
 {% endblock %}

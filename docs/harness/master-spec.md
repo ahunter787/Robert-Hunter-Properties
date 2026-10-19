@@ -1266,3 +1266,10 @@ density through three comparable desktop/phone concepts. Keep editable, predomin
 diagrams and print exports in `docs/design/` and scoped copies in Outline Design; use semantic
 color intentionally and preserve grayscale meaning. This approves the study and project diagram
 skill, not a production shell rollout. Owner selection is recorded in the Design decisions.
+
+**E11 application migration approved October 18, 2026:** adopt Operations Desk and its persistent
+sidebar across existing portal capabilities without changing business/security rules. Properties
+is the first owner-review checkpoint (accepted October 18; continuation authorized). Add one optional unit photo, manager-managed and privately
+served to staff/authorized tenancies. Preserve routes, Decimal calculations and immutable history.
+No messaging/accounting/payment-processing feature is included. See `docs/design/implementation.md`.
+Baseline commits/local merge are authorized; redesign commits, push and deployment are not.

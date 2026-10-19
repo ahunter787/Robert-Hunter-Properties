@@ -1,0 +1,12 @@
+<aside class="portal-sidebar" id="portal-sidebar" aria-label="Portal navigation">
+  <a class="portal-brand" href="{% if user.is_tenant %}{% url 'accounts:home' %}{% elif user.is_manager_or_above %}{% url 'manage:home' %}{% else %}{% url 'maintenance:list' %}{% endif %}"><span class="portal-brand-mark">R</span><span>Robert Hunter<br><small>PROPERTIES</small></span></a>
+  <nav aria-label="Primary">
+    {% for item in portal_nav %}
+      <a class="portal-nav-item {% if item.active %}current{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
+      {% if item.key == 'properties' and item.active %}
+        <div class="portal-subnav"><a href="{% url 'portfolio:property-list' %}" {% if not portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All properties</a><a href="{% url 'portfolio:unit-list' %}" {% if portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All units</a></div>
+      {% endif %}
+    {% endfor %}
+  </nav>
+  <div class="portal-utilities"><strong>{{ user.display_name }}</strong><small>{{ user.get_role_display }}</small><a href="{% url 'accounts:profile' %}" {% if portal_active == 'profile' %}aria-current="page"{% endif %}>Profile &amp; account</a>{% if user.is_staff %}<a href="{% url 'admin:index' %}">Site administration</a>{% endif %}<form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sign out</button></form></div>
+</aside>

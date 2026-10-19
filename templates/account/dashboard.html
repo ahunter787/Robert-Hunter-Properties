@@ -4,10 +4,10 @@
 {% block title %}Dashboard — RHP{% endblock %}
 
 {% block content %}
-  {% include "maintenance/summary.html" %}
   <div class="mx-auto w-full max-w-3xl space-y-6">
     <section class="rhp-card py-3">
       {% if lease %}
+        {% include "components/tenant_location_photo.html" %}
         <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 class="text-lg font-semibold tracking-tight">{{ lease.unit.display_name }}</h1>
           <p class="text-sm text-ink-muted">{{ lease.unit.property.name }}</p>
@@ -16,6 +16,7 @@
         <h1 class="text-lg font-semibold tracking-tight">Your account</h1>
       {% endif %}
     </section>
+    {% include "maintenance/summary.html" %}
 
     {% if lease %}
       <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

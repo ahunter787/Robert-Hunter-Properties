@@ -1,0 +1,9 @@
+<header class="location-header">
+{% if user.is_manager_or_above %}
+  {% if ticket.unit.photo %}{% url 'portfolio:unit-photo' ticket.unit_id as image %}{% else %}{% firstof ticket.property.banner_url '' as image %}{% endif %}
+{% elif tenant_location_matches %}
+  {% if ticket.unit.photo %}{% url 'tenant_portfolio:photo' 'unit' as image %}{% elif ticket.property.banner_image %}{% url 'tenant_portfolio:photo' 'property' as image %}{% else %}{% firstof '' as image %}{% endif %}
+{% else %}{% firstof '' as image %}{% endif %}
+{% include "components/location_image.html" with image_url=image image_label=ticket.property.name image_class="request-banner" %}
+<div class="location-header-content"><p class="font-semibold">{{ ticket.property.name }}{% if ticket.unit %} · {{ ticket.unit.identifier }}{% else %} · Property area{% endif %}</p><p>{{ ticket.property.address_line }}</p></div>
+</header>

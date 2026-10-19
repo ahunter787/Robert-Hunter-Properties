@@ -83,7 +83,9 @@ def test_clearing_the_field_removes_the_pin(signed_in):
 def test_the_property_page_embeds_the_map(signed_in):
     property_ = make_property(latitude="45.523100", longitude="-122.676500")
 
-    body = signed_in.get(reverse("portfolio:property-detail", args=[property_.pk])).content.decode()
+    body = signed_in.get(
+        reverse("portfolio:property-detail", args=[property_.pk]), {"section": "details"}
+    ).content.decode()
 
     assert "google.com/maps?q=45.523100,-122.676500" in body
     assert "output=embed" in body
@@ -94,7 +96,9 @@ def test_the_property_page_embeds_the_map(signed_in):
 def test_a_property_without_a_pin_says_so(signed_in):
     property_ = make_property()
 
-    body = signed_in.get(reverse("portfolio:property-detail", args=[property_.pk])).content.decode()
+    body = signed_in.get(
+        reverse("portfolio:property-detail", args=[property_.pk]), {"section": "details"}
+    ).content.decode()
 
     assert "No map pin yet" in body
     assert "<iframe" not in body
@@ -105,7 +109,9 @@ def test_the_embed_api_is_used_when_the_key_is_configured(signed_in, settings):
     settings.GOOGLE_MAPS_EMBED_API_KEY = "unit-test-key"
     property_ = make_property(latitude="45.523100", longitude="-122.676500")
 
-    body = signed_in.get(reverse("portfolio:property-detail", args=[property_.pk])).content.decode()
+    body = signed_in.get(
+        reverse("portfolio:property-detail", args=[property_.pk]), {"section": "details"}
+    ).content.decode()
 
     assert "google.com/maps/embed/v1/place" in body
     assert "key=unit-test-key" in body

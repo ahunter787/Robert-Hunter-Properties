@@ -17,6 +17,10 @@ COMPLETED → CLOSED`), internal notes, and tenant-visible updates. The request 
 
 Implemented and verified on `rhp-7`, accepted for local merge October 18, 2026:
 
+Local `main` now includes the Phase 7 squash commit `6a492b6`. The prototype/design baseline and
+Phase 8 scope-only records are separate commits. No push was performed. Subsequent E11 work is
+on `codex/operations-desk` and remains uncommitted.
+
 - `apps/maintenance` owns physical requests, explicit lease audiences, chronological updates,
   immutable note revisions, private attachments, reusable vendors, append-only costs and corrections,
   recharge links, notification delivery state, and individual immutable delivery-attempt records.

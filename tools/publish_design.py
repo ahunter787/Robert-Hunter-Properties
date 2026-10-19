@@ -21,6 +21,8 @@ NAMES = [
     "publication.md",
     "prototype.md",
     "prototype-revision-02.md",
+    "implementation.md",
+    "prior-activity-calculator.md",
 ]
 
 
@@ -41,6 +43,27 @@ def protect_owner_edits(doc, previous):
     recorded = previous.get("published_text_sha256")
     if recorded and text_hash(doc.get("text", "")) != recorded:
         raise RuntimeError(f"Owner edits need reconciliation before publishing: {doc['title']}")
+
+
+def preserve_migration_notes(text, doc, previous, name):
+    """Keep the reviewed owner appendix in Outline, never copy its private images into git.
+
+    Only the known migration appendix is supported. Any edit to the authored prefix still
+    blocks publishing. Hashes are metadata, not a local copy of the owner's material.
+    """
+    if name != "implementation.md" or "\nAustin Notes:" not in doc.get("text", ""):
+        return text, False
+    current = doc["text"]
+    start = current.index("\nAustin Notes:")
+    marker = "Source record: `docs/design/implementation.md`"
+    end = current.rfind(marker)
+    if end < start or current[end:].strip() != marker:
+        raise RuntimeError("Migration owner-note boundary needs manual reconciliation")
+    authored = current[:start] + "\n\n" + marker
+    expected = previous.get("published_source_text_sha256", previous.get("published_text_sha256"))
+    if not expected or text_hash(authored) != expected:
+        raise RuntimeError("Migration authored content changed; preserve and reconcile it first")
+    return text.replace(marker, current[start:end].strip() + "\n\n" + marker), True
 
 
 def main():
@@ -155,12 +178,17 @@ def main():
             text += "\n\n## Published visual material\n\n"
             for gallery in sorted(galleries, key=lambda d: d["title"]):
                 text += f"- [{gallery['title']}]({origin}{gallery['url']})\n"
+        source_text_hash = text_hash(text)
+        text, preserved_notes = preserve_migration_notes(
+            text, doc, previous.get("documents", {}).get(name, {}), name
+        )
         if canonical(text) != canonical(doc.get("text", "")):
             changed += 1
             if args.verify:
                 raise RuntimeError(f"Design source drift: {name}")
             if args.apply:
-                protect_owner_edits(doc, previous.get("documents", {}).get(name, {}))
+                if not preserved_notes:
+                    protect_owner_edits(doc, previous.get("documents", {}).get(name, {}))
                 api(
                     "documents.update",
                     {"id": doc["id"], "text": text, "title": source.splitlines()[0][2:]},
@@ -172,6 +200,7 @@ def main():
             "url": origin + doc["url"],
             "sha256": hashlib.sha256(source.encode()).hexdigest(),
             "published_text_sha256": text_hash(text),
+            "published_source_text_sha256": source_text_hash,
         }
     assets_file = DESIGN / "outline-assets.json"
     if assets_file.exists() and not args.only:

@@ -2,9 +2,10 @@
 {% block title %}Maintenance · RHP{% endblock %}
 {% block content %}
 <div class="space-y-6">
-  <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="text-2xl font-semibold">Maintenance</h1><div class="flex flex-wrap gap-3">{% if user.is_tenant or user.is_manager_or_above %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':create' %}">Request maintenance</a>{% endif %}{% if user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url 'maintenance:vendors' %}">Vendors</a>{% endif %}</div></div>
+  <div class="flex flex-wrap items-center justify-between gap-3"><h1 class="text-2xl font-semibold">Maintenance</h1><div class="flex flex-wrap gap-3">{% if can_create %}<a class="rhp-btn rhp-btn-primary" href="{% url namespace|add:':create' %}">Request maintenance</a>{% endif %}{% if user.is_manager_or_above %}<a class="rhp-btn rhp-btn-secondary" href="{% url 'maintenance:vendors' %}">Vendors</a>{% endif %}</div></div>
   <p>This portal is not an emergency-dispatch service. For immediate danger, call 911. Contact RHP directly for urgent problems that cannot wait.</p>
-  <form method="get" class="rhp-card grid gap-4 p-4 sm:grid-cols-3">
+  {% if not user.is_tenant %}<form method="get" data-auto-filters class="rhp-card grid gap-4 p-4 sm:grid-cols-3">
+    <label class="rhp-label">Search requests<input class="rhp-input" type="search" name="q" value="{{ search }}" placeholder="Request, property, or unit"></label>
     <label class="rhp-label">Status<select class="rhp-input" name="status"><option value="unresolved" {% if selected == 'unresolved' %}selected{% endif %}>Unresolved work</option><option value="all" {% if selected == 'all' %}selected{% endif %}>All requests</option>{% for value,label in statuses %}<option value="{{ value }}" {% if selected == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
     <label class="rhp-label">Property<select class="rhp-input" name="property"><option value="">All accessible properties</option>{% for property in properties %}<option value="{{ property.pk }}" {% if request.GET.property == property.pk|stringformat:'s' %}selected{% endif %}>{{ property.name }}</option>{% endfor %}</select></label>
     <label class="rhp-label">Priority<select class="rhp-input" name="priority"><option value="">All priorities</option>{% for value,label in priorities %}<option value="{{ value }}" {% if request.GET.priority == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
@@ -14,20 +15,23 @@
     <button class="rhp-btn rhp-btn-secondary" type="submit">Apply filters</button><a class="rhp-link" href="{% url namespace|add:':list' %}">Reset filters</a>
   </form>
   <p class="text-sm text-ink-muted">Highest priority first, then oldest request.</p>
+  {% else %}<h2 class="text-lg font-semibold">{{ rows|length }} active request{{ rows|length|pluralize }}</h2>{% endif %}
   <ul class="space-y-3">
     {% for ticket in rows %}
-      <li class="rhp-card space-y-2 p-4">
+      <li class="maintenance-row {% if ticket.status == 'COMPLETED' or ticket.status == 'CLOSED' %}maintenance-complete{% elif ticket.priority >= 3 %}maintenance-high{% elif ticket.priority == 1 %}maintenance-low{% else %}maintenance-normal{% endif %}">
         <a class="rhp-link text-lg font-semibold" href="{% url namespace|add:':detail' ticket.public_id %}">{{ ticket.title }}</a>
         <p>{{ ticket.property.name }}{% if ticket.unit %} · Unit {{ ticket.unit.identifier }}{% else %} · Property area{% endif %}</p>
         <p>{{ ticket.get_status_display }} · {{ ticket.get_priority_display }} priority · Opened {{ ticket.created_at|date:'M j, Y' }}{% if ticket.assigned_to %} · Assigned to {{ ticket.assigned_to.display_name }}{% endif %}</p>
         {% if ticket.has_follow_up %}<p class="font-semibold text-danger">Unresolved follow-up — needs manager review</p>{% endif %}
       </li>
     {% empty %}
-      <li class="rhp-card p-5">No requests match these filters.
+      <li class="rhp-card p-5">{% if user.is_tenant %}No active requests.{% else %}No requests match these filters.
         <a class="rhp-link" href="{% url namespace|add:':list' %}?status=all">View all accessible requests</a>
-        {% if user.is_tenant or user.is_manager_or_above %} or <a class="rhp-link" href="{% url namespace|add:':create' %}">request maintenance</a>{% endif %}.
+        {% endif %}
+        {% if user.is_manager_or_above %} or <a class="rhp-link" href="{% url namespace|add:':create' %}">request maintenance</a>.{% endif %}
       </li>
     {% endfor %}
   </ul>
+  {% if user.is_tenant %}<details class="workspace-section"><summary class="cursor-pointer font-semibold">Completed history ({{ completed_rows|length }})</summary><ul class="mt-4 space-y-3">{% for ticket in completed_rows %}<li class="maintenance-row maintenance-complete"><a class="rhp-link font-semibold" href="{% url namespace|add:':detail' ticket.public_id %}">{{ ticket.title }}</a><p>{{ ticket.property.name }}{% if ticket.unit %} · {{ ticket.unit.identifier }}{% endif %} · {{ ticket.get_status_display }}</p></li>{% empty %}<li>No completed requests yet.</li>{% endfor %}</ul></details>{% endif %}
 </div>
 {% endblock %}

@@ -44,7 +44,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
 | E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
 | E10 | RHP property accounting — general-ledger style books | Future | — | — |
-| E11 | Design study — Operations desk + persistent sidebar prototype | Building — isolated interactive review | [Prototype guide](design/prototype.md) | prototype only; no rollout |
+| E11 | Operations desk — shared shell and application migration | In main — owner accepted October 19, 2026; local merge authorized | [Implementation](design/implementation.md) | `codex/operations-desk` |
 | E12 | Tenant–RHP messaging (`P8-E1`) — conversations, unread state, protected attachments and email | Approved scope — unbuilt; decisions pending | [Phase 8](phases/phase-08-communications.md) | not started |
 
 ## Milestones

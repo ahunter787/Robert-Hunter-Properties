@@ -31,7 +31,7 @@
     <input type="hidden" name="review" value="{{ review }}">
     <button class="rhp-btn rhp-btn-primary" type="submit" name="confirm" value="yes">Post reviewed charges</button>
     <button class="rhp-btn rhp-btn-secondary" type="submit" name="back" value="yes">Back to allocations</button>
-    <a class="rhp-link" href="{% url 'maintenance:detail' ticket.public_id %}">Cancel without posting</a>
+    <a class="rhp-link" href="{{ back_url }}">Cancel without posting</a>
   </form>
 </div>
 {% endblock %}

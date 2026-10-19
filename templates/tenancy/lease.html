@@ -7,6 +7,7 @@
   <div class="mx-auto w-full max-w-3xl space-y-6">
     {% if lease %}
       <section class="rhp-card">
+        {% include "components/tenant_location_photo.html" %}
         <p class="rhp-eyebrow">Your lease</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.display_name }}</h1>
         <p class="mt-2 text-sm text-ink-muted">

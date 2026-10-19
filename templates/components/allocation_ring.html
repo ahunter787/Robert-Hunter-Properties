@@ -1,0 +1,23 @@
+{% load rhp_format %}
+<section class="allocation-visual" aria-label="Monthly allocation summary">
+  {% if allocation_chart.state == "ready" %}
+  <div class="allocation-ring">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="60" cy="60" r="45" fill="none" stroke="#e5eae6" stroke-width="15"/>
+      {% for segment in allocation_chart.segments %}
+      {% if segment.unit_id and step != "review" %}<a href="#allocation-unit-{{ segment.unit_id }}" tabindex="-1" aria-hidden="true">{% endif %}
+      <circle cx="60" cy="60" r="45" pathLength="100" fill="none" stroke="{{ segment.color }}" stroke-width="15" stroke-dasharray="{{ segment.length }} 100" stroke-dashoffset="{{ segment.offset }}" transform="rotate(-90 60 60)"><title>{{ segment.label }}: {{ segment.amount|money }}</title></circle>
+      {% if segment.unit_id and step != "review" %}</a>{% endif %}
+      {% endfor %}
+    </svg>
+    <div><strong>{{ allocation_chart.total|money }}</strong><span>per month</span></div>
+  </div>
+  <ul class="allocation-legend">
+    {% for segment in allocation_chart.segments %}
+    <li><span class="allocation-swatch" style="background-color: {{ segment.color }}" aria-hidden="true"></span><div>{% if segment.unit_id and step != "review" %}<a href="#allocation-unit-{{ segment.unit_id }}">{{ segment.label }}</a>{% else %}<strong>{{ segment.label }}</strong>{% endif %}<p>{{ segment.amount|money }} · {{ segment.percent|floatformat:2 }}%{% if segment.vacant %} · Vacant, funded by RHP{% endif %}</p></div></li>
+    {% endfor %}
+  </ul>
+  {% elif allocation_chart.state == "over" %}<p role="status" class="text-danger">Allocation exceeds the monthly bill. Correct the amounts to display the allocation ring.</p>
+  {% elif allocation_chart.state == "zero" %}<p>No monthly amount to allocate.</p>
+  {% else %}<p>Correct the allocation fields to display the allocation ring.</p>{% endif %}
+</section>

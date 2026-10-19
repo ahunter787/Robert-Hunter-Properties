@@ -116,5 +116,8 @@ def test_a_property_panel_does_not_leak_another_propertys_tenants(signed_in):
 
     body = signed_in.get(reverse("portfolio:property-detail", args=[mine.pk])).content.decode()
 
-    assert "Mine" in body
-    assert "Theirs" not in body
+    # The manager's portfolio navigator legitimately includes other property names.
+    # The selected record's content must still be scoped to this property.
+    record = body.split('class="properties-content"', 1)[1]
+    assert "Mine" in record
+    assert "Theirs" not in record

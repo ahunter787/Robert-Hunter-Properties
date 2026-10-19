@@ -44,12 +44,24 @@ Rules:
    record (ADR-005). Managers can take a property or unit out of service but cannot delete it, and a
    property with units cannot be deleted at all: `on_delete=PROTECT` makes that a database refusal
    rather than a UI convention.
+   Empty-property deletion additionally requires the exact typed phrase `confirm delete`, validated
+   on the server. The normal removal action is taking the property out of service; neither that
+   action nor this presentation migration deletes its units, lease history, or financial entries.
 8. **Operations are not site administration.** Managers can create/invite tenant accounts, maintain
    tenant details and activate/deactivate them. Role changes, Django administration, site configuration
    and destructive deletion remain administrator duties. Maintenance workers cannot use tenant-account
    administration or read general portfolio documents; their access is assigned-request context only.
 
 ## Identifiers and enumeration
+
+E11 request sections do not widen access: conversation IDs must belong to the authorized UUID
+request and, for tenants, their own audiences. Internal notes and administrative/financial sections
+are rejected server-side when forbidden. Tenant write controls resolve the selected tenancy's current
+occupancy; another current tenancy does not make a former tenancy writable. Historical request
+headers use a location icon if the existing own-tenancy photo endpoint refers to a different lease.
+Workers get no general portfolio-photo URL. Maintenance milestones are scoped existing updates,
+never a tenant rendering of raw audit records. Account sections retain the existing manager gate,
+with role changes still superadmin-only.
 
 Maintenance routes use UUID public identifiers. Managers see the portfolio; employees see
 assigned requests only. Tenant visibility is an explicit tenancy audience, never inferred
@@ -72,6 +84,14 @@ exists. The old "no id in the URL" lease-document view is gone: the lease is now
 many, so the general case cannot keep that shape.
 
 ## Uploads
+
+E11 adds one optional unit photo. Only managers/admins write it through the validated unit form;
+the Django admin excludes this field. Staff reads use `/manage/units/<pk>/photo/` and require a
+manager role. Tenant reads use `/lease/location-photo/unit/` or `…/property/`, resolving only the
+same authorized non-draft lease shown by the tenant portal (current, otherwise latest).
+There is no tenant-submitted unit id and no worker portfolio-photo access. Files remain private,
+randomly named, JPEG/PNG/WebP under existing upload/dimension limits. Replaced/removed unit photos
+are deleted after commit, and failed portal writes clean up new bytes. Missing files return 404.
 
 A document has a readable `title` independent of its randomized storage path, and keeps the name it was
 uploaded with in `original_name` (`apps/documents/models.py`). Staff supply the title; when it is blank

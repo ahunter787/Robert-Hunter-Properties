@@ -10,6 +10,8 @@ A private local prototype may use a read-only development-data snapshot; never p
 
 ## Study index
 
+- [Application migration — implemented, final owner acceptance pending](implementation.md)
+- [Prior lease activity calculator — separate scoped proposal](prior-activity-calculator.md)
 - [Operations Desk interactive prototype and review guide](prototype.md)
 - [Design principles and visual language](principles.md)
 - [Current-interface audit and case study](case-study.md)

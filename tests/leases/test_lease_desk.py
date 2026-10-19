@@ -341,7 +341,9 @@ def test_the_list_can_show_leases_ending_soon(signed_in):
 def test_a_lease_with_no_document_offers_no_link(signed_in):
     lease = make_lease(make_unit(), tenants=[make_tenant(username="ada")])
 
-    body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    body = signed_in.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "documents"}
+    ).content.decode()
 
     assert "Nothing filed against this tenancy yet" in body
     assert "View lease" not in body
@@ -354,11 +356,16 @@ def test_the_detail_page_lists_the_tenants(signed_in):
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
     assert "Ada One" in body
-    assert "Primary contact" in body
-    assert "$1,850.00" in body
-    assert "1st of every month" in body
-    # The ledger panel is real from Phase 4 on: this lease has nothing charged yet.
-    assert "Ledger" in body
+    tenants = signed_in.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "tenants"}
+    ).content.decode()
+    assert "Primary contact" in tenants
+    terms = signed_in.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "terms"}
+    ).content.decode()
+    assert "$1,850.00" in terms
+    assert "1st of every month" in terms
+    assert "Transactions" in body
     assert "No transactions yet" in body
 
 

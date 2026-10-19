@@ -32,6 +32,7 @@ urlpatterns = [
     path("units/", views.UnitListView.as_view(), name="unit-list"),
     path("units/new/", views.UnitCreateView.as_view(), name="unit-create"),
     path("units/<int:pk>/", views.UnitDetailView.as_view(), name="unit-detail"),
+    path("units/<int:pk>/photo/", views.UnitPhotoView.as_view(), name="unit-photo"),
     path("units/<int:pk>/edit/", views.UnitUpdateView.as_view(), name="unit-update"),
     path(
         "units/<int:pk>/toggle-active/",

@@ -1,0 +1,9 @@
+  {% if user.is_manager_or_above %}
+  <section class="rhp-card space-y-4 p-5" aria-labelledby="cost-heading"><h2 id="cost-heading" class="text-lg font-semibold">Repair expenses — managers only</h2><p>Total recorded expenses: ${{ total|floatformat:2 }}. Expenses do not automatically create tenant charges.</p>
+    {% for cost in costs %}<article class="space-y-2 border-t border-surface-muted pt-4"><h3 class="font-semibold">{{ cost.description }}</h3><p>{{ cost.incurred_on|date:'M j, Y' }} · ${{ cost.net_amount|floatformat:2 }}{% if cost.vendor %} · {{ cost.vendor.name }}{% endif %} · {{ cost.reference }}</p>
+    {% include "maintenance/attachments.html" with attachments=cost.attachments.all %}
+    {% for correction in cost.corrections.all %}<div class="pl-4"><p>Correction {{ correction.incurred_on|date:'M j, Y' }}: ${{ correction.effect|floatformat:2 }} · {{ correction.reason }} · {{ correction.actor.display_name }}</p>{% include "maintenance/attachments.html" with attachments=correction.attachments.all %}</div>{% endfor %}
+    <p>Net tenant charges posted: ${{ cost.recharged|floatformat:2 }}</p><a class="rhp-link" href="{% url 'maintenance:recharge' ticket.public_id cost.pk %}">Prepare tenant recharge</a>
+    {% for recharge in cost.recharges.all %}<p><a class="rhp-link" href="{% url 'ledger:lease-ledger' recharge.lease_id %}">Lease ledger · {{ recharge.lease.unit.label }}</a> · Charge #{{ recharge.charge_id }}</p>{% endfor %}</article>{% empty %}<p>No repair expenses recorded. Use “Record repair expense” when an invoice or receipt is available.</p>{% endfor %}
+  </section>
+  {% endif %}

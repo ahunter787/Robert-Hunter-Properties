@@ -122,10 +122,34 @@ publishes build output.
 
 ## Design language
 
-The owner-approved [E11 design study](design/README.md) evaluates role-aware navigation and
-information density without changing this production shell. Sources and printable vector
+The owner-approved [E11 application migration](design/implementation.md) replaces the shared shell
+and Properties first, with owner review before other record layouts. Sources and printable vector
 artifacts live under `docs/design/`, with scoped review copies in Outline's Design collection.
 The project diagram skill is development tooling only; no new application dependency is added.
+
+Navigation context is validated URL/session state, never authorization. Properties retains a
+property/unit navigator and scoped sections. Optional unit photos use existing validation,
+randomized storage and permission-checked views. Tenant images resolve the same visible lease
+as the tenant portal, never a submitted unit id. Old unit images are removed after commit;
+failed writes clean up newly stored bytes.
+
+The owner accepted Properties and approved continuing E11. Lease records now have a local
+section navigator, with the financial workspace as the default and Terms, Rent schedule, Tenants
+and Documents as addressable sections. The lease and ledger routes share one transaction-content
+template and the existing ledger service; no parallel balance or correction arithmetic exists.
+Allocation SVG geometry is derived from the authoritative worksheet using Decimal; stable unit
+identity chooses colors shared by ring segments, legend and fields. Invalid/over-allocated and
+zero bills do not display a valid-looking percentage ring. Colors supplement numeric labels.
+
+The remaining E11 records use a small shared section-navigation projection. Accounts resolve their
+own lease memberships; no cross-lease balance is introduced. Maintenance first authorizes the UUID
+request, then validates conversation Audience IDs within that request and the actor's scope. A selected
+former tenancy never borrows another membership's write eligibility. Work/status displays project
+existing Update kinds; no history is parsed into new records. Repair costs, delivery and raw audit
+summaries remain manager-only, and workers receive no general location-photo endpoint. Recovery
+navigation validates property/unit context against the cycle; operational calculator services remain
+unchanged. Document property filters include lease-linked records, with unit context independently
+validated. Query parameters remain navigation state, not authorization.
 
 Professional property-management portal, not a SaaS marketing site: warm neutral surfaces, charcoal
 text, restrained forest-green primary, muted gray structure, generous whitespace, restrained cards,

@@ -226,13 +226,15 @@ def test_only_superadmin_sees_the_role_control(client):
     tenant = make_tenant(username="role-view-target")
 
     client.force_login(make_admin(username="admin-role-view"))
-    admin_body = client.get(reverse("manage:account-detail", args=[tenant.pk])).content.decode()
+    admin_body = client.get(
+        reverse("manage:account-detail", args=[tenant.pk]), {"section": "access"}
+    ).content.decode()
     assert "Change role" not in admin_body
     assert "Only a superadmin can change roles." in admin_body
 
     client.force_login(make_superadmin(username="superadmin-role-view"))
     superadmin_body = client.get(
-        reverse("manage:account-detail", args=[tenant.pk])
+        reverse("manage:account-detail", args=[tenant.pk]), {"section": "access"}
     ).content.decode()
     assert "Change role" in superadmin_body
 

@@ -5,11 +5,23 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 
-from apps.common.forms import StyledModelForm
+from apps.common.forms import StyledForm, StyledModelForm
 from apps.common.images import validate_image_upload
 from apps.properties.constants import PropertyType
 from apps.properties.locations import parse_coordinates
 from apps.properties.models import Amenity, Property, Unit
+
+
+class PropertyDeleteConfirmationForm(StyledForm):
+    confirmation = forms.CharField(
+        label='Type "confirm delete" to permanently delete this property'
+    )
+
+    def clean_confirmation(self):
+        value = self.cleaned_data["confirmation"]
+        if value != "confirm delete":
+            raise ValidationError('Type "confirm delete" exactly to continue.')
+        return value
 
 
 class PropertyForm(StyledModelForm):
@@ -22,11 +34,6 @@ class PropertyForm(StyledModelForm):
             "Paste a Google Maps link that contains the pin, or a pair such as "
             "45.5231, -122.6765. Leave blank to remove the pin."
         ),
-    )
-    remove_banner = forms.BooleanField(
-        required=False,
-        label="Remove the current banner photo",
-        help_text="Uploading a new photo replaces the current one.",
     )
 
     class Meta:
@@ -44,9 +51,12 @@ class PropertyForm(StyledModelForm):
             "is_active",
         ]
         labels = {"is_active": "In service", "banner_image": "Banner photo"}
+        widgets = {"banner_image": forms.FileInput()}
         help_texts = {
             "is_active": "Uncheck to retire the property without losing its history.",
-            "banner_image": "JPEG, PNG, or WebP. Shown as the header image on the property page.",
+            "banner_image": (
+                "JPEG, PNG, or WebP. A new photo replaces the current banner when you save."
+            ),
         }
 
     def __init__(self, *args, **kwargs):
@@ -55,9 +65,6 @@ class PropertyForm(StyledModelForm):
             self.fields[
                 "coordinates"
             ].initial = f"{self.instance.latitude}, {self.instance.longitude}"
-        if not self.instance.pk:
-            # Nothing to remove before the first save.
-            self.fields.pop("remove_banner")
 
     def clean_name(self) -> str:
         name = " ".join(self.cleaned_data["name"].split())
@@ -111,25 +118,19 @@ class PropertyForm(StyledModelForm):
         except ValidationError as error:
             self.add_error("coordinates", error)
 
-        # Only a *fresh* upload conflicts with removal: on an edit form the field
-        # still holds the file already on disk, which is truthy.
-        if cleaned.get("remove_banner") and self.files.get("banner_image"):
-            self.add_error(
-                "remove_banner", "Keep the new photo, or tick this to remove the current one."
-            )
         return cleaned
 
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.latitude, instance.longitude = self.cleaned_data.get("coordinates") or (None, None)
-        if self.cleaned_data.get("remove_banner"):
-            instance.banner_image = None
         if commit:
             instance.save()
         return instance
 
 
 class UnitForm(StyledModelForm):
+    remove_photo = forms.BooleanField(required=False, label="Remove the current unit photo")
+
     class Meta:
         model = Unit
         fields = [
@@ -139,9 +140,11 @@ class UnitForm(StyledModelForm):
             "bedrooms",
             "bathrooms",
             "amenities",
+            "photo",
             "is_active",
         ]
         labels = {"is_active": "In service"}
+        widgets = {"photo": forms.FileInput()}
         help_texts = {
             "is_active": "Uncheck for a unit that is out of service.",
             "bedrooms": "Residential properties only.",
@@ -170,6 +173,25 @@ class UnitForm(StyledModelForm):
             )
         self.fields["amenities"].queryset = offered.order_by("name")
         self.fields["amenities"].label = "Amenities"
+        self.fields[
+            "photo"
+        ].help_text = "JPEG, PNG, or WebP. A new upload replaces the current photo."
+        if not self.instance.pk:
+            self.fields.pop("remove_photo")
+
+    def clean_photo(self):
+        return validate_image_upload(
+            self.cleaned_data.get("photo"), max_bytes=settings.RHP_MAX_UPLOAD_MB * 1024 * 1024
+        )
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if self.cleaned_data.get("remove_photo"):
+            instance.photo = None
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
     def clean_identifier(self) -> str:
         identifier = " ".join(self.cleaned_data["identifier"].split())
@@ -181,6 +203,10 @@ class UnitForm(StyledModelForm):
         cleaned = super().clean()
 
         property_ = cleaned.get("property")
+        if cleaned.get("remove_photo") and self.files.get("photo"):
+            self.add_error(
+                "remove_photo", "Choose a new photo or remove the current photo, not both."
+            )
         identifier = cleaned.get("identifier")
         if property_ and identifier:
             clash = Unit.objects.filter(property=property_, identifier=identifier)

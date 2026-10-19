@@ -5,16 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}RHP — Robert Hunter Properties{% endblock %}</title>
     <meta name="description" content="{% block description %}Robert Hunter Properties tenant and management portal.{% endblock %}">
-    <link rel="stylesheet" href="{% static 'css/rhp.css' %}?v=20261014">
+    <link rel="stylesheet" href="{% static 'css/rhp.css' %}?v=20261019-final">
     {# Vendored, not built: the share calculator asks the server to recompute as you type. #}
     <script src="{% static 'js/htmx.min.js' %}?v=2.0.4" defer></script>
+    <script src="{% static 'js/portal.js' %}?v=20261019-final" defer></script>
   </head>
-  <body class="flex min-h-full flex-col overflow-x-hidden bg-surface font-sans text-ink antialiased">
+  <body class="min-h-full bg-surface font-sans text-ink antialiased {% if portal_shell %}portal-shell{% else %}public-shell{% endif %}">
     <a href="#main" class="rhp-skip-link">Skip to content</a>
 
-    {% include "components/nav.html" %}
+    {% if portal_shell %}
+      {% include "components/sidebar.html" %}
+      <div class="portal-workspace">
+        <header class="portal-topbar"><button type="button" class="portal-menu rhp-btn rhp-btn-secondary" aria-controls="portal-sidebar" aria-expanded="false">Menu</button><span>Robert Hunter Properties</span><span class="text-ink-muted">{{ user.get_role_display }}</span></header>
+    {% else %}{% include "components/nav.html" %}{% endif %}
 
-    <main id="main" class="mx-auto w-full max-w-5xl grow px-4 py-8 sm:px-6 lg:py-12">
+    <main id="main" tabindex="-1" class="portal-main {% if not portal_shell %}mx-auto max-w-5xl{% endif %}">
       {% if messages %}
         <div class="mb-6 space-y-3">
           {% for message in messages %}
@@ -27,6 +32,7 @@
     </main>
 
     {% include "components/footer.html" %}
+    {% if portal_shell %}</div>{% endif %}
     {% block scripts %}{% endblock %}
   </body>
 </html>

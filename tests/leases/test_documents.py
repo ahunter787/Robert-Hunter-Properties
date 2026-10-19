@@ -33,7 +33,9 @@ def test_the_tenancys_page_lists_what_is_filed_against_it(as_manager):
     make_document(title="Signed lease", lease=lease, category=DocumentCategory.LEASE)
     make_document(title="November notice", lease=lease, category=DocumentCategory.NOTICE)
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    body = as_manager.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "documents"}
+    ).content.decode()
 
     assert "Signed lease" in body
     assert "November notice" in body
@@ -46,7 +48,9 @@ def test_the_tenancys_page_marks_which_documents_the_tenant_can_see(as_manager):
     make_document(title="Signed lease", lease=lease, tenant_visible=True)
     make_document(title="Internal valuation", lease=lease, tenant_visible=False)
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    body = as_manager.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "documents"}
+    ).content.decode()
 
     assert "The tenant can see it" in body
     assert "Office only" in body
@@ -55,7 +59,9 @@ def test_the_tenancys_page_marks_which_documents_the_tenant_can_see(as_manager):
 def test_the_tenancys_page_says_so_when_nothing_is_filed(as_manager):
     _, lease = a_tenancy()
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    body = as_manager.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "documents"}
+    ).content.decode()
 
     assert "Nothing filed against this tenancy yet" in body
 
@@ -64,7 +70,9 @@ def test_the_document_has_its_own_place_on_the_page_not_the_storage_path(as_mana
     _, lease = a_tenancy()
     document = make_document(title="Signed lease", lease=lease, file_name="scan-0001.pdf")
 
-    body = as_manager.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+    body = as_manager.get(
+        reverse("leases:lease-detail", args=[lease.pk]), {"section": "documents"}
+    ).content.decode()
 
     assert reverse("documents:download", args=[document.pk]) in body
     assert document.file.name not in body, "the private path is never shown"

@@ -1,16 +1,13 @@
-{% extends "base.html" %}
+{% extends "management/properties_workspace.html" %}
 
 {% block title %}Units — RHP{% endblock %}
 
-{% block content %}
+{% block workspace_content %}
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
         <p class="rhp-eyebrow">Portfolio</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">Units</h1>
-        <p class="mt-2 text-sm text-ink-muted">
-          Grouped by property, because that is how the portfolio is read.
-        </p>
       </div>
       <a href="{% url 'portfolio:unit-create' %}" class="rhp-btn rhp-btn-primary">New unit</a>
     </div>
@@ -90,7 +87,7 @@
                 <tbody class="divide-y divide-surface-muted">
                   {% for unit in property.listed_units %}
                     <tr>
-                      <td class="py-3 pr-4 font-medium">{{ unit.identifier }}</td>
+                      <td class="py-3 pr-4 font-medium"><a class="person-link" href="{{ unit.workspace_url }}">{% if unit.photo %}{% url 'portfolio:unit-photo' unit.pk as image_url %}{% else %}{% firstof '' as image_url %}{% endif %}{% include "components/location_image.html" with image_url=image_url image_label=unit.identifier %}<span>{{ unit.identifier }}</span></a></td>
                       <td class="py-3 pr-4">
                         {% if unit.square_feet %}{{ unit.square_feet }} sq ft{% else %}—{% endif %}
                       </td>
@@ -108,7 +105,7 @@
                         {% endif %}
                       </td>
                       <td class="py-3 text-right">
-                        <a href="{% url 'portfolio:unit-detail' unit.pk %}"
+                        <a href="{{ unit.workspace_url }}"
                            class="font-medium text-primary underline-offset-2 hover:underline">Open</a>
                       </td>
                     </tr>

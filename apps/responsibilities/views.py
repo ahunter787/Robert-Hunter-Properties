@@ -13,13 +13,15 @@ from django.contrib import messages
 from django.core import signing
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views import View
 
 from apps.accounts.permissions import ManagerRequiredMixin
 from apps.leases.models import Lease
 from apps.ledger.models import Charge
-from apps.properties.models import Property
+from apps.properties.models import Property, Unit
 from apps.responsibilities import services
 from apps.responsibilities.forms import CycleForm, ResponsibilityForm, SharesForm
 from apps.responsibilities.models import (
@@ -27,6 +29,7 @@ from apps.responsibilities.models import (
     ResponsibilityCycle,
     ResponsibilityShare,
 )
+from apps.responsibilities.presentation import allocation_chart, unit_color
 
 logger = logging.getLogger("apps.responsibilities")
 
@@ -68,6 +71,60 @@ def _refuse_locked(request, cycle) -> bool:
     return True
 
 
+class ResponsibilityOverviewView(ManagerRequiredMixin, View):
+    def get(self, request):
+        properties = Property.objects.order_by("name")
+        property_obj = None
+        rows = []
+        if raw := request.GET.get("property"):
+            if not raw.isdigit():
+                from django.http import Http404
+
+                raise Http404
+            property_obj = get_object_or_404(properties, pk=raw)
+        if request.GET.get("unit"):
+            if not request.GET["unit"].isdigit():
+                from django.http import Http404
+
+                raise Http404
+            get_object_or_404(Unit, pk=request.GET["unit"], property=property_obj)
+        if property_obj:
+            for responsibility in property_obj.responsibilities.all():
+                cycles = list(
+                    responsibility.cycles.prefetch_related("shares__unit").order_by(
+                        "-starts_on", "-pk"
+                    )
+                )
+                for cycle in cycles:
+                    cycle.posted = services.cycle_is_locked(cycle)
+                rows.append({"responsibility": responsibility, "cycles": cycles})
+        return render(
+            request,
+            "management/recovery_overview.html",
+            {
+                "properties": properties,
+                "selected_property": property_obj,
+                "recovery_rows": rows,
+            },
+        )
+
+
+def recovery_return_url(request, property_obj):
+    if request.GET.get("workspace") == "recoveries":
+        return reverse("responsibilities:overview") + f"?property={property_obj.pk}"
+    return reverse("portfolio:property-detail", args=[property_obj.pk]) + "?section=recoveries"
+
+
+def validate_recovery_context(request, responsibility):
+    raw = request.GET.get("property")
+    if raw is not None and raw != str(responsibility.property_id):
+        raise Http404
+    if raw := request.GET.get("unit"):
+        if not raw.isdigit():
+            raise Http404
+        get_object_or_404(Unit, pk=raw, property_id=responsibility.property_id)
+
+
 class ResponsibilityCreateView(ManagerRequiredMixin, View):
     """Add a responsibility to a property."""
 
@@ -105,7 +162,7 @@ class ResponsibilityCreateView(ManagerRequiredMixin, View):
                     f"{responsibility.label} added to {property_obj.name}. Enter its first bill "
                     "when the amount is known.",
                 )
-                return redirect("portfolio:property-detail", pk=property_obj.pk)
+                return redirect(recovery_return_url(request, property_obj))
 
         return render(
             request,
@@ -149,7 +206,7 @@ class ResponsibilityUpdateView(ManagerRequiredMixin, View):
                 form.add_error(None, _explain(exc))
             else:
                 messages.success(request, f"{responsibility.label} updated.")
-                return redirect("portfolio:property-detail", pk=responsibility.property_id)
+                return redirect(recovery_return_url(request, responsibility.property))
 
         return render(
             request,
@@ -233,8 +290,10 @@ class AllocationWorkflow(ManagerRequiredMixin, View):
     def objects(self, pk):
         if self.new_bill:
             responsibility = _responsibility(pk)
+            validate_recovery_context(self.request, responsibility)
             return responsibility, None
         cycle = _cycle(pk)
+        validate_recovery_context(self.request, cycle.responsibility)
         return cycle.responsibility, cycle
 
     def get(self, request, pk):
@@ -297,6 +356,9 @@ class AllocationWorkflow(ManagerRequiredMixin, View):
         else:
             review_rows = []
         vacancy = sum((r["amount"] for r in review_rows if r["vacant"]), Decimal("0.00"))
+        form_rows = _rows(allocation, saved) if allocation else []
+        for row in form_rows:
+            row["color"] = unit_color(row["unit"].pk)
         return render(
             request,
             self.template_name,
@@ -307,7 +369,8 @@ class AllocationWorkflow(ManagerRequiredMixin, View):
                 "new_bill": self.new_bill,
                 "bill": bill,
                 "allocation": allocation,
-                "rows": _rows(allocation, saved) if allocation else [],
+                "rows": form_rows,
+                "allocation_chart": allocation_chart(worksheet, review_rows),
                 "worksheet": worksheet,
                 "review_rows": review_rows,
                 "rhpshare": worksheet.left + vacancy if worksheet else None,
@@ -319,6 +382,7 @@ class AllocationWorkflow(ManagerRequiredMixin, View):
                 "review_token": review_token,
                 "locked": locked,
                 "draft": draft,
+                "back_url": recovery_return_url(request, responsibility.property),
             },
         )
 
@@ -457,7 +521,7 @@ class AllocationWorkflow(ManagerRequiredMixin, View):
                     f"{responsibility.label} allocation saved for {responsibility.property.name}. "
                     "No tenant charges were posted.",
                 )
-                return redirect("portfolio:property-detail", pk=responsibility.property_id)
+                return redirect(recovery_return_url(request, responsibility.property))
         if allocation.worksheet and action != "save":
             # Render the canonical pair, never a stale dollar field beside a new percentage.
             data = allocation.data.copy()

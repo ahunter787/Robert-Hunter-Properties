@@ -2,17 +2,20 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from django.forms import formset_factory
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.audit.models import AuditEvent
 from apps.common.files import document_response
 from apps.properties.models import Property
 
@@ -28,6 +31,7 @@ from .models import (
     Update,
     Vendor,
 )
+from .workspace import request_workspace
 
 
 def area(request):
@@ -51,11 +55,46 @@ def scoped(request, public_id):
 
 
 def context(request, obj=None, **extra):
-    return {"namespace": area(request), "ticket": obj, **extra}
+    result = {"namespace": area(request), "ticket": obj, **extra}
+    if obj:
+        action = request.resolver_match.kwargs.get("action", "")
+        section = {"work": "work", "permission": "work", "share": "work", "cost": "costs"}.get(
+            action, "conversations"
+        )
+        if request.resolver_match.url_name == "recharge":
+            section = "costs"
+        elif request.resolver_match.url_name == "retry":
+            section = "history"
+        if request.GET.get("internal") == "1" and not request.user.is_tenant:
+            section = "internal"
+        params = {"section": section}
+        if source := extra.get("source_update"):
+            source_audience = obj.audiences.filter(lease_id=source.lease_id).first()
+            params["section"] = "conversations" if source_audience else "internal"
+            if source_audience:
+                params["audience"] = source_audience.pk
+        raw = request.GET.get("audience", "")
+        if raw.isdigit():
+            rows = obj.audiences.all()
+            if request.user.is_tenant:
+                rows = rows.filter(lease__lease_tenants__tenant=request.user)
+            if rows.filter(pk=raw).exists():
+                params["audience"] = raw
+        result["back_url"] = (
+            reverse(f"{area(request)}:detail", args=[obj.public_id]) + "?" + urlencode(params)
+        )
+    return result
 
 
-def done(request, ticket, message):
+def done(request, ticket, message, *, section=None, audience=None):
     messages.success(request, message)
+    if section:
+        params = {"section": section}
+        if audience:
+            params["audience"] = audience.pk
+        return redirect(
+            reverse(f"{area(request)}:detail", args=[ticket.public_id]) + "?" + urlencode(params)
+        )
     return redirect(f"{area(request)}:detail", public_id=ticket.public_id)
 
 
@@ -66,12 +105,12 @@ def index(request):
         "property", "unit", "assigned_to"
     )
     selected = request.GET.get("status", "unresolved")
+    if selected not in {"all", "unresolved", *Status.values}:
+        selected = "unresolved"
     flagged = Audience.objects.filter(unresolved=True)
     if request.user.is_tenant:
         flagged = flagged.filter(lease__lease_tenants__tenant=request.user)
     if selected == "unresolved":
-        from django.db.models import Q
-
         rows = rows.filter(
             ~Q(status__in=[Status.COMPLETED, Status.CLOSED])
             | Q(pk__in=flagged.values("request_id"))
@@ -97,6 +136,22 @@ def index(request):
     rows = rows.annotate(has_follow_up=Exists(flagged.filter(request_id=OuterRef("pk"))))
     # Never populate filters from unrestricted rows for a worker or tenant.
     visible = MaintenanceRequest.objects.visible_to(request.user)
+    search = request.GET.get("q", "").strip()[:200]
+    if search:
+        rows = rows.filter(
+            Q(title__icontains=search)
+            | Q(property__name__icontains=search)
+            | Q(unit__identifier__icontains=search)
+        )
+    completed_rows = []
+    if request.user.is_tenant:
+        # A tenancy's own simple queue, not the staff's portfolio filter interface.
+        rows = visible.exclude(status__in=[Status.COMPLETED, Status.CLOSED]).select_related(
+            "property", "unit", "assigned_to"
+        )
+        completed_rows = visible.filter(
+            status__in=[Status.COMPLETED, Status.CLOSED]
+        ).select_related("property", "unit")
     return render(
         request,
         "maintenance/index.html",
@@ -108,6 +163,15 @@ def index(request):
             properties=Property.objects.filter(pk__in=visible.values("property_id")),
             assignees=User.objects.filter(pk__in=visible.values("assigned_to_id")),
             selected=selected,
+            search=search,
+            completed_rows=completed_rows,
+            can_create=request.user.is_manager_or_above
+            or (
+                request.user.is_tenant
+                and services.Lease.objects.current()
+                .filter(lease_tenants__tenant=request.user)
+                .exists()
+            ),
         ),
     )
 
@@ -195,6 +259,20 @@ def detail(request, public_id):
     audiences = ticket.audiences.select_related("lease__unit__property", "permission_by")
     if request.user.is_tenant:
         audiences = audiences.filter(lease__lease_tenants__tenant=request.user).distinct()
+    workspace = request_workspace(request, ticket, audiences)
+    selected = workspace["selected_audience"]
+    if workspace["request_section"] == "internal":
+        updates = updates.filter(lease__isnull=True)
+    else:
+        updates = updates.filter(lease_id=selected.lease_id) if selected else updates.none()
+    milestones = updates.filter(kind__in=["STATUS", "PERMISSION"])
+    updates = updates.exclude(kind__in=["STATUS", "PERMISSION"])
+    tenant_location_matches = False
+    if request.user.is_tenant and selected:
+        from apps.leases.views import visible_lease_for
+
+        visible = visible_lease_for(request.user)
+        tenant_location_matches = bool(visible and visible.pk == selected.lease_id)
     costs, notices, total = [], [], Decimal("0.00")
     if request.user.is_manager_or_above:
         costs = list(
@@ -218,12 +296,19 @@ def detail(request, public_id):
             request,
             ticket,
             updates=updates,
-            audiences=audiences,
             costs=costs,
             total=total,
             notices=notices,
-            can_write=not request.user.is_tenant
-            or audiences.filter(lease__in=services.Lease.objects.current()).exists(),
+            milestones=milestones,
+            tenant_location_matches=tenant_location_matches,
+            history=AuditEvent.objects.filter(
+                object_type="maintenance.MaintenanceRequest", object_id=ticket.pk
+            )
+            .select_related("actor")
+            .order_by("-created_at", "-pk")[:50]
+            if request.user.is_manager_or_above
+            else [],
+            **workspace,
         ),
     )
 
@@ -279,6 +364,17 @@ def action(request, public_id, action):
             },
         }
     form = cls(request.POST or None, request.FILES or None, **kwargs)
+    if not form.is_bound and action in ("update", "follow-up", "review-follow-up"):
+        audience_id = request.GET.get("audience")
+        if audience_id is not None:
+            audience = (
+                get_object_or_404(form.fields["audience"].queryset, pk=audience_id)
+                if audience_id.isdigit()
+                else None
+            )
+            if audience is None:
+                raise Http404
+            form.initial["audience"] = audience.pk
     if action in ("follow-up", "review-follow-up"):
         del form.fields["files"]
         form.fields["audience"].required = True
@@ -331,7 +427,17 @@ def action(request, public_id, action):
                 "review-follow-up": "Response sent and follow-up marked reviewed",
                 "cost": f"Repair expense of ${data.get('amount', Decimal('0')):,.2f} recorded",
             }[action]
-            return done(request, ticket, f"{completed} for “{ticket.title}”.")
+            audience = data.get("audience")
+            section = {"work": "work", "permission": "work", "share": "work", "cost": "costs"}.get(
+                action, "conversations" if audience else "internal"
+            )
+            return done(
+                request,
+                ticket,
+                f"{completed} for “{ticket.title}”.",
+                section=section,
+                audience=audience,
+            )
         except ValidationError as error:
             form.add_error(None, error)
     return render(
@@ -380,7 +486,18 @@ def update_action(request, public_id, pk, operation):
                 )
             else:
                 services.edit_update(update, actor=request.user, **form.cleaned_data)
-            return done(request, ticket, f"{title} completed for “{ticket.title}”.")
+            audience = (
+                form.cleaned_data["audience"]
+                if operation == "publish"
+                else ticket.audiences.filter(lease_id=update.lease_id).first()
+            )
+            return done(
+                request,
+                ticket,
+                f"{title} completed for “{ticket.title}”.",
+                section="conversations" if audience else "internal",
+                audience=audience,
+            )
         except ValidationError as error:
             form.add_error(None, error)
     return render(
@@ -393,6 +510,7 @@ def update_action(request, public_id, pk, operation):
             title=title,
             button=button,
             publication=update if operation == "publish" else None,
+            source_update=update,
         ),
     )
 
@@ -442,6 +560,7 @@ def recharge(request, public_id, pk):
                     request,
                     ticket,
                     f"{len(rows)} reviewed repair charge(s) posted for “{ticket.title}”.",
+                    section="costs",
                 )
             if formset.is_valid():
                 allocations = [
@@ -574,7 +693,10 @@ def retry(request, pk):
     if request.method == "POST":
         services.retry_notification(notice, actor=request.user)
         return done(
-            request, notice.update.request, "Email retry requested. Check delivery status below."
+            request,
+            notice.update.request,
+            "Email retry requested. Check delivery status below.",
+            section="history",
         )
     return render(
         request, "maintenance/retry.html", context(request, notice.update.request, notice=notice)

@@ -23,6 +23,9 @@ to later phases and are labelled rather than faked.
   `Lease.unit` without reshaping anything.
 - **Media:** the property banner photo and the tenant photo are both stored under randomised names and
   served through permission-checked views, never by the web server or the proxy.
+  The property edit form replaces the banner on save or clears it through a dedicated button, not a
+  removal checkbox. Staff banner URLs change with each replacement to prevent stale cached photos;
+  replaced/cleared banner files are removed only after the change commits (E11 correction).
 - **Tenant records:** managers and administrators create, invite, activate, and maintain tenant records
   (`/manage/accounts/`). Role changes remain superadmin-only; destructive deletion remains admin-only.
 

@@ -25,10 +25,12 @@ from django.views.generic import (
     View,
 )
 
-from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
-from apps.properties.forms import PropertyForm, UnitForm
+from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin, TenantAreaMixin
+from apps.properties.forms import PropertyDeleteConfirmationForm, PropertyForm, UnitForm
 from apps.properties.locations import embed_url, external_url
 from apps.properties.models import Property, Unit
+from apps.properties.signals import remove_banner_file
+from apps.properties.workspace import navigation_properties, workspace_context
 from apps.responsibilities import services as responsibility_services
 
 logger = logging.getLogger("apps.properties")
@@ -37,7 +39,21 @@ logger = logging.getLogger("apps.properties")
 # --- Properties -----------------------------------------------------------
 
 
-class PropertyListView(ManagerRequiredMixin, ListView):
+class WorkspaceMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            workspace_context(
+                self.request,
+                property=context.get("property"),
+                unit=context.get("unit"),
+                properties=context["properties"] if isinstance(self, PropertyListView) else None,
+            )
+        )
+        return context
+
+
+class PropertyListView(ManagerRequiredMixin, WorkspaceMixin, ListView):
     """The portfolio: every property with its unit counts."""
 
     template_name = "management/property_list.html"
@@ -45,10 +61,14 @@ class PropertyListView(ManagerRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = Property.objects.annotate(
-            unit_total=Count("units", distinct=True),
-            unit_active=Count("units", filter=Q(units__is_active=True), distinct=True),
-        ).order_by("name")
+        queryset = (
+            navigation_properties()
+            .annotate(
+                unit_total=Count("units", distinct=True),
+                unit_active=Count("units", filter=Q(units__is_active=True), distinct=True),
+            )
+            .order_by("name")
+        )
         search = self.request.GET.get("q", "").strip()
         if search:
             queryset = queryset.filter(
@@ -86,16 +106,18 @@ class PropertyCreateView(ManagerRequiredMixin, CreateView):
         return reverse("portfolio:property-detail", args=[self.object.pk])
 
 
-class PropertyDetailView(ManagerRequiredMixin, DetailView):
+class PropertyDetailView(ManagerRequiredMixin, WorkspaceMixin, DetailView):
     template_name = "management/property_detail.html"
     context_object_name = "property"
 
     def get_queryset(self):
-        return Property.objects.prefetch_related("units")
+        return navigation_properties()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         units = list(self.object.units.all())
+        for unit in units:
+            unit.workspace_url = context["workspace_unit_urls"][unit.pk]
         context["units"] = units
         context["unit_total"] = len(units)
         context["unit_active"] = sum(1 for unit in units if unit.is_active)
@@ -142,7 +164,7 @@ class PropertyBannerView(ManagerRequiredMixin, View):
         banner = property_.banner_image
         banner.open("rb")
         response = FileResponse(banner)
-        response["Cache-Control"] = "private, max-age=300"
+        response["Cache-Control"] = "private, no-cache"
         return response
 
 
@@ -150,6 +172,19 @@ class PropertyUpdateView(ManagerRequiredMixin, UpdateView):
     model = Property
     form_class = PropertyForm
     template_name = "management/property_form.html"
+
+    def post(self, request, *args, **kwargs):
+        if request.POST.get("clear_banner") != "1":
+            return super().post(request, *args, **kwargs)
+        # Clearing a photo must not save or validate unrelated, unfinished edits.
+        with transaction.atomic():
+            self.object = get_object_or_404(Property.objects.select_for_update(), pk=kwargs["pk"])
+            name, storage = self.object.banner_image.name, self.object.banner_image.storage
+            self.object.banner_image = None
+            self.object.save(update_fields=["banner_image", "updated_at"])
+            transaction.on_commit(lambda: remove_banner_file(name, storage))
+        messages.success(request, f"Banner photo cleared for {self.object.name}.")
+        return redirect("portfolio:property-update", pk=self.object.pk)
 
     def form_valid(self, form):
         # Read the stored name before the form binds a replacement: a ModelForm
@@ -162,11 +197,11 @@ class PropertyUpdateView(ManagerRequiredMixin, UpdateView):
         )
         storage = self.object.banner_image.storage
 
-        response = super().form_valid(form)
-
-        current_banner = self.object.banner_image.name if self.object.banner_image else ""
-        if previous_banner and previous_banner != current_banner:
-            storage.delete(previous_banner)
+        with transaction.atomic():
+            response = super().form_valid(form)
+            current_banner = self.object.banner_image.name if self.object.banner_image else ""
+            if previous_banner and previous_banner != current_banner:
+                transaction.on_commit(lambda: remove_banner_file(previous_banner, storage))
 
         logger.info("property updated pk=%s by=%s", self.object.pk, self.request.user.pk)
         messages.success(self.request, f"{self.object.name} was updated.")
@@ -201,6 +236,7 @@ class PropertyDeleteView(AdminRequiredMixin, DeleteView):
     """Hard delete: ADMIN only, behind a confirmation page, refused while units exist."""
 
     model = Property
+    form_class = PropertyDeleteConfirmationForm
     template_name = "management/property_confirm_delete.html"
     context_object_name = "property"
     success_url = reverse_lazy("portfolio:property-list")
@@ -235,7 +271,7 @@ class PropertyDeleteView(AdminRequiredMixin, DeleteView):
 # --- Units ----------------------------------------------------------------
 
 
-class UnitListView(ManagerRequiredMixin, ListView):
+class UnitListView(ManagerRequiredMixin, WorkspaceMixin, ListView):
     """Every unit, grouped under the property it belongs to.
 
     The page is paginated by **property**, not by unit, so the grouping survives
@@ -288,10 +324,36 @@ class UnitListView(ManagerRequiredMixin, ListView):
         context["units"] = [
             unit for property_ in context["properties"] for unit in property_.listed_units
         ]
+        for unit in context["units"]:
+            unit.workspace_url = context["workspace_unit_urls"][unit.pk]
         return context
 
 
-class UnitCreateView(ManagerRequiredMixin, CreateView):
+class UnitPhotoSaveMixin:
+    """Serialize replacement, retaining old bytes until the database commits."""
+
+    def form_valid(self, form):
+        from apps.properties.signals import remove_unit_photo
+
+        old = ""
+        uploaded = bool(form.files.get("photo"))
+        try:
+            with transaction.atomic():
+                if form.instance.pk:
+                    old = Unit.objects.select_for_update().get(pk=form.instance.pk).photo.name
+                response = super().form_valid(form)
+                current = self.object.photo.name or ""
+                if old and old != current:
+                    transaction.on_commit(lambda: remove_unit_photo(old, self.object.photo.storage))
+                return response
+        except Exception:
+            new = form.instance.photo
+            if uploaded and new and new._committed and new.name != old:
+                remove_unit_photo(new.name, new.storage)
+            raise
+
+
+class UnitCreateView(ManagerRequiredMixin, UnitPhotoSaveMixin, CreateView):
     model = Unit
     form_class = UnitForm
     template_name = "management/unit_form.html"
@@ -316,7 +378,7 @@ class UnitCreateView(ManagerRequiredMixin, CreateView):
         return reverse("portfolio:unit-detail", args=[self.object.pk])
 
 
-class UnitDetailView(ManagerRequiredMixin, DetailView):
+class UnitDetailView(ManagerRequiredMixin, WorkspaceMixin, DetailView):
     template_name = "management/unit_detail.html"
     context_object_name = "unit"
 
@@ -331,7 +393,7 @@ class UnitDetailView(ManagerRequiredMixin, DetailView):
         return context
 
 
-class UnitUpdateView(ManagerRequiredMixin, UpdateView):
+class UnitUpdateView(ManagerRequiredMixin, UnitPhotoSaveMixin, UpdateView):
     model = Unit
     form_class = UnitForm
     template_name = "management/unit_form.html"
@@ -383,3 +445,37 @@ class UnitDeleteView(AdminRequiredMixin, DeleteView):
         logger.info("unit deleted pk=%s by=%s", unit.pk, self.request.user.pk)
         messages.success(self.request, f"{label} was deleted.")
         return response
+
+
+def location_photo_response(photo):
+    if not photo:
+        raise Http404("No photo is available.")
+    try:
+        photo.open("rb")
+    except FileNotFoundError as error:
+        raise Http404("No photo is available.") from error
+    response = FileResponse(photo)
+    response["Cache-Control"] = "private, max-age=300"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+class UnitPhotoView(ManagerRequiredMixin, View):
+    http_method_names = ["get"]
+
+    def get(self, request, pk):
+        unit = get_object_or_404(Unit, pk=pk)
+        return location_photo_response(unit.photo)
+
+
+class TenantLocationPhotoView(TenantAreaMixin, View):
+    http_method_names = ["get"]
+
+    def get(self, request, kind):
+        from apps.leases.models import Lease
+
+        lease = Lease.objects.visible_for(request.user)
+        if not lease or kind not in ("unit", "property"):
+            raise Http404("No photo is available.")
+        photo = lease.unit.photo if kind == "unit" else lease.unit.property.banner_image
+        return location_photo_response(photo)

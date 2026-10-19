@@ -75,7 +75,8 @@ def test_a_maintenance_user_sees_neither_board(client):
     assert "property_active_count" not in response.context
     assert "in service of" not in body
     assert "Invitations" not in body
-    assert "Your access" in body
+    assert "Assigned work" in body
+    assert "View assigned requests" in body
 
 
 def test_the_board_contains_no_development_placeholders(client):

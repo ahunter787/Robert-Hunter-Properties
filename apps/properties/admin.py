@@ -29,6 +29,8 @@ class PropertyAdmin(admin.ModelAdmin):
 
 @admin.register(Unit)
 class UnitAdmin(admin.ModelAdmin):
+    # Photo writes use the portal's validated, transaction-safe upload workflow.
+    exclude = ("photo",)
     list_display = ("identifier", "property", "square_feet", "bedrooms", "bathrooms", "is_active")
     list_filter = ("is_active",)
     search_fields = ("identifier", "property__name")

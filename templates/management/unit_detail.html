@@ -1,153 +1,18 @@
-{% extends "base.html" %}
+{% extends "management/properties_workspace.html" %}
 {% load rhp_format %}
-
 {% block title %}{{ unit.display_name }} - {{ unit.property.name }} — RHP{% endblock %}
-
-{% block content %}
-  {% include "maintenance/summary.html" %}
-  <div class="mx-auto w-full max-w-3xl space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <p class="rhp-eyebrow">Portfolio</p>
-        <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ unit.display_name }}</h1>
-        <p class="mt-2 text-sm text-ink-muted">
-          - <a href="{% url 'portfolio:property-detail' unit.property.pk %}"
-               class="font-medium text-primary underline-offset-2 hover:underline">{{ unit.property.name }}</a>
-        </p>
-      </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <a href="{% url 'portfolio:unit-update' unit.pk %}" class="rhp-btn rhp-btn-secondary">Edit</a>
-        <form method="post" action="{% url 'portfolio:unit-toggle-active' unit.pk %}">
-          {% csrf_token %}
-          <button type="submit" class="rhp-btn rhp-btn-secondary">
-            {% if unit.is_active %}Take out of service{% else %}Return to service{% endif %}
-          </button>
-        </form>
-        {% if user.is_admin_or_above %}
-          <a href="{% url 'portfolio:unit-delete' unit.pk %}" class="rhp-btn rhp-btn-secondary">Delete</a>
-        {% endif %}
-      </div>
-    </div>
-
-    <section class="rhp-card">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold">Details</h2>
-        <div class="flex flex-wrap items-center gap-2">
-          {% if unit.is_active %}
-            <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">In service</span>
-          {% else %}
-            <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Out of service</span>
-          {% endif %}
-        </div>
-      </div>
-      <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-        <div>
-          <dt class="text-ink-muted">Property</dt>
-          <dd class="font-medium">{{ unit.property.name }}</dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Address</dt>
-          <dd class="font-medium">{{ unit.property.address_line }}</dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Square feet</dt>
-          <dd class="font-medium">
-            {% if unit.square_feet %}{{ unit.square_feet }} sq ft{% else %}Not recorded{% endif %}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Property type</dt>
-          <dd class="font-medium">{{ unit.property.get_property_type_display }}</dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Bedrooms</dt>
-          <dd class="font-medium">
-            {% if unit.is_commercial %}Not applicable{% else %}{{ unit.bedrooms|default_if_none:"Not recorded" }}{% endif %}
-          </dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Bathrooms</dt>
-          <dd class="font-medium">
-            {% if unit.is_commercial %}Not applicable{% else %}{{ unit.bathrooms|default_if_none:"Not recorded" }}{% endif %}
-          </dd>
-        </div>
-      </dl>
-      {% if unit.is_commercial %}
-        <p class="rhp-help mt-4">
-          {{ unit.property.name }} is a commercial property, so bedrooms and bathrooms are not
-          recorded for its units.
-        </p>
-      {% endif %}
-    </section>
-
-    <section class="rhp-card">
-      <h2 class="text-sm font-semibold">Amenities</h2>
-      {% if unit.amenities.all %}
-        <ul class="mt-4 flex flex-wrap gap-2">
-          {% for amenity in unit.amenities.all %}
-            <li class="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-ink">
-              {{ amenity.name }}
-            </li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          No amenities recorded for this unit yet.
-        </p>
-      {% endif %}
-      <p class="rhp-help mt-4">
-        Amenities come from a list staff maintain — add or rename one in the back office.
-      </p>
-    </section>
-
-    <section class="rhp-card">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-sm font-semibold">Tenancy</h2>
-        {% if not unit.is_active %}
-          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Out of service</span>
-        {% elif unit.is_vacant %}
-          <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Vacant</span>
-        {% else %}
-          <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Occupied</span>
-        {% endif %}
-      </div>
-
-      {% with lease=unit.current_lease %}
-        {% if lease %}
-          <dl class="mt-4 grid gap-4 text-sm sm:grid-cols-2">
-            <div>
-              <dt class="text-ink-muted">Current tenant{{ unit.occupants|length|pluralize }}</dt>
-              <dd class="font-medium">
-                {% for tenant in unit.occupants %}{{ tenant.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
-              </dd>
-            </div>
-            <div>
-              <dt class="text-ink-muted">Lease term</dt>
-              <dd class="font-medium">{{ lease.start_date|date:"M j, Y" }} → {{ lease.end_date|date:"M j, Y" }}</dd>
-            </div>
-            <div>
-              <dt class="text-ink-muted">Rent</dt>
-              <dd class="font-medium">{{ lease.monthly_rent|money }}/month, due {{ lease.due_day_label }}</dd>
-            </div>
-            <div>
-              <dt class="text-ink-muted">Deposit</dt>
-              <dd class="font-medium">{{ lease.deposit|money }}</dd>
-            </div>
-          </dl>
-          <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">Open the lease</a>
-        {% else %}
-          <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-            Nobody is on a lease here right now.
-            {% if unit.is_active %}
-              <a href="{% url 'leases:lease-create' %}?unit={{ unit.pk }}"
-                 class="font-medium text-primary underline-offset-2 hover:underline">Start a lease</a>.
-            {% else %}
-              This unit is out of service.
-            {% endif %}
-          </p>
-        {% endif %}
-      {% endwith %}
-
-    </section>
-  </div>
+{% block workspace_content %}
+{% if workspace_section == 'overview' or workspace_section == 'details' %}
+<div class="record-actions"><a href="{% url 'portfolio:unit-update' unit.pk %}" class="rhp-btn rhp-btn-secondary">Edit unit</a><form method="post" action="{% url 'portfolio:unit-toggle-active' unit.pk %}">{% csrf_token %}<button class="rhp-btn rhp-btn-secondary">{% if unit.is_active %}Take out of service{% else %}Return to service{% endif %}</button></form>{% if user.is_admin_or_above %}<a href="{% url 'portfolio:unit-delete' unit.pk %}" class="rhp-btn rhp-btn-secondary">Delete unit</a>{% endif %}</div>
+{% if workspace_section == 'overview' %}
+<section class="workspace-section"><div class="section-heading"><h2>Current tenancy</h2><span class="workspace-badge">{% if not unit.is_active %}Out of service{% elif unit.current_lease %}Occupied{% else %}Vacant{% endif %}</span></div>
+{% with lease=unit.current_lease %}{% if lease %}
+<div class="tenancy-people">{% for tenant in unit.occupants %}<a class="person-link" href="{% url 'manage:account-detail' tenant.pk %}"><span class="person-image">{{ tenant.display_name|first }}{% if tenant.tenant_profile.photo %}<img src="{% url 'manage:account-photo' tenant.pk %}" alt="{{ tenant.display_name }}">{% endif %}</span><strong>{{ tenant.display_name }}</strong></a>{% endfor %}</div>
+<dl class="workspace-facts"><div><dt>Monthly rent</dt><dd>{{ lease.monthly_rent|money }} · due {{ lease.due_day_label }}</dd></div><div><dt>Lease term</dt><dd>{{ lease.start_date|date:'M j, Y' }} – {{ lease.end_date|date:'M j, Y' }}</dd></div><div><dt>Deposit</dt><dd>{{ lease.deposit|money }}</dd></div><div><dt>Lease / account</dt><dd>{{ lease.get_status_display }} / {{ lease.get_account_status_display }}</dd></div></dl><div class="record-actions"><a class="rhp-btn rhp-btn-primary" href="{% url 'leases:lease-detail' lease.pk %}">Open the lease</a><a class="rhp-btn rhp-btn-secondary" href="{% url 'ledger:lease-ledger' lease.pk %}">Open lease ledger</a></div>
+{% else %}<p>Nobody is on a lease here right now.</p>{% if unit.is_active %}<a class="rhp-btn rhp-btn-primary" href="{% url 'leases:lease-create' %}?unit={{ unit.pk }}">Start a lease</a>{% endif %}{% endif %}{% endwith %}
+</section>
+{% include "maintenance/summary.html" %}
+{% endif %}
+<section class="workspace-section"><h2>Unit details</h2><dl class="workspace-facts"><div><dt>Property type</dt><dd>{{ unit.property.get_property_type_display }}</dd></div><div><dt>Square feet</dt><dd>{% if unit.square_feet %}{{ unit.square_feet }} sq ft{% else %}Not recorded{% endif %}</dd></div><div><dt>Bedrooms</dt><dd>{% if unit.is_commercial %}Not applicable{% else %}{{ unit.bedrooms|default_if_none:'Not recorded' }}{% endif %}</dd></div><div><dt>Bathrooms</dt><dd>{% if unit.is_commercial %}Not applicable{% else %}{{ unit.bathrooms|default_if_none:'Not recorded' }}{% endif %}</dd></div></dl>{% if unit.is_commercial %}<p class="rhp-help">This is a commercial property; bedrooms and bathrooms are not recorded.</p>{% endif %}<h3>Amenities</h3>{% for amenity in unit.amenities.all %}<span class="workspace-badge">{{ amenity.name }}</span>{% empty %}<p>No amenities recorded for this unit yet.</p>{% endfor %}</section>
+{% else %}{% include "management/location_section.html" %}{% endif %}
 {% endblock %}

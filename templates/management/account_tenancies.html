@@ -1,0 +1,7 @@
+{% load rhp_format %}
+{% for lease in tenancies %}<article class="workspace-section space-y-3">
+<h3 class="font-semibold"><a class="rhp-link" href="{% url 'portfolio:unit-detail' lease.unit_id %}">{{ lease.unit.identifier }}</a> · <a class="rhp-link" href="{% url 'portfolio:property-detail' lease.unit.property_id %}">{{ lease.unit.property.name }}</a></h3>
+<p>{{ lease.start_date|date:"M j, Y" }} – {{ lease.end_date|date:"M j, Y" }}</p>
+<p>Occupancy: {{ lease.get_status_display }} · Financial account: {{ lease.get_account_status_display }}</p>
+<div class="flex flex-wrap gap-3"><a class="rhp-btn rhp-btn-secondary" href="{% url 'leases:lease-detail' lease.pk %}">Lease workspace</a><a class="rhp-link" href="{% url 'ledger:lease-ledger' lease.pk %}">Lease ledger</a></div>
+</article>{% empty %}<p>No tenancies in this section.</p>{% endfor %}

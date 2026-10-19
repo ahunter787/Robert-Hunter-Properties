@@ -69,6 +69,11 @@ requires Pillow, which is why it is a runtime dependency (ADR-006, ADR-009).
 
 ## Lease tables (Phase 3)
 
+E11's additive `properties/0005_unit_photo` adds nullable `Unit.photo`. Existing units remain
+unchanged with no photo; no tenant/lease/ledger rows are transformed. Storage uses randomized
+`unit_photos/` names and private views, never a public media URL. Replacement/removal cleanup runs
+after commit. This is image identity, not tenancy history or a gallery.
+
 | Table | Purpose | Notes |
 | --- | --- | --- |
 | `leases_lease` | one tenancy of one unit and its financial-account state | `UniqueConstraint(unit, condition=status='ACTIVE')` — `one_active_lease_per_unit`; `CheckConstraint(end_date >= start_date)`; `CheckConstraint(account_status='OPEN' OR (account_status='SETTLED' AND status='ENDED' AND settled_at IS NOT NULL))`; `unit` is a FK with **`on_delete=PROTECT`**, so a unit with history cannot be deleted; indexed `(status, end_date)`. Occupancy is `DRAFT`/`ACTIVE`/`ENDED`; `account_status` is `OPEN`/`SETTLED`; current settlement metadata is `settled_at`, `settled_by`, and `settlement_note`. `monthly_rent` and `deposit` are `Decimal(12,2)`. Its document is now a row in `documents_document` (Phase 6, ADR-022) |

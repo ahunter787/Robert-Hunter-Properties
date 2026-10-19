@@ -637,7 +637,9 @@ def test_a_manager_can_manage_the_rent_schedule_and_nnn(signed_in):
     period = lease.rent_periods.order_by("effective_from").first()
 
     body = strip_tags(
-        signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+        signed_in.get(
+            reverse("leases:lease-detail", args=[lease.pk]), {"section": "rent"}
+        ).content.decode()
     )
     assert "Rent" in body and "2,084.00" in body
     assert "Generate rent schedule" in body
@@ -793,7 +795,9 @@ def test_the_lease_page_shows_the_schedule_and_the_staged_nnn(as_admin):
     first = lease_services.first_due_on_or_after(lease, lease.start_date)
 
     body = strip_tags(
-        as_admin.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+        as_admin.get(
+            reverse("leases:lease-detail", args=[lease.pk]), {"section": "rent"}
+        ).content.decode()
     )
 
     assert "Triple net (NNN)" in body

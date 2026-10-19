@@ -21,7 +21,25 @@
       {# multipart: the banner photo is uploaded here #}
       <form method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
-        {% include "components/form.html" with form=form %}
+        {% if form.non_field_errors %}<div class="rhp-alert" role="alert">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="space-y-4">
+          {% for field in form %}
+            {% if field.name == 'banner_image' %}
+              <section class="space-y-3" aria-label="Banner photo">
+                {% if object.banner_image %}
+                  {% include "components/location_image.html" with image_url=object.banner_url image_label=object.name image_class="request-banner" %}
+                {% endif %}
+                {% include "components/field.html" with field=field %}
+                {% if object.banner_image %}
+                  <button type="submit" form="clear-banner-form" name="clear_banner" value="1" formnovalidate class="rhp-btn rhp-btn-secondary" aria-label="Clear banner photo for {{ object.name }}">Clear banner photo</button>
+                  <p class="rhp-help">Clears only the saved banner photo. Other unsaved changes will not be saved.</p>
+                {% endif %}
+              </section>
+            {% else %}
+              {% include "components/field.html" with field=field %}
+            {% endif %}
+          {% endfor %}
+        </div>
         <div class="mt-6 flex items-center gap-3">
           <button type="submit" class="rhp-btn rhp-btn-primary">
             {% if object %}Save changes{% else %}Add property{% endif %}
@@ -30,6 +48,10 @@
              class="rhp-btn rhp-btn-secondary">Cancel</a>
         </div>
       </form>
+      {% if object.banner_image %}
+        {# A separate form keeps Enter in a property field bound to Save, never Clear. #}
+        <form id="clear-banner-form" method="post">{% csrf_token %}</form>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

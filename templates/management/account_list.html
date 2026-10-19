@@ -6,7 +6,6 @@
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">People</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">Tenant accounts</h1>
       </div>
       {% if user.is_manager_or_above %}
@@ -52,6 +51,8 @@
                   <div class="flex items-center gap-3">
                     {% if account.tenant_profile.photo %}
                       {% url 'manage:account-photo' account.pk as photo_url %}
+                    {% else %}
+                      {% firstof '' as photo_url %}
                     {% endif %}
                     {% include "components/avatar.html" with photo_url=photo_url size="sm" %}
                     <span class="font-medium">{{ account.display_name }}</span>

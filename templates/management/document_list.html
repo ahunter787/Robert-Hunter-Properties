@@ -7,17 +7,16 @@
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">Documents</p>
-        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Everything the office holds</h1>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Documents</h1>
         <p class="mt-2 text-sm text-ink-muted">
-          Leases, addenda, notices, inspections and correspondence. A document is only on a
-          tenant's pages if somebody ticked "the tenant can see this" when filing it.
+          Private office files and documents shared with tenants.
         </p>
       </div>
       <a href="{% url 'documents:upload' %}" class="rhp-btn rhp-btn-primary">File a document</a>
     </div>
 
     <form method="get" class="rhp-card flex flex-wrap items-end gap-3">
+      {% if unit_id %}<input type="hidden" name="unit" value="{{ unit_id }}">{% endif %}
       <div class="min-w-56 grow">
         <label class="rhp-label" for="q">Search</label>
         <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
@@ -62,9 +61,9 @@
             <tr>
               <th scope="col" class="py-2 pr-4">Document</th>
               <th scope="col" class="py-2 pr-4">Category</th>
-              <th scope="col" class="py-2 pr-4">Filed against</th>
+              <th scope="col" class="py-2 pr-4">Property / tenancy</th>
               <th scope="col" class="py-2 pr-4">Dated</th>
-              <th scope="col" class="py-2 pr-4">The tenant</th>
+              <th scope="col" class="py-2 pr-4">Visibility</th>
               <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -78,13 +77,13 @@
                   {% endif %}
                 </td>
                 <td class="py-3 pr-4 text-ink-muted">{{ document.get_category_display }}</td>
-                <td class="py-3 pr-4 text-ink-muted">{{ document.attachment_label }}</td>
+                <td class="py-3 pr-4 text-ink-muted">{% if document.lease_id %}<a class="rhp-link" href="{% url 'leases:lease-detail' document.lease_id %}?section=documents">{{ document.attachment_label }}</a>{% elif document.property_id %}<a class="rhp-link" href="{% url 'portfolio:property-detail' document.property_id %}?section=documents">{{ document.attachment_label }}</a>{% elif document.tenant_id %}<a class="rhp-link" href="{% url 'manage:account-detail' document.tenant_id %}">{{ document.attachment_label }}</a>{% else %}{{ document.attachment_label }}{% endif %}</td>
                 <td class="py-3 pr-4 text-ink-muted">
                   {{ document.document_date|date:"M j, Y"|default:"—" }}
                 </td>
                 <td class="py-3 pr-4">
                   {% if document.tenant_visible %}
-                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Can see it</span>
+                    <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Shared with tenant</span>
                   {% else %}
                     <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Office only</span>
                   {% endif %}
@@ -118,10 +117,10 @@
         <span class="text-ink-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
         <div class="flex gap-2">
           {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="rhp-btn rhp-btn-secondary">Previous</a>
+            <a href="?{{ filter_query }}&amp;page={{ page_obj.previous_page_number }}" class="rhp-btn rhp-btn-secondary">Previous</a>
           {% endif %}
           {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="rhp-btn rhp-btn-secondary">Next</a>
+            <a href="?{{ filter_query }}&amp;page={{ page_obj.next_page_number }}" class="rhp-btn rhp-btn-secondary">Next</a>
           {% endif %}
         </div>
       </div>

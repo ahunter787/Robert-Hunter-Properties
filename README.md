@@ -9,7 +9,7 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 7 (maintenance) is owner-accepted for local merge. E11's approved Operations Desk design is next; Phase 8 remains unbuilt.**
+**Current status: Phase 7 and E11's Operations Desk migration are owner-accepted for the local baseline. Phase 8 communications implementation is authorized next. Nothing has been pushed.**
 RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
 tenants are created by staff and invited, roles gate every route server-side, the portfolio can be

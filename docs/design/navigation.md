@@ -1,5 +1,9 @@
 # Navigation maps and maintenance workflow
 
+**Application migration approved October 18, 2026.** The reviewed prototype is accepted.
+The working proposals below are the preserved study history; the implementation contract and
+Properties-first review checkpoint now live in [Application migration](implementation.md).
+
 ## Operations desk + persistent sidebar — working plan
 
 **Direction selected for planning:** October 18, 2026. **Register:** E11.

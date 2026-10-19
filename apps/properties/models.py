@@ -6,12 +6,14 @@ than showing a zero that looks like real data.
 """
 
 from decimal import Decimal
+from hashlib import sha256
 from pathlib import Path
 from uuid import uuid4
 
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower
+from django.urls import reverse
 from django.utils.functional import cached_property
 
 from apps.properties.constants import (  # noqa: F401 - USState re-exported
@@ -31,6 +33,13 @@ def property_banner_path(instance, filename: str) -> str:
     if len(suffix) > 10 or not suffix.isascii():
         suffix = ""
     return f"property_banners/{uuid4().hex}{suffix}"
+
+
+def unit_photo_path(instance, filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
+    if len(suffix) > 10 or not suffix.isascii():
+        suffix = ""
+    return f"unit_photos/{uuid4().hex}{suffix}"
 
 
 class PropertyQuerySet(models.QuerySet):
@@ -111,6 +120,14 @@ class Property(models.Model):
         return bool(self.banner_image)
 
     @property
+    def banner_url(self) -> str:
+        """Private endpoint with a new cache key whenever the stored photo changes."""
+        if not self.banner_image:
+            return ""
+        version = sha256(self.banner_image.name.encode()).hexdigest()[:16]
+        return reverse("portfolio:property-banner", args=[self.pk]) + f"?v={version}"
+
+    @property
     def is_commercial(self) -> bool:
         return self.property_type == PropertyType.COMMERCIAL
 
@@ -174,6 +191,7 @@ class Unit(models.Model):
         on_delete=models.PROTECT,
         related_name="units",
     )
+    photo = models.ImageField(upload_to=unit_photo_path, blank=True, null=True)
     identifier = models.CharField(
         max_length=32,
         help_text="Label used inside the property, for example '1', 'A', or 'Rear'.",

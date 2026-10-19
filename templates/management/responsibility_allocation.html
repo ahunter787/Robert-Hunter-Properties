@@ -2,7 +2,7 @@
 {% load rhp_format static %}
 {% block title %}Allocate {{ responsibility.label }} — RHP{% endblock %}
 {% block content %}
-<div class="mx-auto w-full max-w-3xl space-y-6">
+<div class="w-full space-y-6">
   <div>
     <p class="rhp-eyebrow"><a href="{% url 'portfolio:property-detail' property.pk %}">{{ property.name }}</a> · Expense recoveries</p>
     <h1 class="mt-1 text-2xl font-semibold">{{ responsibility.label }} allocation</h1>
@@ -17,7 +17,7 @@
   {% endif %}
   {% if locked %}
     <div class="rhp-card"><p>This bill has posted charges. Correct those charges with adjustments on the lease ledger; its allocations cannot be changed.</p></div>
-    <a class="rhp-btn rhp-btn-secondary" href="{% url 'portfolio:property-detail' property.pk %}">Back to property</a>
+    <a class="rhp-btn rhp-btn-secondary" href="{{ back_url }}">Return to expense recoveries</a>
   {% else %}
   <form method="post" data-allocation-form class="space-y-6">
     {% csrf_token %}
@@ -36,6 +36,7 @@
       <input type="hidden" name="review_token" value="{{ review_token }}">
       <div class="rhp-card space-y-4">
         <h2 class="font-semibold">3. Review and save</h2>
+        {% include "components/allocation_ring.html" %}
         {% for row in review_rows %}
         <div class="border-b border-line pb-3">
           <p class="font-medium">{{ row.unit.identifier }}{% if row.vacant %} · Vacant{% endif %}</p>
@@ -59,6 +60,7 @@
       {% if bill %}{% for field in bill %}{{ field.as_hidden }}{% endfor %}{% endif %}
       <div data-allocation-panel class="rhp-card space-y-4">
         <h2 class="font-semibold">2. Allocate monthly amount</h2>
+        {% include "components/allocation_ring.html" %}
         <p class="text-sm text-ink-muted">Unsaved allocation. Enter dollars or a percentage for each unit. Only the selected remainder recipient changes automatically.</p>
         <div role="status" aria-live="polite" data-allocation-status>
           {% if worksheet %}<p>Allocated to units: {{ worksheet.assigned|money }} · Unallocated: {{ worksheet.left|money }} per month</p>
@@ -76,7 +78,7 @@
         <h3 class="font-semibold">Custom allocation</h3>
         <p class="rhp-help">Enter amounts below, or adjust the results of size-based or equal allocation.</p>
         {% for row in rows %}
-        <fieldset data-allocation-row class="rounded-card border border-line p-3 space-y-3">
+        <fieldset data-allocation-row id="allocation-unit-{{ row.unit.pk }}" tabindex="-1" style="border-left: 5px solid {{ row.color }}" class="rounded-card border border-line p-3 space-y-3">
           <legend class="px-1 font-semibold">{{ row.unit.identifier }}{% if row.vacant %} · Vacant{% endif %}</legend>
           <p class="text-sm text-ink-muted">{% if row.unit.square_feet %}{{ row.unit.square_feet }} sq ft{% else %}Square footage not recorded{% endif %}{% if not new_bill %} · Saved: {{ row.saved|money }} per month{% endif %}</p>
           {% if row.remainder %}<p class="font-medium">Calculated remainder recipient</p>{% endif %}
@@ -102,7 +104,7 @@
         {% if new_bill %}<button class="rhp-btn rhp-btn-secondary" name="action" value="details" formnovalidate>Back to bill details</button>{% endif %}
       </div>
     {% endif %}
-    <a class="rhp-btn rhp-btn-secondary" href="{% url 'portfolio:property-detail' property.pk %}">Cancel</a>
+    <a class="rhp-btn rhp-btn-secondary" href="{{ back_url }}">Cancel</a>
   </form>
   <p class="text-sm text-ink-muted">As soon as a month's charge has been posted, its bill becomes history: The correction belongs on the ledger as an adjustment.</p>
   {% endif %}

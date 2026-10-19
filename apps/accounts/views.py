@@ -15,6 +15,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
@@ -38,6 +39,7 @@ from apps.accounts.permissions import (
 )
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
+from apps.common.workspaces import section_navigation
 from apps.leases.models import Lease, LeaseStatus
 from apps.leases.views import visible_lease_for as leases_visible_for
 from apps.ledger import services as ledger_services
@@ -323,8 +325,8 @@ class TenantAccountCreateView(ManagerRequiredMixin, FormView):
         else:
             messages.warning(
                 self.request,
-                "Account created, but no email was delivered: RHP is using the console "
-                "email backend. The invitation link is in the application log.",
+                "Account created, but the invitation email was not sent. "
+                "Ask the site administrator to check email delivery.",
             )
         return redirect("manage:account-detail", pk=user.pk)
 
@@ -343,6 +345,33 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         profile = getattr(self.object, "tenant_profile", None)
         context["profile"] = profile
         context["photo_form"] = TenantProfileForm(instance=profile) if profile else None
+        sections = (
+            ("overview", "Overview"),
+            ("tenancies", "Tenancies"),
+            ("contact", "Contact & photo"),
+            ("access", "Account & access"),
+        )
+        section = self.request.GET.get("section", "overview")
+        if section not in dict(sections):
+            section = "overview"
+        leases = list(
+            Lease.objects.filter(lease_tenants__tenant=self.object)
+            .select_related("unit__property")
+            .prefetch_related("lease_tenants__tenant")
+            .distinct()
+            .order_by("-start_date", "-pk")
+        )
+        current_ids = set(
+            Lease.objects.current()
+            .filter(pk__in=[lease.pk for lease in leases])
+            .values_list("pk", flat=True)
+        )
+        context.update(
+            account_section=section,
+            record_tabs=section_navigation(self.request.path, sections, section),
+            current_tenancies=[lease for lease in leases if lease.pk in current_ids],
+            other_tenancies=[lease for lease in leases if lease.pk not in current_ids],
+        )
         return context
 
 
@@ -366,7 +395,9 @@ class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
                 messages.error(request, error)
             for error in form.errors.get("remove_photo", []):
                 messages.error(request, error)
-            return redirect("manage:account-detail", pk=account.pk)
+            return redirect(
+                reverse("manage:account-detail", args=[account.pk]) + "?section=contact"
+            )
 
         profile = form.save()
         current = profile.photo.name if profile.photo else ""
@@ -380,7 +411,7 @@ class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
             if not current
             else f"{account.display_name}'s photo was updated.",
         )
-        return redirect("manage:account-detail", pk=account.pk)
+        return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=contact")
 
 
 class TenantPhotoView(ManagerRequiredMixin, View):
@@ -423,7 +454,7 @@ class TenantAccountToggleActiveView(ManagerRequiredMixin, View):
         )
         state = "reactivated" if account.is_active else "deactivated"
         messages.success(request, f"{account.display_name} was {state}.")
-        return redirect("manage:account-detail", pk=account.pk)
+        return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=access")
 
 
 class TenantAccountResendInviteView(ManagerRequiredMixin, View):
@@ -437,17 +468,17 @@ class TenantAccountResendInviteView(ManagerRequiredMixin, View):
                 f"{account.display_name} has already set a password; "
                 "send a password reset instead.",
             )
-            return redirect("manage:account-detail", pk=account.pk)
+            return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=access")
         delivered = emails.send_invitation(account, request.build_absolute_uri("/"))
         if delivered:
             messages.success(request, f"Invitation re-sent to {account.email}.")
         else:
             messages.warning(
                 request,
-                "No email was delivered: RHP is using the console email backend. "
-                "The invitation link is in the application log.",
+                "The invitation email was not sent. "
+                "Ask the site administrator to check email delivery.",
             )
-        return redirect("manage:account-detail", pk=account.pk)
+        return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=access")
 
 
 class TenantRoleChangeView(AdminRequiredMixin, View):
@@ -465,7 +496,7 @@ class TenantRoleChangeView(AdminRequiredMixin, View):
         form = TenantRoleForm(request.POST, instance=account)
         if not form.is_valid():
             messages.error(request, "That role change was not valid.")
-            return redirect("manage:account-detail", pk=account.pk)
+            return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=access")
         account = form.save()
         logger.info(
             "role changed user=%s from=%s to=%s by=%s",
@@ -475,4 +506,4 @@ class TenantRoleChangeView(AdminRequiredMixin, View):
             request.user.pk,
         )
         messages.success(request, f"{account.display_name} is now {account.get_role_display()}.")
-        return redirect("manage:account-detail", pk=account.pk)
+        return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=access")

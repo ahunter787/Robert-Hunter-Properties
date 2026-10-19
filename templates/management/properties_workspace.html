@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="properties-workspace">
+  {% include "management/property_navigator.html" %}
+  <div class="properties-content">
+  {% if workspace_location %}
+    <header class="location-header">
+      {% if unit %}{% if unit.photo %}{% url 'portfolio:unit-photo' unit.pk as header_image %}{% else %}{% firstof '' as header_image %}{% endif %}{% else %}{% firstof workspace_location.banner_url '' as header_image %}{% endif %}
+      {% include "components/location_image.html" with image_url=header_image image_label=unit.display_name|default:workspace_location.name image_class="location-banner" %}
+      <div class="location-header-content"><nav aria-label="Breadcrumb" class="breadcrumbs"><a href="{% url 'portfolio:property-detail' workspace_location.pk %}">{{ workspace_location.name }}</a>{% if unit %}<span aria-hidden="true">/</span><span>{{ unit.display_name }}</span>{% endif %}</nav><h1>{{ unit.display_name|default:workspace_location.name }}</h1><p>{{ workspace_location.address_line }}</p></div>
+    </header>
+    <nav class="location-tabs" aria-label="Record sections">{% for tab in workspace_tabs %}<a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}</nav>
+  {% endif %}
+  {% block workspace_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

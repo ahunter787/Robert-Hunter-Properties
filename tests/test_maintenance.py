@@ -125,6 +125,36 @@ def test_scope_and_public_ids(world, client):
     assert ticket.audiences.get(lease=lease).permission_to_enter is False
 
 
+def test_tenant_queue_uses_active_count_and_private_completed_history(world, client):
+    _, tenant, _, other, _, _, _, ticket = world
+    client.force_login(tenant)
+    page = client.get(reverse("tenant_maintenance:list"))
+    assert b"1 active request" in page.content
+    assert b"Apply filters" not in page.content
+    assert b"Completed history" in page.content
+    ticket.status = Status.COMPLETED
+    ticket.save()
+    page = client.get(reverse("tenant_maintenance:list"))
+    assert b"0 active requests" in page.content
+    assert ticket in page.context["completed_rows"]
+    client.force_login(other)
+    page = client.get(reverse("tenant_maintenance:list"))
+    assert ticket not in page.context["completed_rows"]
+
+
+def test_staff_queue_search_stays_within_authorized_requests(world, client):
+    manager, _, _, _, worker, _, _, ticket = world
+    client.force_login(manager)
+    page = client.get(reverse("maintenance:list"), {"q": "Kitchen"})
+    assert ticket in page.context["rows"]
+    assert b"data-auto-filters" in page.content
+    page = client.get(reverse("maintenance:list"), {"q": "Missing request"})
+    assert not page.context["rows"]
+    client.force_login(worker)
+    page = client.get(reverse("maintenance:list"), {"q": "Kitchen"})
+    assert ticket not in page.context["rows"]
+
+
 def test_shared_property_conversations_do_not_leak(world, client):
     manager, tenant, _, other, _, lease, second, _ = world
     ticket = s.create_request(
@@ -165,7 +195,9 @@ def test_shared_property_conversations_do_not_leak(world, client):
     ticket.status = Status.CLOSED
     ticket.save()
     response = client.get(reverse("tenant_maintenance:list"))
-    assert "Roof repair" not in response.content.decode()
+    assert "Completed history" in response.content.decode()
+    assert ticket in response.context["completed_rows"]
+    assert ticket not in response.context["rows"]
 
 
 def test_move_out_history_and_new_occupants(world, client):

@@ -2,6 +2,18 @@
 
 ## Confirmed
 
+- October 18, 2026: final E11 pass approved. Staff maintenance uses separate tenancy conversations,
+  not an all-audience feed. Internal notes are a separate section, costs/delivery/history remain
+  manager-only, and existing status/permission records provide compact milestones. Person records
+  prioritize current tenancies and contacts; account administration remains secondary. No new contact
+  editing, onboarding calculator, financial service, migration or dependency is authorized.
+
+- October 18, 2026: Properties application slice accepted; continue E11 migration. Correct portrait
+  URL reuse, aligned property columns, taller banners and lease second-tier navigation. Retain
+  administrator-only deletion of empty mistaken/test property records, with crimson presentation
+  and an exact typed confirmation. Taking a property out of service remains the normal removal
+  path; linked units, leases and financial history stay protected. Prepare, but do not implement,
+  the separate [prior-activity calculator proposal](prior-activity-calculator.md).
 - October 18, 2026: owner accepted the revised prototype and authorized E11 application migration,
   locally merging the outstanding baseline without pushing. The approved plan covers the existing
   portal and one optional unit photo. Properties is the first implementation/review checkpoint;
@@ -49,6 +61,9 @@ Read October 18, 2026. Preserved verbatim; the table above records the implement
 **D-Q6:** I don't think we should keep any existing menus specifically. The redesign should be allowed to fully capture a new feel. For example, the expense recoveries we've made is very good, and the relationships of our data should work exactly the same, but the Innago style uses a Circular percentage ring with color coding. That would be a great way to display the electricity bill allocation. If the 910 Stark Property had 2 units, color code each unit (ie Blue + Pink), then fill the ring with blue and pink relative to the percentage allocated.For me, the information, the calculations, the data relationships are critical, But the design and workflow is completely re-doable
 
 ## Prototype authorization
+
+Historical study authorization follows. The October 18 application-migration approval recorded
+above supersedes its no-rollout boundary; the original prototype review remains preserved.
 
 ### Revision approved October 18, 2026
 

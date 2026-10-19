@@ -4,18 +4,12 @@
 {% block title %}Management — RHP{% endblock %}
 
 {% block content %}
-  {% include "maintenance/summary.html" %}
   <div class="space-y-6">
-    <section class="rhp-card">
-      <p class="rhp-eyebrow">Management</p>
-      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Welcome, {{ user.display_name }}</h1>
-      <p class="mt-2 text-sm text-ink-muted">
-        Signed in as {{ user.get_role_display }}.
-      </p>
-    </section>
+    <header class="workspace-page-heading"><h1>Dashboard</h1></header>
+    <section class="workspace-section"><h2>Needs attention</h2><div class="flex flex-wrap gap-6 mt-4">{% include "maintenance/summary.html" %}{% if is_manager %}<div><p class="font-semibold">{{ ledger_arrears_leases }} overdue account{{ ledger_arrears_leases|pluralize }}</p><a class="rhp-link" href="{% url 'ledger:overview' %}?arrears=1">Review overdue accounts</a></div><div><p class="font-semibold">{{ lease_expiring_count }} lease{{ lease_expiring_count|pluralize }} ending within 30 days</p><a class="rhp-link" href="{% url 'leases:lease-list' %}?expiring=30">Review expiring leases</a></div>{% endif %}</div></section>
 
     {% if is_manager %}
-      <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section class="dashboard-metrics grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="Portfolio summary">
         <div class="rhp-card">
           <p class="rhp-eyebrow">Properties</p>
           <p class="mt-2 text-3xl font-semibold">{{ property_active_count }}</p>
@@ -85,10 +79,11 @@
 
     {% else %}
       <section class="rhp-card">
-        <h2 class="text-sm font-semibold">Your access</h2>
+        <h2 class="text-sm font-semibold">Assigned work</h2>
         <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-          Your account does not have access to portfolio operations. Contact an administrator if your access needs have changed.
+          Review your assigned maintenance requests and record work progress.
         </p>
+        <a class="rhp-btn rhp-btn-primary mt-4" href="{% url 'maintenance:list' %}">View assigned requests</a>
       </section>
     {% endif %}
   </div>

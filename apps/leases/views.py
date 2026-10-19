@@ -32,7 +32,7 @@ from apps.accounts.permissions import (
     TenantAreaMixin,
 )
 from apps.audit.models import AuditAction
-from apps.audit.services import record
+from apps.audit.services import events_for_lease, record
 from apps.leases import services as lease_services
 from apps.leases.forms import (
     LeaseEndForm,
@@ -51,6 +51,7 @@ from apps.leases.models import (
     OnboardingMethod,
     RentPeriod,
 )
+from apps.leases.workspace import workspace_context
 from apps.ledger import services as ledger_services
 from apps.properties.models import Unit
 
@@ -75,7 +76,7 @@ class LeaseListView(ManagerRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant"
+            "lease_tenants__tenant__tenant_profile"
         )
         search = self.request.GET.get("q", "").strip()
         if search:
@@ -149,7 +150,7 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant", "rent_periods", "nnn_rates"
+            "lease_tenants__tenant__tenant_profile", "rent_periods", "nnn_rates", "documents"
         )
 
     def get_context_data(self, **kwargs):
@@ -160,6 +161,11 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
         # E1: the rent schedule and the NNN history the rent card renders.
         context["rent_schedule"] = lease_services.schedule_rows(self.object)
         context["nnn_history"] = list(reversed(self.object.nnn_rates_ordered))
+        context.update(workspace_context(self.request, self.object))
+        context["history"] = events_for_lease(self.object, limit=25)
+        context["can_post_due_charges"] = ledger_services.has_due_charges_to_post(
+            self.object, through=ledger_services.charges_due()
+        )
         return context
 
 

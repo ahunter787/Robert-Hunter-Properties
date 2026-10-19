@@ -186,3 +186,17 @@ the same migration. Chosen from a multi-select on the unit form, shown as chips 
 pagination and a property's units are never split across pages. Filters scope both levels: a property
 appears because it has a matching unit, and shows only those units. Each group is headed by the
 property's name, its type and its address, with an **Add unit** link that preselects it.
+
+## Revision: banner replacement and explicit clearing
+
+**Date:** 2026-10-19, E11 owner review.
+
+The property form now groups the banner preview, upload and **Clear banner photo** button instead
+of the original removal checkbox. A new upload replaces the current photo when the form is saved.
+Clear is a manager-authorized, CSRF-protected POST that changes only the saved banner, not unfinished
+property edits. Replaced/cleared bytes are removed after commit, so rollback retains the old photo.
+
+Successful uploads previously reused a five-minute-cached endpoint URL. Staff banner URLs now carry
+a revision derived from the randomized stored name, and the endpoint requires private-cache
+revalidation. Templates use the generated permission-checked URL; neither storage paths nor direct
+media serving are introduced. No database change is required.

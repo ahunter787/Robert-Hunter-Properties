@@ -76,7 +76,11 @@ def text_of(response) -> str:
 def test_a_manager_reads_the_property_bills(as_manager):
     property_obj, _first, _second, _responsibility, _cycle = billed_building()
 
-    body = text_of(as_manager.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
+    body = text_of(
+        as_manager.get(
+            reverse("portfolio:property-detail", args=[property_obj.pk]), {"section": "recoveries"}
+        )
+    )
 
     assert "Expense recoveries" in body
     assert "Water" in body
@@ -92,7 +96,11 @@ def test_the_card_says_what_the_landlord_carries(as_admin):
     property_obj, first, _second, responsibility, cycle = billed_building()
     services.set_shares(cycle, {first.pk: Decimal("80.00")})
 
-    body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
+    body = text_of(
+        as_admin.get(
+            reverse("portfolio:property-detail", args=[property_obj.pk]), {"section": "recoveries"}
+        )
+    )
 
     assert "$120.00 a month of this bill is not carried by a unit." in body
     assert "RHP share" in body
@@ -103,7 +111,11 @@ def test_the_card_says_when_nothing_is_staged(as_admin):
     make_unit(for_property=property_obj, identifier="1", square_feet=500)
     make_responsibility(property_obj, label="Trash")
 
-    body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
+    body = text_of(
+        as_admin.get(
+            reverse("portfolio:property-detail", args=[property_obj.pk]), {"section": "recoveries"}
+        )
+    )
 
     assert "No billing period has been scheduled." in body
 
@@ -215,7 +227,11 @@ def test_a_typed_amount_beats_the_proposal(as_admin):
         first.pk: Decimal("80.00"),
         second.pk: Decimal("48.00"),
     }
-    body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
+    body = text_of(
+        as_admin.get(
+            reverse("portfolio:property-detail", args=[property_obj.pk]), {"section": "recoveries"}
+        )
+    )
     assert "$72.00 a month of this bill is not carried by a unit." in body
 
 
@@ -411,7 +427,11 @@ def test_the_cam_rate_is_reference_only(as_admin):
         unit, start_date=TODAY.replace(day=1), end_date=TODAY + dt.timedelta(days=200)
     )
 
-    body = text_of(as_admin.get(reverse("portfolio:property-detail", args=[property_obj.pk])))
+    body = text_of(
+        as_admin.get(
+            reverse("portfolio:property-detail", args=[property_obj.pk]), {"section": "recoveries"}
+        )
+    )
     ledger_services.generate_charges(
         lease, through=due_date_in(TODAY.year + (TODAY.month == 12), (TODAY.month % 12) + 1, 31)
     )

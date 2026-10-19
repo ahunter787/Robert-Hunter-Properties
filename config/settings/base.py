@@ -64,6 +64,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.common.context_processors.portal_navigation",
             ],
             "libraries": {
                 # apps/common is a plain package rather than an installed app, so

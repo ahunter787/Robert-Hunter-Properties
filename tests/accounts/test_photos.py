@@ -50,6 +50,27 @@ def give_photo(tenant, name: str = "portrait.png", size=(300, 300)) -> str:
     return profile.photo.name
 
 
+def test_tenant_without_portrait_does_not_inherit_previous_rows_photo(as_manager):
+    first = make_tenant(username="first-portrait", first_name="A", last_name="Example")
+    second = make_tenant(username="second-no-portrait", first_name="B", last_name="Example")
+    give_photo(first)
+    body = as_manager.get(reverse("manage:account-list")).content.decode()
+    assert body.count(reverse("manage:account-photo", args=[first.pk])) == 1
+    assert reverse("manage:account-photo", args=[second.pk]) not in body
+    assert "No photo" in body
+
+
+def test_photo_input_does_not_link_private_storage_names(as_manager):
+    tenant = make_tenant(username="photo-widget")
+    name = give_photo(tenant)
+    body = as_manager.get(
+        reverse("manage:account-detail", args=[tenant.pk]) + "?section=contact"
+    ).content.decode()
+    assert name not in body
+    assert 'name="remove_photo"' in body
+    assert 'name="photo-clear"' not in body
+
+
 @pytest.fixture
 def as_admin(client):
     client.force_login(make_admin(username="photo-admin"))
@@ -233,7 +254,9 @@ def test_the_account_page_shows_the_photo_and_the_upload_form(as_admin):
         {"photo": photo_upload()},
     )
 
-    body = as_admin.get(reverse("manage:account-detail", args=[tenant.pk])).content.decode()
+    body = as_admin.get(
+        reverse("manage:account-detail", args=[tenant.pk]), {"section": "contact"}
+    ).content.decode()
 
     assert reverse("manage:account-photo", args=[tenant.pk]) in body
     assert "Replace photo" in body
@@ -243,7 +266,9 @@ def test_a_manager_can_update_the_photo(as_manager):
     tenant = make_tenant(username="ada")
     give_photo(tenant)
 
-    body = as_manager.get(reverse("manage:account-detail", args=[tenant.pk])).content.decode()
+    body = as_manager.get(
+        reverse("manage:account-detail", args=[tenant.pk]), {"section": "contact"}
+    ).content.decode()
 
     assert reverse("manage:account-photo", args=[tenant.pk]) in body
     assert "Replace photo" in body
@@ -252,10 +277,12 @@ def test_a_manager_can_update_the_photo(as_manager):
 def test_the_placeholder_is_drawn_when_there_is_no_photo(as_admin):
     tenant = make_tenant(username="ada")
 
-    body = as_admin.get(reverse("manage:account-detail", args=[tenant.pk])).content.decode()
+    body = as_admin.get(
+        reverse("manage:account-detail", args=[tenant.pk]), {"section": "contact"}
+    ).content.decode()
 
     assert "No photo" in body, "the inline placeholder, not a broken image"
-    assert "<svg" in body
+    assert 'class="person-image person-large"' in body
 
 
 def test_the_tenant_list_shows_a_portrait_for_each_tenant(as_admin):

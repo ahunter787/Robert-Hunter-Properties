@@ -38,18 +38,39 @@ def test_the_confirmation_warns_when_units_exist(as_admin):
 def test_confirming_deletes_the_property(as_admin):
     property_ = make_property()
 
-    response = as_admin.post(reverse("portfolio:property-delete", args=[property_.pk]))
+    response = as_admin.post(
+        reverse("portfolio:property-delete", args=[property_.pk]),
+        {"confirmation": "confirm delete"},
+    )
 
     assert response.status_code == 302
     assert response["Location"] == reverse("portfolio:property-list")
     assert not Property.objects.filter(pk=property_.pk).exists()
 
 
+@pytest.mark.parametrize("confirmation", ["", "delete", "CONFIRM DELETE"])
+def test_property_deletion_requires_exact_typed_confirmation(as_admin, confirmation):
+    property_ = make_property()
+    response = as_admin.post(
+        reverse("portfolio:property-delete", args=[property_.pk]),
+        {
+            "confirmation": confirmation,
+        },
+    )
+    assert response.status_code == 200
+    assert Property.objects.filter(pk=property_.pk).exists()
+    assert response.context["form"].errors
+
+
 def test_a_property_with_units_cannot_be_deleted(as_admin):
     property_ = make_property()
     make_unit(property_, identifier="A")
 
-    response = as_admin.post(reverse("portfolio:property-delete", args=[property_.pk]), follow=True)
+    response = as_admin.post(
+        reverse("portfolio:property-delete", args=[property_.pk]),
+        {"confirmation": "confirm delete"},
+        follow=True,
+    )
 
     assert Property.objects.filter(pk=property_.pk).exists()
     assert b"still has units" in response.content
@@ -61,7 +82,10 @@ def test_deleting_units_then_the_property_succeeds(as_admin):
     unit = make_unit(property_, identifier="A")
 
     as_admin.post(reverse("portfolio:unit-delete", args=[unit.pk]))
-    as_admin.post(reverse("portfolio:property-delete", args=[property_.pk]))
+    as_admin.post(
+        reverse("portfolio:property-delete", args=[property_.pk]),
+        {"confirmation": "confirm delete"},
+    )
 
     assert not Property.objects.exists()
 

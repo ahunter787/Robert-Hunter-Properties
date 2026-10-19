@@ -384,7 +384,9 @@ def test_the_lease_page_asks_for_the_history_to_be_placed(as_admin):
 
     body = " ".join(
         strip_tags(
-            as_admin.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
+            as_admin.get(
+                reverse("leases:lease-detail", args=[lease.pk]), {"section": "terms"}
+            ).content.decode()
         ).split()
     )
 

@@ -1,0 +1,8 @@
+{% if lease.unit.photo %}
+  {% url 'tenant_portfolio:photo' 'unit' as tenant_location_image %}
+{% elif lease.unit.property.banner_image %}
+  {% url 'tenant_portfolio:photo' 'property' as tenant_location_image %}
+{% else %}
+  {% firstof '' as tenant_location_image %}
+{% endif %}
+{% include "components/location_image.html" with image_url=tenant_location_image image_label=lease.unit.label image_class="location-banner" %}

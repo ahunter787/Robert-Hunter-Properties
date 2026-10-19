@@ -11,6 +11,7 @@ from apps.responsibilities import views
 app_name = "responsibilities"
 
 urlpatterns = [
+    path("responsibilities/", views.ResponsibilityOverviewView.as_view(), name="overview"),
     path(
         "properties/<int:pk>/responsibilities/new/",
         views.ResponsibilityCreateView.as_view(),

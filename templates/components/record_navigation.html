@@ -1,0 +1,4 @@
+<aside><details class="location-picker" open><summary>{{ navigation_label|default:"Record sections" }}</summary>
+<nav class="lease-sections" aria-label="{{ navigation_label|default:'Record sections' }}">
+{% for tab in record_tabs %}<a href="{{ tab.url }}" {% if tab.active %}aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+</nav></details></aside>

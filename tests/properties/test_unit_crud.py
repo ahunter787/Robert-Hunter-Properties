@@ -187,5 +187,5 @@ def test_unit_detail_points_back_at_its_property(signed_in):
     assert "Maple Street Duplex" in body
     assert "12 Maple St, Springfield, IL 62704" in body
     # The tenancy panel is real from Phase 3 on: this unit has no lease yet.
-    assert "Tenancy" in body
+    assert "Current tenancy" in body
     assert "Nobody is on a lease here right now" in body

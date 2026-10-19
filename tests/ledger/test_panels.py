@@ -69,7 +69,7 @@ def test_the_lease_page_shows_the_ledger_panel(signed_in):
 
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
-    assert "Ledger" in body
+    assert "Transactions" in body
     assert "Paid in full" in body, "the panel states the derived balance"
     assert "Rent for October" in body, "recent activity is real"
     assert reverse("ledger:lease-ledger", args=[lease.pk]) in body
@@ -82,7 +82,7 @@ def test_the_lease_page_shows_an_outstanding_balance(signed_in):
     body = signed_in.get(reverse("leases:lease-detail", args=[lease.pk])).content.decode()
 
     assert "1,850.00" in body
-    assert "past due" in body
+    assert "past due" in body.lower()
 
 
 def test_the_accounting_area_is_in_the_navigation_for_managers(signed_in):

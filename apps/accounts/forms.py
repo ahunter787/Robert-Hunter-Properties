@@ -101,6 +101,7 @@ class TenantProfileForm(StyledModelForm):
         model = TenantProfile
         fields = ["photo"]
         labels = {"photo": "Photo"}
+        widgets = {"photo": forms.FileInput()}
         help_texts = {"photo": "JPEG, PNG, or WebP."}
 
     def __init__(self, *args, **kwargs):
