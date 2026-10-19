@@ -1,0 +1,13 @@
+{% extends "communications/base.html" %}
+{% block workspace %}<div class="section-heading"><h2 class="text-lg font-semibold">Messages</h2><a class="rhp-btn rhp-btn-primary" href="{{ new_url }}">New conversation</a></div>
+{% if user.is_manager_or_above %}<a class="rhp-link" href="{% url 'communications:deliveries' %}">Review email delivery</a>{% endif %}
+<form method="get" class="workspace-section space-y-4">
+  <div class="workspace-filters">
+    <label class="rhp-label">Search conversations<input class="rhp-field" name="q" value="{{ search }}" placeholder="Subject, person, property, or unit"></label>
+    <label class="rhp-label">Work status<select class="rhp-field" name="state"><option value="">All statuses</option>{% for value,label in states %}<option value="{{ value }}" {% if request.GET.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+    <label><input type="checkbox" name="unread" value="1" {% if request.GET.unread %}checked{% endif %}> Unread for me</label>
+    <button class="rhp-btn rhp-btn-secondary">Apply filters</button>
+  </div>
+  <details {% if request.GET.property or request.GET.unit or request.GET.tenant %}open{% endif %}><summary class="rhp-link">Filter by property, unit, or tenant</summary><div class="workspace-filters mt-4">{% for field in inbox_filters %}<div>{% include "components/field.html" %}</div>{% endfor %}</div></details>
+</form>
+<ul class="space-y-3">{% for row in page %}<li class="workspace-section"><a class="rhp-link font-semibold" href="{% url namespace|add:':conversation' row.public_id %}">{{ row.subject }}</a>{% if row.unread %}<strong class="text-primary"> · Unread for you</strong>{% endif %}<p>{{ row.lease.unit.label }} · {{ row.get_visibility_display }} · {{ row.get_state_display }}</p><p class="text-sm">{% for participant in row.participants.all %}{{ participant.user.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %} · RHP staff</p><p class="text-sm text-ink-muted">Updated {{ row.updated_at|date:"M j, Y, g:i A" }}{% if row.frozen_at %} · Household history — read-only{% endif %}</p></li>{% empty %}<li class="workspace-section">No conversations match. Start a new conversation to contact {% if user.is_tenant %}RHP{% else %}a tenant{% endif %}.</li>{% endfor %}</ul>{% include "communications/pagination.html" %}{% endblock %}

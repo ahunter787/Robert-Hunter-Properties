@@ -143,6 +143,26 @@ Phase 7 adds tables and audit-action choices only: existing leases, documents an
 not transformed. Request-row and lease-row locks bind a signed recharge review to current data;
 tenant charges still go through the existing ledger service and account-state guards.
 
+## Communications (Phase 8)
+
+`communications/0001_initial` adds conversations, explicit participants, immutable messages and
+private attachments, per-user read positions, send attempts, lifecycle events, announcements,
+immutable published versions/recipient snapshots, notifications and delivery attempts. Conversation,
+announcement and attachment public routes use UUIDs; their internal audit identities remain integers.
+`audit/0010_alter_auditevent_action` adds the communications action. No existing tenancy, financial,
+document or maintenance history is transformed.
+
+Unique author/composer tokens bind a send to its payload fingerprint. Unique announcement review
+keys make publication idempotent. Participant, recipient and read-position pairs have database
+uniqueness constraints. A notification references exactly one message or published version, with
+one delivery record per source/person; its append-only attempts preserve earlier outcomes.
+
+PostgreSQL locks serialize sends, monotonic reads, membership freezes and reviewed publication.
+User locks use `FOR NO KEY UPDATE` so concurrent co-tenant notifications can reference each other's
+accounts without a foreign-key lock cycle. Sent messages, attachments, participants, published
+versions, recipients and events use append-only model/queryset guards. No communications balance
+or financial responsibility is stored. See ADR-024.
+
 ## Modeling conventions
 
 These are binding for the phases that follow (Phases 2–11):

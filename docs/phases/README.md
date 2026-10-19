@@ -24,7 +24,7 @@ across four documents: the paths, the screens, the tests, and the open questions
 | 5 | [Tenant dashboard](phase-05-tenant-dashboard.md) | Complete | What is due now, what is next, when the lease ends, and the statement — on a phone |
 | 6 | [Document management](phase-06-document-management.md) | Complete | File a lease, an addendum, a notice or an inspection against a tenancy, choose whether the tenant sees it, and hand it back only through a permission check |
 | 7 | [Maintenance](phase-07-maintenance.md) | Complete | Requests, private conversations, work tracking, costs and reviewed recharges |
-| 8 | [Communications](phase-08-communications.md) | Not started | — |
+| 8 | [Communications](phase-08-communications.md) | Complete | Private/shared messages, announcements, protected files and email delivery review |
 | 9 | [Admin dashboard](phase-09-admin-dashboard.md) | Not started | — |
 | 10 | [Reporting and search](phase-10-reporting-and-search.md) | Not started | — |
 | 11 | [Payment integration](phase-11-payment-integration.md) | Not started — approved, optional for 2027 | One-time ACH and ACH autopay; processor-hosted bank linking |

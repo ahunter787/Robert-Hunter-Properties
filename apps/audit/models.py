@@ -39,6 +39,7 @@ class AuditAction(models.TextChoices):
     MAINTENANCE_COST = "MAINTENANCE_COST", "Repair expense recorded"
     MAINTENANCE_RECHARGE = "MAINTENANCE_RECHARGE", "Repair charge posted"
     MAINTENANCE_FILE_REMOVED = "MAINTENANCE_FILE_REMOVED", "Maintenance attachment removed"
+    COMMUNICATION_CHANGED = "COMMUNICATION_CHANGED", "Communication updated"
 
 
 class AuditEventQuerySet(models.QuerySet):

@@ -1,5 +1,12 @@
 # Security
 
+Phase 8 communications follow ADR-024: explicit tenant participants, frozen household conversations,
+snapshot announcement recipients, private UUID downloads, append-only messages/versions, and manager
+only operational controls. Every read/send/read-position/download is independently scoped. New lease
+members never inherit old conversation or announcement history. Follow-up is explicit and independent
+of settlement. Email uses neutral links, rechecks authorization and excludes the sender; ambiguous
+delivery is not proof of failure or permission for silent duplicate retry. Workers have no inbox.
+
 RHP will hold tenant identity data, lease documents, and financial records. Security is a
 first-class requirement, not a hardening phase: the rules below are binding from the first feature
 phase onward. Phase 12 adds the operational layer (backups, monitoring, MFA, penetration testing).

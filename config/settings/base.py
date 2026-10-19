@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "apps.documents",
     "apps.audit",
     "apps.maintenance",
+    "apps.communications",
 ]
 
 MIDDLEWARE = [
@@ -51,6 +52,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+RHP_COMMUNICATION_SEND_LIMIT = env.int("RHP_COMMUNICATION_SEND_LIMIT", default=30)
 
 ROOT_URLCONF = "config.urls"
 

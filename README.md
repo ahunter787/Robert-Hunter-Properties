@@ -9,7 +9,9 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 7 and E11's Operations Desk migration are owner-accepted for the local baseline. Phase 8 communications implementation is authorized next. Nothing has been pushed.**
+**Current status: Phase 7 and the accepted E11 Operations Desk are merged into local `main`.
+Phase 8 communications is implemented, verified, and owner-accepted for local merge.
+Nothing has been pushed or externally deployed.**
 RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
 tenants are created by staff and invited, roles gate every route server-side, the portfolio can be
@@ -43,6 +45,8 @@ conversations, assigned work, repair expenses, reviewed tenant recharges, and du
 | `/account/profile/` | the account page: details, contact information, password change |
 | `/maintenance/` | tenant requests and their own tenancy conversations; former tenants retain read-only history |
 | `/manage/maintenance/` | staff queue, work tracking, explicit sharing, manager-only expenses and reviewed recharges |
+| `/communications/` | tenant private/shared conversations and recorded announcement history |
+| `/manage/communications/` | shared RHP inbox, announcements, publication review and email delivery retries |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
 | `/manage/` | staff landing page with portfolio, occupancy and money counters |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
@@ -190,6 +194,7 @@ apps/properties/ portfolio: properties and units (Phase 2)
 apps/leases/     lease desk and the tenant's own lease (Phase 3)
 apps/ledger/     accounting: charges, payments, balances (Phase 4)
 apps/audit/      the audit trail: who changed what (Phase 4)
+apps/communications/ tenancy-scoped messages, announcements and durable email attempts (Phase 8)
 apps/common/     shared building blocks (form styling, dates, filters)
 templates/       account/, management/, tenancy/, components/, error pages, base layout
 assets/css/      Tailwind entry point (built into static/css/rhp.css)

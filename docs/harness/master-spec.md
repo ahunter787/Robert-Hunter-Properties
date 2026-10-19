@@ -823,6 +823,7 @@ Examples:
 Announcements may target:
 - everyone
 - one property
+- selected properties
 
 Owner-approved scope extension, October 17, 2026 — E12 / P8-E1:
 Include saved tenant/management conversations, explicit authorized participants, private attachments,
@@ -831,10 +832,12 @@ follow-up opens a private conversation, not public comments. Optional open-page 
 existing Django/HTMX stack, with complete plain-form operation. No native mobile app, push notifications,
 SMS, general group/community chat, presence/typing indicators or new queue/realtime service is required.
 
-The capability specification and unresolved access/lifecycle choices are in
-`docs/phases/phase-08-communications.md`. Messaging scope is approved but unbuilt; recommendations
-in that record are not owner answers. An implementation ADR and resolved choices are required before
-code. Presentation remains the separate E11 decision; no layout or visual language is selected here.
+The capability specification and recorded access/lifecycle answers are in
+`docs/phases/phase-08-communications.md`. The owner resolved the questions October 19, 2026 and
+authorized ADR-024 implementation on `rhp-8` after the accepted E11 local merge. Use the Operations
+Desk shell, one Communications workspace, private/shared topic threads, manager-enabled move-out
+follow-up, frozen household history, fixed announcement recipients, important-only email and no
+acknowledgment. Preserve maintenance and financial boundaries.
 
 Acceptance criteria:
 - announcement appears only to intended tenants

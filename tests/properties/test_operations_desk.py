@@ -45,6 +45,7 @@ def test_sidebar_order_and_no_redundant_middle_navigation(client, manager):
         "Rent & Payments",
         "Expense recoveries",
         "Maintenance",
+        "Communications",
         "Documents",
     ]
     body = response.content.decode()

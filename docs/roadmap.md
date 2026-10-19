@@ -20,7 +20,7 @@ lives. For the long-horizon view — which later phase will change something tha
 | 5 | Tenant dashboard | **Complete** |
 | 6 | Document management | **Complete** |
 | 7 | Maintenance system | **Complete** |
-| 8 | Communications (announcements and tenant–RHP messaging) | Not started — messaging scope approved; decisions pending |
+| 8 | Communications (announcements and tenant–RHP messaging) | **Complete** |
 | 9 | Admin dashboard | Not started |
 | 10 | Reporting and search | Not started |
 | 11 | Payment integration | Not started — approved, optional for 2027 |
@@ -45,7 +45,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
 | E10 | RHP property accounting — general-ledger style books | Future | — | — |
 | E11 | Operations desk — shared shell and application migration | In main — owner accepted October 19, 2026; local merge authorized | [Implementation](design/implementation.md) | `codex/operations-desk` |
-| E12 | Tenant–RHP messaging (`P8-E1`) — conversations, unread state, protected attachments and email | Approved scope — unbuilt; decisions pending | [Phase 8](phases/phase-08-communications.md) | not started |
+| E12 | Tenant–RHP messaging (`P8-E1`) — conversations, unread state, protected attachments and email | In main — owner accepted for local merge | [ADR-024](decisions/ADR-024-communications.md) | folded |
 
 ## Milestones
 
@@ -286,7 +286,9 @@ No financial liability is inferred, and existing occupancy/account locks remain 
 
 Property-scoped announcements (water shutoff, inspections, parking, holidays) that appear only to the
 intended tenants and expire correctly. E12 / P8-E1 adds bounded tenant–RHP messaging in approved scope;
-implementation and access/lifecycle decisions remain pending. See the [Phase 8 record](phases/phase-08-communications.md).
+owner decisions are resolved and implementation is owner-accepted for local merge after the
+“Allow messages after move-out” wording correction. Recorded manual verification gaps remain explicit.
+See the [Phase 8 record](phases/phase-08-communications.md).
 
 ## Phase 9 — Admin dashboard
 

@@ -102,8 +102,9 @@ view of them.
   yet. Phase 6 is built, so a receipt can be filed by hand like any other document today; generating one
   from a recorded payment is Phase 10, and whether RHP wants it is your call.
 - **Direct messaging** — E12 / P8-E1, scope approved October 17, 2026: bounded tenant–RHP conversations,
-  attachments, unread state and email, without native apps or push. Phase 8 remains unbuilt; its access/
-  lifecycle questions need answers and E11 presentation selection is independent.
+  attachments, unread state and email, without native apps or push. The owner resolved private/shared
+  scope, move-out follow-up and publication snapshots on October 19. Phase 8 is implemented and
+  owner-accepted for local merge using the E11 shell; see ADR-024 and the Phase 8 record for evidence.
 - **Payment provider** — P11-Q1. Phase 11 waits for your decision, and nothing else is blocked by it.
 - **How much tenants should see** — P5-Q1. Phase 4 shows a tenant their balance, the next amount and
   activity, but not the audit trail behind it. Whether a tenant ever sees the history of changes to their own

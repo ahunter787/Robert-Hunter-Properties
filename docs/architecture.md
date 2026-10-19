@@ -5,7 +5,7 @@ Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](deci
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a
 small property-management business, and it can move from a local VM to a cloud VPS unchanged.
 
-**Status: Phase 7 complete and owner-accepted for local merge.** Identity, portfolio,
+**Status: Phase 7, E11 and Phase 8 owner-accepted for the local baseline.** Identity, portfolio,
 leases, the rent ledger, tenant pages and documents are established; maintenance adds private
 tenancy conversations, assigned work, repair expenses and reviewed recharges. Domain apps arrive one phase at a time
 ([`roadmap.md`](roadmap.md)).
@@ -74,6 +74,7 @@ apps/                   domain apps, one per phase
   ledger/                 accounting: charges, payments, balances (Phase 4)
   audit/                  the audit trail: who changed what (Phase 4)
   documents/              documents: one row per uploaded file, and its screens (Phase 6)
+  communications/         fixed-participant messages, announcement snapshots and email attempts (Phase 8)
   maintenance/            requests, private conversations, work, costs, recharge reviews and email (Phase 7)
   common/                 shared, domain-neutral building blocks (form styling, dates, filters, the file rules)
 templates/              base layout, components/, account/, management/, tenancy/
@@ -119,6 +120,11 @@ publishes build output.
   the responsibility row serializes allocation saves and expense-charge generation so posted
   history cannot race an allocation edit. Review signatures include the saved allocation, unit
   roster, bill and tenancy facts, and bind the reviewed cents to the acting manager.
+
+Phase 8 implementation uses `apps/communications`, not maintenance Update/Attachment records.
+Fixed conversation participants and announcement recipient snapshots define tenant scope. PostgreSQL
+locks protect sends, lifecycle changes, read positions and signed publication reviews. Durable email
+intent dispatches after commit with per-attempt outcomes; no queue/realtime dependency. See ADR-024.
 
 ## Design language
 

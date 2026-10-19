@@ -109,6 +109,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
 
         lease = leases_visible_for(request.user)
         ledger = ledger_services.build_ledger(lease) if lease else None
+        from apps.communications.summary import communications_summary
         from apps.maintenance.summary import maintenance_summary
 
         return render(
@@ -120,6 +121,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
                 "activity_limit": settings.RHP_LEDGER_ACTIVITY_LIMIT,
                 "lease_days_remaining": _days_remaining(lease),
                 "maintenance": maintenance_summary(request.user),
+                "communications": communications_summary(request.user),
             },
         )
 
@@ -227,6 +229,9 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
         from apps.maintenance.summary import maintenance_summary
 
         context["maintenance"] = maintenance_summary(user)
+        from apps.communications.summary import communications_summary
+
+        context["communications"] = communications_summary(user)
 
         if user.is_manager_or_above:
             context["property_active_count"] = Property.objects.active().count()

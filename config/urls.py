@@ -26,6 +26,8 @@ urlpatterns = [
     path("payments/", include("apps.ledger.urls_tenant")),
     path("maintenance/", include("apps.maintenance.urls_tenant")),
     path("manage/maintenance/", include("apps.maintenance.urls_management")),
+    path("communications/", include("apps.communications.urls_tenant")),
+    path("manage/communications/", include("apps.communications.urls_management")),
     path("admin/", admin.site.urls),
 ]
 

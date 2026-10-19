@@ -1,6 +1,6 @@
 # Operations Desk application migration
 
-**Status:** Complete — owner accepted October 19, 2026 for local merge
+**Status:** Complete — owner accepted and locally merged October 19, 2026
 **Register:** E11; not Phase 8, Phase 9, or property accounting.
 **Owner approval:** October 18, 2026, approved implementation plan in chat.
 
@@ -12,6 +12,11 @@ separately, then work on `codex/operations-desk`. Do not push. The owner subsequ
 including the banner correction, and authorized its local commit/merge and starting `rhp-8`.
 The Properties review checkpoint was accepted before propagating the remaining layouts. The shared
 role-aware shell surrounds the completed record workspaces and existing operational forms.
+
+The accepted application was preserved on `codex/operations-desk` as `9b90b7d` and squashed into
+local `main` as `1e906b6`. Earlier local `main` commits were retained. The design branch remains
+available for recovery; nothing was pushed or deployed. Phase 8 implementation now belongs to
+`rhp-8` and does not reopen E11 or implement the separate prior-activity calculator proposal.
 
 Owner-supplied unit photos added to the original interactive-review page remain there unchanged.
 They are not copied into tracked assets or synthetic published application captures. That page is

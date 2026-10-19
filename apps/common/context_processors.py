@@ -21,6 +21,8 @@ def portal_navigation(request):
         "payments": "payments",
         "tenant_documents": "documents",
         "tenant_maintenance": "maintenance",
+        "communications": "communications",
+        "tenant_communications": "communications",
     }.get(namespace, "dashboard")
     if namespace == "manage" and name.startswith("account-"):
         active = "tenants"
@@ -35,6 +37,7 @@ def portal_navigation(request):
             ("ledger", "Rent & Payments", "ledger:overview"),
             ("recoveries", "Expense recoveries", "responsibilities:overview"),
             ("maintenance", "Maintenance", "maintenance:list"),
+            ("communications", "Communications", "communications:index"),
             ("documents", "Documents", "documents:list"),
         ]
     elif user.is_tenant:
@@ -43,6 +46,7 @@ def portal_navigation(request):
             ("lease", "Lease", "tenancy:lease"),
             ("payments", "Payments", "payments:home"),
             ("maintenance", "Maintenance", "tenant_maintenance:list"),
+            ("communications", "Communications", "tenant_communications:index"),
             ("documents", "Documents", "tenant_documents:list"),
         ]
     else:
