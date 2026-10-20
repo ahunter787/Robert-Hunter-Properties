@@ -42,6 +42,11 @@ tenancy conversations, assigned work, repair expenses and reviewed recharges. Do
 
 ## Request flow
 
+Phase 9 centralizes read-only dashboard projections and metric detail populations. It reuses ledger
+arithmetic, effective payments and lease occupancy, with no stored summaries. Activity reads the
+existing audit table through a role-scoped, bulk-resolved projection; raw metadata is not rendered.
+See ADR-025. Existing tenant and assigned-worker dashboards remain independent.
+
 Phase 7 adds `apps/maintenance`: physical requests, explicit tenancy audiences, scoped
 timeline updates and attachments, vendors, immutable cost entries and ledger recharge links.
 An integer identity integrates with audit events while public routes use UUIDs. Request
@@ -186,7 +191,9 @@ while `role` gates the RHP portal (ADR-003). Staff-only views mix in a permissio
 | `/account/invite/<uidb64>/<token>/` | accept an invitation and set a password |
 | `/account/profile/`, `/account/password/` | account page, contact details, password change |
 | `/account/` | role-aware home: the **tenant dashboard**, or a redirect to `/manage/` for staff |
-| `/manage/` | staff landing page with the counters that role can use |
+| `/manage/` | rent-first operational dashboard; assigned-work-only landing for maintenance workers |
+| `/manage/dashboard/<metric>/` | shared read-only projection explaining each dashboard figure |
+| `/manage/activity/` | paginated operational audit history with validated filters and role-scoped events |
 | `/manage/properties/…` | portfolio: list, create, detail, edit, take out of service, delete (admin) |
 | `/manage/properties/<pk>/banner/` | the banner photo, served by a permission-checked view (never a public media path) |
 | `/manage/units/…` | units the same way, attached to a property |

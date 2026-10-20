@@ -849,6 +849,12 @@ Acceptance criteria:
 PHASE 9 — ADMIN DASHBOARD
 -------------------------
 
+Owner-approved implementation, October 19, 2026 (ADR-025): replace the existing staff dashboard,
+rent first; all posted charge categories; live calculations on page load; cumulative 30/90-day
+lease windows; searchable operational history with role changes superadmin-only. Every metric has
+a matching read-only drill-down. Month charges use original due dates with corrections; effective
+cleared payments use payment dates. No invented monthly outstanding, stored totals or new accounting.
+
 Goal:
 Give RHP a useful operating overview.
 

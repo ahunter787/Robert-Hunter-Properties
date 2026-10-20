@@ -13,6 +13,11 @@ phase onward. Phase 12 adds the operational layer (backups, monitoring, MFA, pen
 
 ## Authorization
 
+Phase 9 metric/detail and activity endpoints independently require manager access. Role-change
+events are superadmin-only. Activity renders action labels and whitelisted object context, never
+unrestricted summaries/metadata, communications bodies or private attachments. Missing targets do
+not grant guessed links. Worker/tenant direct access remains forbidden (ADR-025).
+
 Maintenance entry permission records a tenant's request-specific authorization for RHP staff
 and assigned repair professionals, not landlord self-authorization or an exemption from entry
 notice requirements. Manager-recorded offline authorization/withdrawal requires a source note

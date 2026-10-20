@@ -21,7 +21,7 @@ lives. For the long-horizon view — which later phase will change something tha
 | 6 | Document management | **Complete** |
 | 7 | Maintenance system | **Complete** |
 | 8 | Communications (announcements and tenant–RHP messaging) | **Complete** |
-| 9 | Admin dashboard | Not started |
+| 9 | Admin dashboard | **Complete** |
 | 10 | Reporting and search | Not started |
 | 11 | Payment integration | Not started — approved, optional for 2027 |
 | 12 | Production hardening | Not started |

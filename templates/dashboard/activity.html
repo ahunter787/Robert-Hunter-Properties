@@ -1,0 +1,3 @@
+{% extends "base.html" %}
+{% block title %}Activity history — RHP{% endblock %}
+{% block content %}<div class="space-y-6"><header class="workspace-page-heading"><h1>Activity history</h1><p>Recorded changes across RHP. Open a record for its details and existing history.</p></header><form method="get" class="workspace-section space-y-4"><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{% include "components/form.html" %}</div><button class="rhp-btn rhp-btn-primary">Apply filters</button><a class="rhp-link" href="{% url 'manage:activity' %}">Clear filters</a></form><section class="workspace-section">{% include "dashboard/events.html" %}</section>{% include "communications/pagination.html" %}</div>{% endblock %}

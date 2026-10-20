@@ -39,6 +39,7 @@ from apps.accounts.permissions import (
 )
 from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
+from apps.audit.models import AuditAction
 from apps.common.workspaces import section_navigation
 from apps.leases.models import Lease, LeaseStatus
 from apps.leases.views import visible_lease_for as leases_visible_for
@@ -234,6 +235,10 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
         context["communications"] = communications_summary(user)
 
         if user.is_manager_or_above:
+            from apps.dashboard import activity
+            from apps.dashboard import services as dashboard_services
+
+            context["dashboard"] = dashboard_services.project(user)
             context["property_active_count"] = Property.objects.active().count()
             context["property_total_count"] = Property.objects.count()
             context["unit_active_count"] = Unit.objects.active().count()
@@ -254,15 +259,17 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
 
             # Money comes from the ledger's own definitions, not from a second
             # opinion about what a balance is (ADR-008).
-            ledger_rows = ledger_services.ledger_rows()
-            ledger_totals = ledger_services.totals(ledger_rows)
-            context["ledger_outstanding"] = ledger_totals["outstanding"]
-            context["ledger_due_now"] = ledger_totals["due_now"]
-            context["ledger_arrears"] = ledger_totals["arrears"]
-            context["ledger_arrears_leases"] = ledger_totals["arrears_leases"]
+            metrics = context["dashboard"]["metrics"]
+            context["ledger_outstanding"] = metrics["balances"].value
+            context["ledger_due_now"] = metrics["due-now"].value
+            context["ledger_arrears"] = metrics["past-due"].value
+            context["ledger_arrears_leases"] = metrics["overdue-accounts"].value
 
         if user.is_manager_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()
+            context["recent_events"] = activity.project(
+                activity.visible(user).exclude(action=AuditAction.ROLE_CHANGED)[:10]
+            )
         return context
 
 

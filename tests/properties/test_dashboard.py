@@ -31,7 +31,11 @@ def test_a_manager_sees_portfolio_counts(client):
     assert response.context["property_total_count"] == 2
     assert response.context["unit_active_count"] == 1
     assert response.context["unit_total_count"] == 2
-    assert "in service of 2 total" in response.content.decode()
+    metrics = response.context["dashboard"]["metrics"]
+    assert metrics["properties"].value == 2
+    assert metrics["units"].value == 1
+    assert metrics["properties"].url in response.content.decode()
+    assert metrics["units"].url in response.content.decode()
 
 
 def test_a_manager_sees_the_active_tenant_count(client):

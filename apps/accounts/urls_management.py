@@ -7,11 +7,14 @@ staff routes structurally separate from the tenant-facing ones (ADR-003).
 from django.urls import path
 
 from apps.accounts import views
+from apps.dashboard.views import ActivityBrowser, MetricDetail
 
 app_name = "manage"
 
 urlpatterns = [
     path("", views.ManageHomeView.as_view(), name="home"),
+    path("activity/", ActivityBrowser.as_view(), name="activity"),
+    path("dashboard/<slug:metric>/", MetricDetail.as_view(), name="dashboard-detail"),
     # Accounts
     path("accounts/", views.TenantAccountListView.as_view(), name="account-list"),
     path("accounts/new/", views.TenantAccountCreateView.as_view(), name="account-create"),

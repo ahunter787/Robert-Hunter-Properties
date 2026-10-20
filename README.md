@@ -9,8 +9,8 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phase 7 and the accepted E11 Operations Desk are merged into local `main`.
-Phase 8 communications is implemented, verified, and owner-accepted for local merge.
+**Current status: Phases 7–8 and the accepted E11 Operations Desk are merged into local `main`.
+Phase 9 operational dashboard is owner-accepted for local preservation and merge.
 Nothing has been pushed or externally deployed.**
 RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,
@@ -48,7 +48,9 @@ conversations, assigned work, repair expenses, reviewed tenant recharges, and du
 | `/communications/` | tenant private/shared conversations and recorded announcement history |
 | `/manage/communications/` | shared RHP inbox, announcements, publication review and email delivery retries |
 | `/account/invite/<uidb64>/<token>/` | where an invited tenant sets their password |
-| `/manage/` | staff landing page with portfolio, occupancy and money counters |
+| `/manage/` | rent-first operational dashboard with linked financial, maintenance, communications and portfolio summaries |
+| `/manage/dashboard/<metric>/` | read-only records explaining a dashboard figure |
+| `/manage/activity/` | searchable operational audit history; role changes remain superadmin-only |
 | `/manage/properties/`, `/manage/units/` | the portfolio: create, edit, take out of service; delete is admin-only |
 | `/manage/leases/` | the lease desk: create, edit, activate, end, and attach the signed lease; deleting a draft is admin-only |
 | `/manage/ledger/` | accounting: each live lease's balance, what is past due, and what is coming due; each lease has its own ledger |
