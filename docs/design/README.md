@@ -24,6 +24,7 @@ A private local prototype may use a read-only development-data snapshot; never p
 - [Three interface concepts and comparison](concepts.md)
 - [Decisions and owner feedback](decisions.md)
 - [Publication and reproducible artifacts](publication.md)
+- [Property accounting — a built-in ledger, exported for the accountant](property-accounting.md)
 
 ## Review sequence
 
@@ -35,3 +36,8 @@ A private local prototype may use a read-only development-data snapshot; never p
 
 The Phase 7 corrections are owner-accepted for local merge. This study adds no later-phase product behavior,
 accounting, payment processing, request deletion, or altered financial responsibility.
+
+**Property accounting is no longer "later":** the owner approved building it as extension E10 on
+October 20, 2026, after comparing the established products. It has its own record
+([ADR-026](../decisions/ADR-026-property-accounting.md)) and blueprint rather than being part of this design
+study, and it changes nothing in the screens reviewed here.

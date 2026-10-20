@@ -105,3 +105,15 @@ review rounds and explicitly separates proposals from approved choices. Balanced
 are the starting treatment. The next review is a full-color prototype, not production rollout.
 Future accounting remains E10, messaging E12/Phase 8 and payment processing Phase 11; none is
 introduced by the design work.
+
+## Property accounting — October 20, 2026
+
+The owner asked how accounting is normally done and whether RHP should integrate an established system
+(GnuCash was examined) instead of building one. The product comparison settled it: Buildium, AppFolio,
+TenantCloud and Innago all **build property accounting** and treat QuickBooks as a one-way copy for an
+accountant; GnuCash is a single-user desktop ledger with no API and must not be written from outside its
+own libraries. The owner approved a bounded in-app double-entry general ledger, posted from the existing
+tenant sub-ledger, with a journal export for an accountant — extension **E10**, decision
+[ADR-026](../decisions/ADR-026-property-accounting.md), blueprint
+[property-accounting.md](property-accounting.md). It is a separate extension with its own slices; nothing in
+the E11 or Phase 7–9 work changes, and no tenant-facing screen is affected.

@@ -95,6 +95,7 @@ apps/                   domain apps, one per phase
   properties/             portfolio: properties and units (Phase 2)
   leases/                 tenancies: the lease desk and the tenant's lease (Phase 3)
   ledger/                 accounting: charges, payments, balances (Phase 4)
+  accounting/             property accounting: chart, journals, banks, reconciliation (E10, in design)
   audit/                  the audit trail: who changed what (Phase 4)
   documents/              documents: one row per uploaded file, and its screens (Phase 6)
   communications/         fixed-participant messages, announcement snapshots and email attempts (Phase 8)
@@ -342,3 +343,14 @@ been a lie. Phase 3 filled them from the lease definition, and the property and 
 reshaped: roles, permissions, scoping and the portfolio model are used unchanged. Phase 3 added no new
 dependency — lease documents reuse the upload validation and permission-checked serving that Phase 2's
 banners established.
+
+## Property accounting (E10) — the boundary
+
+E10 adds a general ledger beside the ledger (ADR-026). The tenant sub-ledger stays the operational source of
+truth for what a tenancy owes; the GL posts journals from those records once per source row, and every
+balance and report is derived from journal lines rather than stored — the same rule the ledger already
+follows. An AR control account must equal the sum of tenant-ledger balances, asserted by tests, so the two
+readings cannot drift. The GL is staff-only: managers read and reconcile, administrators own the chart of
+accounts and manual journals, and no tenant route reaches any accounting record. Bank statements are
+imported and reconciled against journal lines; they never rewrite an entry. The blueprint is
+[`design/property-accounting.md`](design/property-accounting.md) and the build is sliced `E10-B1`…`B5`.

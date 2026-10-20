@@ -301,6 +301,13 @@ balance is a wrong entry, not a wrong number (ADR-008).
 - **No card or bank credential is ever stored by RHP.** A payment records an
   amount, a date, a method label and a free-text reference. Phase 11 integrates a provider; when it
   does, bank linking and tokens belong to the provider, never to this database.
+- **Property accounting (E10) is a second reading, not a second set of money.** Journals post from the
+  ledger's own records once per source row and are immutable once posted; a correction is a reversing entry
+  with an actor and a reason. The AR control account must equal the sum of tenant-ledger balances (a tested
+  invariant), so the two readings cannot drift. The chart of accounts and manual journals are administrator
+  acts; journals, disbursements and reconciliation are manager-and-above; **no tenant route reaches any
+  accounting record**. Imported bank statements are reconciled against entries and never rewrite them; a
+  reconciled period is reopened with a reason, as a settled account is ([ADR-026](decisions/ADR-026-property-accounting.md)).
 
 ## Dependencies and updates
 

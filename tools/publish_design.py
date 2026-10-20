@@ -28,6 +28,7 @@ NAMES = [
     "financial-implementation.md",
     "financial-clarity-owner-notes.md",
     "financial-clarity/README.md",
+    "property-accounting.md",
 ]
 
 

@@ -193,6 +193,16 @@ These are binding for the phases that follow (Phases 2–11):
 - **Tenant scoping is a query concern**: models do not carry "who may see me" logic; the view or a
   manager method applies the authorization scope (see [`security.md`](security.md)).
 
+## Property accounting (E10 — planned)
+
+E10 adds a general ledger beside the ledger, in a new `accounting` app (ADR-026). Planned tables, with money
+always `DecimalField(12,2)` and append-only once posted: `accounting_chart_account`,
+`accounting_account_mapping`, `accounting_journal_entry`, `accounting_journal_line`,
+`accounting_bank_account`, `accounting_bank_statement`, `accounting_statement_line`,
+`accounting_reconciliation`, `accounting_disbursement`, `accounting_deposit_event`. Balances are derived
+from journal lines, never stored; a posted entry is corrected by a reversing entry. The design is
+[the blueprint](design/property-accounting.md); each table arrives with the slice that needs it.
+
 ## Testing
 
 `pytest-django` creates the `test_<POSTGRES_DB>` database against the same PostgreSQL server, so

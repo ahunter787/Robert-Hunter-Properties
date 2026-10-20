@@ -8,7 +8,9 @@ is a specification amendment (the states and what they mean for money), recorded
 [ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is complete and in `main`**;
 it is the phase E6 was waiting for, so **E6 is no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
 (concessions) is proposed**, re-scoped by the owner's own 2022 example; **E7 (a unit's ledger history)
-and E8 (early termination) are proposed; E10 (property accounting) is future work.**
+and E8 (early termination) are proposed; **E10 (property accounting) is in design** — the owner's decision to
+build it, and to export to an accountant rather than integrate an external ledger, is
+[ADR-026](decisions/ADR-026-property-accounting.md).**
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -31,7 +33,7 @@ parser accepts the longer form.
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md); October 20 financial reading surface, expandable bills and history recovery owner-accepted for local merge; remaining forms deferred [record](design/financial-implementation.md) |
-| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | Future — outside the rent-ledger scope |
+| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **In design** — [ADR-026](decisions/ADR-026-property-accounting.md) |
 | **E11** | **Operations desk application migration** — persistent sidebar, unified Properties and existing portal workflows; RHP domain rules preserved | Presentation | In main — [owner accepted October 19, 2026](design/implementation.md); local merge authorized, no push |
 | **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | In main — owner accepted for local merge; [Phase 8](phases/phase-08-communications.md), ADR-024 |
 
@@ -434,10 +436,27 @@ ecosystem verification are separate from asset-publication completion.
 
 ## 11. E10 — RHP property accounting
 
-**Status: future.** This extension will add landlord-side accounting only for properties Robert Hunter
-Properties owns. It is not third-party property-management accounting and does not change the tenant rent
-ledger. Its eventual design must define a chart of accounts, bank reconciliation, expenses, owner reports,
-and the boundary between tenant ledger transactions and the general ledger before implementation begins.
+**Status: in design** — the decision is [ADR-026](decisions/ADR-026-property-accounting.md) and the working
+blueprint is [the property-accounting study](design/property-accounting.md).
+
+This extension adds landlord-side accounting only for properties Robert Hunter Properties owns. It is not
+third-party property-management accounting and does not change the tenant rent ledger. The owner's question
+was whether to integrate established accounting software instead of building one; the answer, from the
+products that do this for a living — Buildium, AppFolio, TenantCloud and Innago — is that **property
+accounting is built in**, and QuickBooks is a one-way copy for an accountant. GnuCash was examined and
+rejected as a backend: it is a single-user desktop ledger with no API, whose database must not be written
+from outside its own libraries.
+
+Built in: a chart of accounts, journals posted from the existing sub-ledger, bank accounts with statement
+import and a three-way reconciliation, cash disbursements, security-deposit movements, an AR control that
+must equal the tenant-ledger total, and statements (trial balance, income statement by property, balance
+sheet, cash flow, Schedule E summary). Exported, not integrated: a journal CSV and a plain-text journal for
+an accountant. Out of scope: trust/escrow accounting and management fees (RHP owns its properties),
+third-party owner distributions, 1099 e-filing, depreciation and tax schedules (the separate business-side
+domain in §13), and payment processing (Phase 11).
+
+The design is sliced `E10-B1` … `E10-B5`, each with its own migration, tests and owner review; the blueprint
+carries the chart, the posting rules, the controls and the build order.
 
 
 ---

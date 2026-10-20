@@ -63,6 +63,7 @@ Things that will be revisited, and by which phase. This is the quickest way to s
 | Balance and charge states | Phase 4 | Phase 9, 10, 11 | Reported on in the dashboard and the money reports; a provider may need payments applied to named charges rather than oldest-first (P11-Q3). Phase 5's review split the one balance into what is due now, what is past due and what is coming due (ADR-008, ADR-012) |
 | Audit trail | Phase 4 | Phase 9, 12 | Phase 9 adds the audit browser; Phase 12 decides retention (P12-Q4) |
 | Expense recoveries vs maintenance cost | P4-E2 | Phase 7 | Recurring cycles remain separate. ADR-023 links reviewed one-time repair costs directly to ordinary ledger charges, without inferring liability (P7-Q2 answered) |
+| Tenant ledger money facts | Phase 4 | **E10 (in design)** | The general ledger posts from these records once per source row; the AR control must equal the tenant-ledger total, and no balance is derived twice (ADR-026) |
 
 ## Questions deliberately left open
 
