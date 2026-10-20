@@ -101,7 +101,7 @@ def test_a_tenant_paid_ahead_sees_credit_not_debt(client, dashboard):
 
     body = client.get(dashboard).content.decode()
 
-    assert "credit" in body
+    assert "Credit balance" in body
     assert "11,000.00" in body, "the year's prepayment shows as credit, not as a debt"
     assert "Due now" in body and "$0.00" in body
 
@@ -225,7 +225,7 @@ def test_an_expected_payment_is_shown_without_moving_the_balance(client, dashboa
     body = client.get(dashboard).content.decode()
 
     assert "1,000.00" in body, "expected money is not money"
-    assert "Payment expected" in body, "a promise is labelled as one"
+    assert "Expected—not received" in body, "a promise is labelled as one"
 
 
 def test_two_tenants_never_see_each_others_money(client, dashboard):

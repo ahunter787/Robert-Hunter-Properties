@@ -23,6 +23,23 @@ The same lease exposed two more gaps:
 
 ## Decision
 
+### October 20, 2026 recovery amendment — existing history without a billing start date
+
+An older active lease may already contain charges/payments but lack its billing start date.
+Initial setup must still refuse to recreate that history. Instead, the existing setup URL offers
+**Keep existing account history**: choose an in-term billing start date and a reason, review current
+entry counts/date range/account balance, and explicitly confirm. No entry is added, removed,
+adjusted or inferred. The billing start date alone is saved with an append-only LEASE_ONBOARDED
+audit event identifying `workflow=keep_existing_history`, the reason, actor and reviewed fingerprint.
+Do not fabricate a LeaseOnboarding HISTORY/POSITION record or a historical payment total.
+
+The signed review expires after 30 minutes and binds the lease, manager, date, reason and current
+lease/charge/payment/schedule state. Confirmation locks the lease and rejects stale, tampered,
+expired, wrong-manager and replayed reviews. Only managers/admins may use it; ended or settled
+accounts and leases without charges are ineligible. Preview, Back and Cancel do not write.
+The date controls future explicit posting checks; existing records on either side remain visible.
+There is no automatic live-record repair or generation. The prior-payment calculator stays deferred.
+
 ### A lease has a cutover: the first month RHP bills for
 
 `Lease.billing_start_date`. Blank means the term's start, which is what a tenancy that began inside RHP

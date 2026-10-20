@@ -831,7 +831,7 @@ def test_the_tenant_summary_names_the_nnn_part(client):
     body = " ".join(strip_tags(client.get(reverse("payments:home")).content.decode()).split())
 
     assert "Upcoming" in body and "$1,150.00" in body
-    assert f"Due {due:%b} {due.day}, {due.year}" in body
+    assert f"Next due {due:%b} {due.day}, {due.year}" in body
     assert "Base rent" in body and "$1,000.00" in body
     assert "NNN" in body and "$150.00" in body
 

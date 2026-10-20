@@ -30,7 +30,7 @@ parser accepts the longer form.
 | **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Proposed** — was waiting on Phase 6, which is now built; the owner's decision: a charge always has its evidence from the day it exists |
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
-| **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md) |
+| **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md); October 20 financial reading surface, expandable bills and history recovery owner-accepted for local merge; remaining forms deferred [record](design/financial-implementation.md) |
 | **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | Future — outside the rent-ledger scope |
 | **E11** | **Operations desk application migration** — persistent sidebar, unified Properties and existing portal workflows; RHP domain rules preserved | Presentation | In main — [owner accepted October 19, 2026](design/implementation.md); local merge authorized, no push |
 | **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | In main — owner accepted for local merge; [Phase 8](phases/phase-08-communications.md), ADR-024 |
@@ -413,6 +413,24 @@ not change route paths, store a balance, add a payment provider, or add general-
 Future property accounting is limited to properties owned by RHP. Phase 11 is separately approved as an
 optional 2027 capability for one-time ACH and ACH autopay using processor-hosted or tokenized bank linking;
 RHP will never store bank credentials.
+
+### October 20, 2026 — financial clarity follow-up
+
+Owner authorized a separate audit of language, icons/color and manager editing workflows after the
+Phase 9 local merge. [Findings](design/financial-audit.md), [vocabulary](design/financial-vocabulary.md)
+and [proposed implementation units](design/financial-implementation.md) preserve the original Outline
+notes. The owner subsequently approved the financial first implementation release for staff and
+tenants. The delivered `codex/financial-clarity` checkpoint provides one shared lease financial
+workspace, amount-only red/green/purple/black semantics, expandable due-date bills and reviewed
+existing-history recovery. The owner accepted these changes and authorized local preservation and
+squash into `main`. Remaining financial forms and nonfinancial editing findings remain deferred;
+the owner's forthcoming onboarding solution will be reviewed separately. No push or deployment is authorized.
+
+The audit's F05 identifies a separate legacy classification risk: starting credits are represented
+as cleared payments and can appear in monthly received totals. An isolated test reproduces it; this
+presentation study does not change financial rules, infer cash, or rewrite historical records.
+New visual examples remain local until a permitted Outline upload path works; text publication and
+ecosystem verification are separate from asset-publication completion.
 
 ## 11. E10 — RHP property accounting
 

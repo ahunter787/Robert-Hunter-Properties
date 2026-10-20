@@ -1282,3 +1282,21 @@ is the first owner-review checkpoint (accepted October 18; continuation authoriz
 served to staff/authorized tenancies. Preserve routes, Decimal calculations and immutable history.
 No messaging/accounting/payment-processing feature is included. See `docs/design/implementation.md`.
 Baseline commits/local merge are authorized; redesign commits, push and deployment are not.
+
+**Financial clarity release approved October 20, 2026 (E9/E11):** share the lease financial
+workspace across both existing staff URLs, retain the middle lease navigation, and apply equivalent
+tenant language without staff controls. Distinguish posted upcoming debt from unposted scheduled
+rent; empty accounts do not assert payment. Amount-only colors: debt/cost red, receipt/credit green,
+explicit correction purple, expected payments and ordinary statement information black. No financial
+blue/orange meanings. Preserve domain calculations, immutable history and settlement locks. First
+review the shared reading surface before changing remaining financial forms. No new accounting,
+payment processing, inferred prior receipts, models or dependencies are approved by this release.
+
+**Expandable bill refinement approved October 20:** both portals group a tenancy's charges by
+exact due date (rent, NNN, expense recoveries and one-time charges), with one total and aggregate
+payment progress. Components retain descriptions, icons and inline corrections, but no paid/remaining
+breakdown. Staff may adjust individual charges, not the overall bill. Payments remain separate dated
+records, including expectations, cancellations and reversals. Cards open independently through native
+disclosure controls; noninteractive card content toggles without intercepting actions or text selection.
+Grouping is read-only, precedes filtering/pagination and preserves full-history balances and existing
+payment allocation. This does not authorize invoice storage, accounting or financial-rule changes.

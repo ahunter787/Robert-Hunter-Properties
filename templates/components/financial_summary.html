@@ -1,0 +1,11 @@
+{% load rhp_format %}
+<div class="financial-summary" aria-label="Financial summary">
+  {% if empty %}<p class="financial-account-note">No charges or payments recorded.</p>{% elif paid_in_full %}<p class="financial-account-note">Paid in full</p>{% endif %}
+  <dl class="financial-summary-grid">
+    <div><dt>Due now</dt><dd class="financial-figure {% if ledger.due_now > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.due_now|money }}</dd></div>
+    <div><dt>Past due</dt><dd class="financial-figure {% if ledger.arrears > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.arrears|money }}</dd><p class="financial-help">Included in due now.</p></div>
+    <div><dt>Upcoming charges</dt><dd class="financial-figure {% if ledger.not_yet_due > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.not_yet_due|money }}</dd>{% if upcoming_date %}<p class="financial-help">Next due {{ upcoming_date|date:"M j, Y" }}.</p>{% else %}<p class="financial-help">No unpaid upcoming charges recorded.</p>{% endif %}</div>
+    <div><dt>{% if ledger.credit > 0 %}Credit balance{% else %}Account balance{% endif %}</dt><dd class="financial-figure {% if ledger.credit > 0 %}money-received{% elif ledger.balance_due > 0 %}money-owed{% else %}money-statement{% endif %}">{% if ledger.credit > 0 %}{{ ledger.credit|money }}{% else %}{{ ledger.balance_due|money }}{% endif %}</dd>{% if ledger.not_yet_due > 0 %}<p class="financial-help">Includes upcoming charges.</p>{% endif %}{% if ledger.credit > 0 %}<p class="financial-help">Credit on this account—not a cash refund.</p>{% endif %}</div>
+  </dl>
+  {% if scheduled_date %}<p class="financial-scheduled"><span>Next scheduled rent—not yet added:</span> <span class="money-statement">{{ scheduled_amount|money }}</span> · {{ scheduled_date|date:"M j, Y" }}<span class="block financial-help">Not included in the account balance. Other property charges may apply.</span></p>{% endif %}
+</div>

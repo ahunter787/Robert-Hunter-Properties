@@ -25,20 +25,12 @@
           <dd class="font-medium">{{ charge.amount|money }}</dd>
         </div>
         <div>
-          <dt class="text-ink-muted">Paid or credited</dt>
-          <dd class="font-medium">{{ line.settled|money }}</dd>
-        </div>
-        <div>
-          <dt class="text-ink-muted">Still owed</dt>
-          <dd class="font-medium {% if outstanding %}text-danger{% endif %}">{{ outstanding|money }}</dd>
-        </div>
-        <div>
           <dt class="text-ink-muted">Due</dt>
           <dd class="font-medium">{{ charge.due_date|date:"M j, Y" }}</dd>
         </div>
         <div>
           <dt class="text-ink-muted">Type</dt>
-          <dd class="font-medium">{{ charge.get_kind_display }}</dd>
+          <dd class="font-medium">{{ charge|financial_charge_label }}</dd>
         </div>
       </dl>
     </section>
@@ -58,12 +50,8 @@
         </div>
       </form>
       <p class="rhp-help mt-4">
-        {% if outstanding %}
-          The amount starts at what is still owed, so a reduction with no changes zeroes this charge.
-        {% else %}
-          This charge is already settled, so the amount is blank: an adjustment here would put the
-          account in credit rather than clear the charge.
-        {% endif %}
+        Enter the amount to increase or reduce this charge. Check any suggested amount before saving.
+        A reduction may leave a credit on the account; it does not refund money.
         The charge itself is never changed — a separate adjustment entry is added, which is why the
         ledger still shows what was originally charged.
       </p>

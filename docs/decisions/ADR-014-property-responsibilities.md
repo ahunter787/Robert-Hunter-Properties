@@ -170,6 +170,20 @@ tenant charges, or migrations are introduced by this correction.
 
 ## Consequences
 
+### October 20, 2026 — shared bill presentation
+
+The owner approved the same due-date bill reading for staff and tenants. Include all charges sharing
+that date, including one-time charges, in a collapsed expandable card named, for example,
+“October 5th 2026 Bill.” Single-component bills use the same presentation. Received, expected,
+canceled and undone payments remain separate dated records. Show only the overall bill's payment
+progress and remaining amount, never a per-component settlement breakdown. Preserve the underlying
+separate immutable charges and existing FIFO allocation; this is not an invoice model or accounting
+change. Keep descriptions, financial icons and inline corrections in the expanded card. Authorized
+staff Adjust actions remain on individual charges only. Native disclosures work without JavaScript;
+the enhanced whole-card click ignores actions, controls and text selection. Group before pagination
+or date filtering and compute balances from full chronological history, bills before same-date payments.
+This supersedes the earlier single-charge-row exception and ADR-011's component-level payment display.
+
 **Positive**
 
 - The property's bill is the record, the office's division is the record, and the tenant's charge is the

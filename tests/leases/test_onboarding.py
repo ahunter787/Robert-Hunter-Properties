@@ -502,7 +502,7 @@ def test_the_tenant_statement_shows_a_stated_history_with_its_nnn(client):
 
     body = " ".join(strip_tags(client.get(reverse("payments:home")).content.decode()).split())
 
-    assert "months and payments" in body
-    assert "rent and charges" in body, "the history is listed month by month"
+    assert "statement entries" in body
+    assert "Bill" in body and "Show breakdown" in body, "history is grouped by exact due date"
     assert "NNN" in body and "$305.00" in body, "the NNN they paid is shown apart from rent"
     assert "Payment received" in body and "$108,000.00" in body

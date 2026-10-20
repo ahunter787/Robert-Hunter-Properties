@@ -10,6 +10,10 @@ A private local prototype may use a read-only development-data snapshot; never p
 
 ## Study index
 
+- [Financial clarity and editing-workflow audit — findings](financial-audit.md)
+- [Financial language, icons and approved amount colors](financial-vocabulary.md)
+- [Financial clarity — first implementation release and review checkpoint](financial-implementation.md)
+- [Preserved accounting-audit owner notes](financial-clarity-owner-notes.md)
 - [Application migration — implemented, final owner acceptance pending](implementation.md)
 - [Prior lease activity calculator — separate scoped proposal](prior-activity-calculator.md)
 - [Operations Desk interactive prototype and review guide](prototype.md)

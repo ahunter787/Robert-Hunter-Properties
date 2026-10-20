@@ -53,7 +53,7 @@ def test_a_tenant_paid_ahead_is_told_they_are_in_credit(client):
 
     body = client.get(reverse("tenancy:lease")).content.decode()
 
-    assert "credit" in body
+    assert "Credit balance" in body
     assert "200.00" in body
 
 

@@ -14,6 +14,12 @@ integration is explicitly Phase 11.
 
 ## What exists today
 
+**October 20 financial-clarity follow-up:** approved E9/E11 work shares both lease financial entry
+routes and introduces amount-level meanings without changing ledger calculations or mutations.
+The owner accepted the reading surface, expandable bills and reviewed history recovery for local
+merge. Remaining entry/correction forms await separate review. See
+[implementation record](../design/financial-implementation.md). Phase 4 remains complete.
+
 - **Models** (`apps/ledger/models.py`): `Charge` (lease, kind, direction, amount, due date, description,
   optional responsibility link) and `Payment` (lease, kind, status, method, amount, date, reference,
   reversal links). Enumerations: `ChargeKind` (`RENT`, `NNN`, `RESPONSIBILITY`, `MANUAL`, `ADJUSTMENT`,
@@ -79,6 +85,17 @@ that a hand-entered period survives regeneration, and the guard that refuses to 
 retroactive tenancy.
 
 ## Acceptance criteria and evidence
+
+**Owner-approved existing-history recovery (October 20):** an active, open account with existing
+charges but no billing start date now uses a signed review rather than the original setup form.
+Managers choose a date/reason and explicitly confirm; only the date and audit event are saved.
+Nothing is regenerated or inferred. See ADR-016. No live account is repaired automatically.
+
+**October 20 bill-presentation refinement (E9/E11):** both staff lease entry routes and tenant
+statements group all same-due-date charges into expandable bills. Totals and payment progress are
+bill-level only; descriptions, icons, corrections and staff-only Adjust actions remain on components.
+Payments stay separate. Grouping precedes date filtering/pagination and preserves full-history
+running balances. This introduces no model, migration or financial-allocation change.
 
 - [x] Balance is derived from ledger entries — no stored balance, no stored charge status
 - [x] Financial history is immutable and auditable: append-only models, `PROTECT` keys, read-only in the

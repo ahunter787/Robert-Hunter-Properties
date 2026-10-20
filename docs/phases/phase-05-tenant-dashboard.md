@@ -13,12 +13,24 @@ here; both belong to later phases and are labelled rather than faked.
 
 ## What exists today
 
+**October 20 financial-clarity follow-up:** the approved shared summary separates posted upcoming
+debt from unposted scheduled rent and uses equivalent amount colors in tenant pages without staff
+controls, correction reasons or audit history. Phase 5 remains complete; financial rules and the
+known starting-credit/payment representation are unchanged.
+The owner accepted the shared reading surface and expandable bills for local merge; remaining
+financial task forms are deferred to the next reviewed scope.
+An additional owner-approved refinement groups every exact due date into an expandable bill,
+including one-time and single-component charges. Payment progress appears only at bill level;
+received/expected/canceled/undone payments remain separate records. Component corrections stay inline
+without publishing staff reasons. This supersedes the earlier per-component settlement/hidden-void
+presentation below, not the financial allocation rules.
+
 - **`/account/`** (`apps/accounts/views.py`, `TenantDashboardView`): what is due now — or that the tenant is
   in credit, or that nothing is owing — the next rent and its date, when the lease ends, quick actions, and
   the recent activity. Staff are redirected to `/manage/` rather than shown a tenant page (ADR-010).
 - **`/payments/`** (`apps/ledger/views.py`, `TenantPaymentsView`): the tenant's own statement, paginated by
-  month, showing rent, NNN and responsibilities as one month; expected money labelled "expected" and not
-  moving the balance; voided entries hidden; a correction absorbed into the charge it corrects.
+  bill and payment, showing all same-due-date charges as one bill; expected money is not received and
+  does not move the balance; canceled expectations remain labeled history; corrections stay inline.
 - **`/lease/`**: the lease detail page beside them (Phase 3/4).
 - **Tenant navigation:** Dashboard, Lease, Payments — the tenant area became real here.
 - **No data of its own.** Every figure is a reading of the ledger (`build_ledger`) and the lease.
@@ -47,7 +59,7 @@ together, and the tenant's card names each part rather than showing one blended 
       (the final check was the owner's own phone)
 - [x] No unnecessary information density — three figures, three actions, five recent rows
 - [x] The tenant's critical information is visible without digging: it is the page they land on
-- [x] Expected money never moves the balance; voided entries are never shown
+- [x] Expected/canceled money never moves the balance; canceled expectations are explicitly labeled
 - [x] The two panels belonging to later phases are labelled, not faked
 
 `tests/ledger/test_tenant_area.py` and `tests/ledger/test_tenant_payments.py` cover the tenant's view,

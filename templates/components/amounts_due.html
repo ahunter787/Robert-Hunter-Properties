@@ -1,6 +1,2 @@
 {% load rhp_format %}
-<div class="grid gap-4 sm:grid-cols-3">
-  <div><p class="rhp-eyebrow">Due now</p><p class="mt-2 text-2xl font-semibold">{{ ledger.due_now|money }}</p>{% if ledger.arrears > 0 %}<p class="text-sm font-medium text-danger">{{ ledger.arrears|money }} past due</p>{% endif %}</div>
-  <div><p class="rhp-eyebrow">Upcoming</p>{% if ledger.next_due_date %}<p class="mt-2 text-2xl font-semibold">{{ ledger.next_due_total|money }}</p><p class="text-sm text-ink-muted">Due {{ ledger.next_due_date|date:"M j, Y" }}</p>{% else %}<p class="mt-2 text-sm text-ink-muted">No upcoming amount</p>{% endif %}</div>
-  <div><p class="rhp-eyebrow">Account balance</p>{% if ledger.credit > 0 %}<p class="mt-2 text-2xl font-semibold text-success">{{ ledger.credit|money }} credit</p>{% else %}<p class="mt-2 text-2xl font-semibold">{{ ledger.balance_due|money }}</p>{% if ledger.not_yet_due > 0 %}<p class="text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}{% endif %}</div>
-</div>
+{% financial_summary ledger %}

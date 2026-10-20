@@ -4,9 +4,9 @@
     "README.md": {
       "id": "712e49bb-c1a6-4a0b-a57d-5d3334587336",
       "url": "http://10.60.0.227:8090/doc/rhp-design-0tQffpBfEc",
-      "sha256": "053d560c71423b105dd36500f4a94956866387c2b35f9464c964dc046a51d99c",
-      "published_text_sha256": "af48d0b05db756464631055bc137d3ebda6ec685ae9cbb094c705f39d37e0b51",
-      "published_source_text_sha256": "af48d0b05db756464631055bc137d3ebda6ec685ae9cbb094c705f39d37e0b51"
+      "sha256": "34350aa6f4b5df4cd0125117afa6f32acaea5e5c6d7effda370750e4785ac71b",
+      "published_text_sha256": "6c0f446f5b5a9b59e16a67b4f65bdfe49e918faf19b4a83c7adbc75f97f5bb08",
+      "published_source_text_sha256": "6c0f446f5b5a9b59e16a67b4f65bdfe49e918faf19b4a83c7adbc75f97f5bb08"
     },
     "principles.md": {
       "id": "a55f858e-9e53-4000-a552-f58f964e12c5",
@@ -76,6 +76,41 @@
       "sha256": "7cce409dbdf35f55bc2403e2b623fba82605fffe8013d716ee71a9f012dcf014",
       "published_text_sha256": "a3d6c5c73e7af8bcd9fdeb04a2b9c9a2f2e5ad1363b762b7d877a6b486321528",
       "published_source_text_sha256": "a3d6c5c73e7af8bcd9fdeb04a2b9c9a2f2e5ad1363b762b7d877a6b486321528"
+    },
+    "financial-audit.md": {
+      "id": "fe1dbb31-a472-454a-a66b-ea5ffb88dfe7",
+      "url": "http://10.60.0.227:8090/doc/financial-clarity-and-manager-workflow-audit-uULKrnbLva",
+      "sha256": "7c927145a58d40aa0f393c80126a26c91bf628b93709f455aae02592945de5a3",
+      "published_text_sha256": "a38fcef92934cb428f425c5bf6294ff7ea315748e214879d98cffc921c62ab65",
+      "published_source_text_sha256": "a38fcef92934cb428f425c5bf6294ff7ea315748e214879d98cffc921c62ab65"
+    },
+    "financial-vocabulary.md": {
+      "id": "cd9c4306-c193-484d-ba67-2809699c8a48",
+      "url": "http://10.60.0.227:8090/doc/financial-language-icons-and-color-approved-specification-PabCAqPpru",
+      "sha256": "df8693753e68cb1ec9674fe88ab2db7d8f1ba2c0c9e0c0fe69a0f84f8dad0906",
+      "published_text_sha256": "7c78b1ea4b51e72ae5397d5b063f9dc6273f3b39595d557fdfdda2a385d37175",
+      "published_source_text_sha256": "7c78b1ea4b51e72ae5397d5b063f9dc6273f3b39595d557fdfdda2a385d37175"
+    },
+    "financial-implementation.md": {
+      "id": "21ec025a-7a15-40b5-86ab-9df871351f30",
+      "url": "http://10.60.0.227:8090/doc/financial-clarity-first-implementation-release-mLtsyZofB0",
+      "sha256": "b8e19943a3c34ed9cb2d16d10468e0a04198ee24f63004981e417fd011c09be0",
+      "published_text_sha256": "578c587b716e444a3ecdf8d2692a8ca0bc3ce580cb7ee6468a3cb028bab6f5aa",
+      "published_source_text_sha256": "578c587b716e444a3ecdf8d2692a8ca0bc3ce580cb7ee6468a3cb028bab6f5aa"
+    },
+    "financial-clarity-owner-notes.md": {
+      "id": "15c036a9-3ad6-4f4f-9934-dfbc69110fce",
+      "url": "http://10.60.0.227:8090/doc/financial-clarity-preserved-owner-notes-o4jRh7mnjV",
+      "sha256": "0e354387c357a7934f4d3be04ef1f688ea6b556c3ac46728dbd47e15eb76afe5",
+      "published_text_sha256": "d9645d689bbea3c9be16daeee08df5af60fb2c220bc5a8ceb190e1cd4c38ca43",
+      "published_source_text_sha256": "d9645d689bbea3c9be16daeee08df5af60fb2c220bc5a8ceb190e1cd4c38ca43"
+    },
+    "financial-clarity/README.md": {
+      "id": "7e44c47f-752d-4fd0-9ed8-af823ef3925d",
+      "url": "http://10.60.0.227:8090/doc/financial-clarity-synthetic-review-examples-biGym6IIqE",
+      "sha256": "06cbc870ec0c70567794b5fe73c463d611a742cc1c4979a87f0ae528fc9e714e",
+      "published_text_sha256": "f34f3f2435ed649f6bf64c52fe06953f0670b4106aab436422bb1df6bcd0577f",
+      "published_source_text_sha256": "f34f3f2435ed649f6bf64c52fe06953f0670b4106aab436422bb1df6bcd0577f"
     }
   },
   "galleries": {

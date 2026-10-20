@@ -23,11 +23,18 @@ NAMES = [
     "prototype-revision-02.md",
     "implementation.md",
     "prior-activity-calculator.md",
+    "financial-audit.md",
+    "financial-vocabulary.md",
+    "financial-implementation.md",
+    "financial-clarity-owner-notes.md",
+    "financial-clarity/README.md",
 ]
 
 
 def canonical(text):
     """Outline joins paragraphs and rewrites bullet/table spacing when an editor opens."""
+    # Quote paragraphs are reflowed too: their text, not wrapping markers, is authoritative.
+    text = re.sub(r"(?m)^> ?", "", text)
     text = re.sub(r"(?m)^\|?[-:| ]{3,}\|?$", "", text)
     text = re.sub(r"(?m)^[ \t]*[-*] ", "- ", text)
     text = re.sub(r"[ \t]*\|[ \t]*", "|", text)

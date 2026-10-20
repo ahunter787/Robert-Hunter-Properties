@@ -366,7 +366,7 @@ def test_the_detail_page_lists_the_tenants(signed_in):
     assert "$1,850.00" in terms
     assert "1st of every month" in terms
     assert "Transactions" in body
-    assert "No transactions yet" in body
+    assert "No charges or payments recorded" in body
 
 
 def test_lease_tenants_are_protected_from_deletion():

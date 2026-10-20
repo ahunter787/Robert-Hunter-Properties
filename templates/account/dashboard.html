@@ -20,14 +20,15 @@
     {% include "communications/summary.html" %}
 
     {% if lease %}
+      {% financial_summary_data ledger as financial %}
       <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <div class="rhp-card">
           <p class="rhp-eyebrow">Due now</p>
           {% if ledger.due_now > 0 %}
-            <p class="mt-2 text-3xl font-semibold">{{ ledger.due_now|money }}</p>
+            <p class="mt-2 text-3xl font-semibold money-owed">{{ ledger.due_now|money }}</p>
             {% if ledger.arrears > 0 %}
-              <p class="mt-1 text-sm font-medium text-danger">
-                {{ ledger.arrears|money }} past due
+              <p class="mt-1 text-sm font-medium money-statement">
+                <span class="money-owed">{{ ledger.arrears|money }}</span> past due
                 {% if ledger.arrears_oldest %}· since {{ ledger.arrears_oldest.date|date:"M j, Y" }}{% endif %}
               </p>
             {% else %}
@@ -37,28 +38,21 @@
         </div>
 
         <div class="rhp-card">
-          <p class="rhp-eyebrow">Upcoming</p>
-          {% if ledger.next_due_date %}
-            <p class="mt-2 text-3xl font-semibold">{{ ledger.next_due_total|money }}</p>
+          <p class="rhp-eyebrow">Upcoming charges</p>
+          {% if ledger.not_yet_due > 0 %}
+            <p class="mt-2 text-3xl font-semibold money-owed">{{ ledger.not_yet_due|money }}</p>
             <p class="mt-1 text-sm text-ink-muted">
-              Due {{ ledger.next_due_date|date:"M j, Y" }}
-              {% if ledger.next_due_nnn > 0 %}
-                · rent {{ ledger.next_due_rent|money }} + triple-net (NNN) {{ ledger.next_due_nnn|money }}
-              {% elif ledger.next_due_pending %}
-                · payment pending
-              {% elif not ledger.next_due_billed %}
-                · not yet posted
-              {% endif %}
+              Next due {{ financial.upcoming_date|date:"M j, Y" }}
             </p>
           {% else %}
-            <p class="mt-2 text-3xl font-semibold text-ink-muted">No further rent</p>
-            <p class="mt-1 text-sm text-ink-muted">this lease has ended</p>
+            <p class="mt-2 text-3xl font-semibold money-statement">$0.00</p>
+            <p class="mt-1 text-sm money-statement">No unpaid upcoming charges recorded.</p>
           {% endif %}
         </div>
 
         <div class="rhp-card">
-          <p class="rhp-eyebrow">Account balance</p>
-          {% if ledger.credit > 0 %}<p class="mt-2 text-3xl font-semibold text-success">{{ ledger.credit|money }} credit</p>{% else %}<p class="mt-2 text-3xl font-semibold">{{ ledger.balance_due|money }}</p>{% if ledger.not_yet_due > 0 %}<p class="mt-1 text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}{% endif %}
+          <p class="rhp-eyebrow">{% if ledger.credit > 0 %}Credit balance{% else %}Account balance{% endif %}</p>
+          {% if ledger.credit > 0 %}<p class="mt-2 text-3xl font-semibold money-received">{{ ledger.credit|money }}</p>{% else %}<p class="mt-2 text-3xl font-semibold {% if ledger.balance_due > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.balance_due|money }}</p>{% if ledger.not_yet_due > 0 %}<p class="mt-1 text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}{% endif %}
         </div>
 
         <div class="rhp-card">
@@ -78,6 +72,8 @@
         </div>
       </section>
 
+      {% if financial.empty %}<p class="text-sm money-statement">No charges or payments recorded.</p>{% elif financial.paid_in_full %}<p class="text-sm money-statement">Paid in full</p>{% endif %}
+      {% if financial.scheduled_date %}<p class="text-sm money-statement">Next scheduled rent—not yet added: {{ financial.scheduled_amount|money }} · {{ financial.scheduled_date|date:"M j, Y" }}. Not included in the account balance.</p>{% endif %}
       {% if ledger.not_yet_due > 0 %}
         <p class="text-sm text-ink-muted">
           {{ ledger.not_yet_due|money }} is posted but not yet due. Your statement shows it month by

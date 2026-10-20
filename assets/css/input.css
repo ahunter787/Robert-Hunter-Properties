@@ -41,6 +41,41 @@
 
 /* E11 screen-first application shell. Documentation print rules do not govern this UI. */
 @layer components {
+  /* Financial meaning belongs to amounts, not labels or whole rows. */
+  .money-owed { color: #9c231c; }
+  .money-received { color: #1c6b45; }
+  .money-change { color: #6b21a8; }
+  .money-statement, .financial-summary { color: #171717; }
+  .financial-icon { display: inline-block; width: 1rem; height: 1rem;
+    vertical-align: -.15em; margin-right: .3rem; flex-shrink: 0; }
+  .financial-summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
+  .financial-summary dt { font-size: .875rem; font-weight: 600; }
+  .financial-figure { font-size: 1.65rem; font-weight: 650; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+  .financial-help { color: #171717; font-size: .75rem; font-weight: 400; margin-top: .3rem; }
+  .financial-account-note { margin-bottom: 1rem; font-size: .875rem; }
+  .financial-scheduled { margin-top: 1.25rem; border-top: 1px solid #dce5e0; padding-top: 1rem; font-size: .875rem; }
+  .financial-transactions { color: #171717; min-width: 780px; }
+  .lease-financial-history { grid-column: 1 / -1; min-width: 0; }
+  .bill-card { border: 1px solid #d5dfd9; border-radius: 12px; overflow: hidden; color: #171717; }
+  .bill-summary, .financial-payment { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1rem; }
+  .bill-summary { cursor: pointer; list-style: none; background: #f7faf8; }
+  .bill-summary::-webkit-details-marker { display: none; }
+  .bill-summary:focus-visible { outline: 3px solid #265c48; outline-offset: -3px; }
+  .bill-summary:hover { background: #edf3ef; }
+  .bill-disclosure-label::before { content: '+ '; }
+  .bill-hide, .bill-card[open] > .bill-summary .bill-show { display: none; }
+  .bill-card[open] > .bill-summary .bill-hide { display: inline; }
+  .bill-card[open] > .bill-summary .bill-disclosure-label::before { content: '− '; }
+  .bill-breakdown { padding: .25rem 1rem .75rem; border-top: 1px solid #d5dfd9; }
+  .bill-component { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: .75rem 0; }
+  .bill-component + .bill-component { border-top: 1px solid #e2e8e4; }
+  .financial-payment { border-bottom: 1px solid #d5dfd9; }
+  .bill-summary > span:last-child, .bill-component > div:last-child, .financial-payment > div:last-child { flex-shrink: 0; }
+  .bill-summary > span:last-child, .financial-payment > div:last-child { margin-left: auto; }
+  @media (max-width: 480px) { .bill-summary, .financial-payment { padding: .75rem; gap: .5rem; flex-wrap: wrap; } .bill-breakdown { padding-left: .75rem; padding-right: .75rem; } }
+  @media print { .bill-card::details-content { display: block; } .bill-disclosure-label { display: none; } .bill-card, .bill-summary { background: white; } }
+  @media (max-width: 1100px) { .financial-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 380px) { .financial-summary-grid { grid-template-columns: minmax(0, 1fr); } }
   .portal-shell { display: grid; grid-template-columns: 244px minmax(0, 1fr); }
   .portal-workspace { min-width: 0; }
   .portal-sidebar { background: #163d32; color: white; padding: 34px 20px 24px;

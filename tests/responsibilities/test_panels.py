@@ -337,12 +337,12 @@ def test_the_tenant_month_card_groups_the_charges(client):
 
     body = text_of(client.get(reverse("payments:home")))
 
-    assert f"{due:%B %Y}" in body
-    assert "rent and charges" in body
+    assert f"{due:%B} 1st {due:%Y} Bill" in body
+    assert "Show breakdown" in body
     assert "$1,348.00" in body, "1000 rent + 200 NNN + 100 water + 48 pruning"
-    assert "Base rent" in body and "$1,000.00" in body
+    assert "Rent" in body and "$1,000.00" in body
     assert "NNN" in body and "$200.00" in body
-    assert "Property charges" in body and "$148.00" in body
+    assert "Property charges" in body
     assert "$100.00" in body and "$48.00" in body
     assert "Water" in body and "Pruning" in body
     assert "<details" in client.get(reverse("payments:home")).content.decode()
@@ -366,7 +366,7 @@ def test_the_dashboard_shows_the_month_not_four_rows(client):
     body = text_of(client.get(reverse("accounts:home")))
 
     assert "Recent activity" in body
-    assert "rent and charges" in body
+    assert "Bill" in body and "Show breakdown" in body
 
 
 def test_a_partly_paid_month_says_what_is_left(client):
@@ -376,8 +376,9 @@ def test_a_partly_paid_month_says_what_is_left(client):
 
     body = text_of(client.get(reverse("payments:home")))
 
-    assert "$500.00 to pay" in body, "the rent that the payment part settled"
-    assert "$848.00 of this month is still to pay." in body
+    assert "$500.00 to pay" not in body, "no per-component payment allocation"
+    assert "Remaining: $848.00" in body
+    assert "Partly paid" in body
 
 
 def test_the_lease_page_notes_the_next_step_up(client):

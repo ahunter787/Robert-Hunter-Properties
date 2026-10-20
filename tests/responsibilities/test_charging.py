@@ -294,7 +294,7 @@ def test_a_month_reads_as_past_due_until_every_part_of_it_is_paid():
         for entry in ledger_services.build_ledger(lease).statement_months()
         if entry.kind == "month"
     )
-    assert month.state_label == "Past due", "the rent is paid; the water is not"
+    assert month.state_label == "Partly paid · Past due", "payment progress belongs to the bill"
 
     ledger_services.record_payment(
         lease, amount=Decimal("100.00"), payment_date=TODAY, method="ACH"
@@ -305,5 +305,5 @@ def test_a_month_reads_as_past_due_until_every_part_of_it_is_paid():
         for entry in ledger_services.build_ledger(lease).statement_months()
         if entry.kind == "month"
     )
-    assert month.state_label == "Paid"
+    assert month.state_label == "Paid in full"
     assert month.left == Decimal("0.00")

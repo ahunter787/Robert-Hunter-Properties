@@ -1,9 +1,9 @@
 """The ledger screens: balances, charges, payments, reversals, adjustments.
 
-Authorization is server-side throughout: the whole accounting area is MANAGER and
-above, while reversals and adjustments are ADMIN because they change what history
-means. Nothing here accepts a lease id from a form — the lease comes from the URL
-and every queryset is filtered by it.
+Authorization is server-side throughout: financial operations, including reversals
+and adjustments, require MANAGER or above. Corrections preserve the original entries.
+Nothing here accepts a lease id from a form — the lease comes from the URL and every
+queryset is filtered by it.
 """
 
 import logging
@@ -14,14 +14,15 @@ from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
-from django.views.generic import DetailView, TemplateView
+from django.views.generic import TemplateView
 
 from apps.accounts.permissions import (
     ManagerRequiredMixin,
     TenantAreaMixin,
 )
-from apps.audit.services import events_for_lease
 from apps.leases.models import Lease
+from apps.leases.views import LeaseDetailView
+from apps.leases.workspace import workspace_context
 from apps.ledger import services
 from apps.ledger.forms import (
     AdjustmentForm,
@@ -80,29 +81,12 @@ class LedgerOverviewView(ManagerRequiredMixin, TemplateView):
         return context
 
 
-class LeaseLedgerView(ManagerRequiredMixin, DetailView):
+class LeaseLedgerView(LeaseDetailView):
     """One tenancy's ledger: what is owed, what happened, and the actions."""
-
-    model = Lease
-    template_name = "management/ledger_lease.html"
-    context_object_name = "lease"
-
-    def get_queryset(self):
-        return Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant", "charges", "payments"
-        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["ledger"] = services.build_ledger(self.object)
-        context["history"] = events_for_lease(self.object, limit=25)
-        context["is_admin"] = self.request.user.is_admin_or_above
-        # The screen links to the charge and payment screens rather than rendering forms of
-        # its own, so the only thing it asks the service is whether there is anything to post
-        # — through the service's own eligibility rule, not a copy of it.
-        context["can_post_due_charges"] = services.has_due_charges_to_post(
-            self.object, through=services.charges_due()
-        )
+        context.update(workspace_context(self.request, self.object, section="ledger"))
         return context
 
 
@@ -397,12 +381,12 @@ class TenantPaymentsView(TenantAreaMixin, TemplateView):
 
     Read-only and deliberately thin: it renders `build_ledger`'s numbers, so the
     tenant and the office are looking at the same derivation. There is no id in
-    the URL — the session decides whose money this is — and voided entries, which
-    are office noise, are not shown.
+    the URL — the session decides whose money this is. Due-date bills and separate
+    payments include explicitly labeled canceled expectations, never cash received.
     """
 
     template_name = "tenancy/payments.html"
-    #: Entries per page: a month counts as one, so this is over a year of tenancy.
+    #: Group before pagination: a bill counts as one entry regardless of its components.
     per_page = 20
 
     def get_context_data(self, **kwargs):
@@ -412,7 +396,7 @@ class TenantPaymentsView(TenantAreaMixin, TemplateView):
         statement = ledger.statement_months() if ledger else []
 
         # One list, so a long tenancy reads a page at a time rather than growing
-        # without end: a month counts as one entry (E2). An out-of-range link
+        # without end: a bill counts as one entry (E2). An out-of-range link
         # falls back rather than 404-ing.
         paginator = Paginator(statement, self.per_page)
         page = paginator.get_page(self.request.GET.get("page"))

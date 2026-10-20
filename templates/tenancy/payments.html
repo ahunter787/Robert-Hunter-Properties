@@ -27,7 +27,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-sm font-semibold">Your statement</h2>
           <span class="text-sm text-ink-muted">
-            {{ statement_total }} month{{ statement_total|pluralize }} and payment{{ statement_total|pluralize }}
+            {{ statement_total }} statement {{ statement_total|pluralize:"entry,entries" }}
           </span>
         </div>
         {% if statement %}
@@ -54,7 +54,7 @@
           {% endif %}
         {% else %}
           <p class="mt-2 text-sm leading-relaxed text-ink-muted">
-            No rent has been charged yet. Your charges and payments will appear here.
+            No charges or payments recorded.
           </p>
         {% endif %}
       </section>

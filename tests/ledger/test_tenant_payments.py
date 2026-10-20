@@ -5,6 +5,7 @@ reads on a phone. It shows the same derived figures as the office's ledger.
 """
 
 import datetime as dt
+import re
 from decimal import Decimal
 
 import pytest
@@ -76,9 +77,9 @@ def test_a_tenancy_three_months_behind_reads_plainly(client, payments, in_early_
     body = " ".join(strip_tags(client.get(payments).content.decode()).split())
 
     assert "Due now" in body and "$4,588.00" in body, "what the tenant has to find"
-    assert "$4,588.00 past due" in body
-    assert "Upcoming" in body and "$2,084.00" in body
-    assert "Due Oct 5, 2026" in body
+    assert re.search(r"Past due\s*\$4,588.00", body)
+    assert re.search(r"Upcoming charges\s*\$4,168.00", body)
+    assert "Next due Oct 5, 2026" in body
     assert "Account balance" in body and "$8,756.00" in body
     assert "Includes upcoming charges." in body
     assert "was $2,084.00, adjusted down by $2,084.00" in body, "the credited months read net"
@@ -131,7 +132,8 @@ def test_a_partly_paid_charge_says_so(client, payments):
     body = client.get(payments).content.decode()
 
     assert "Partly paid" in body
-    assert "paid $400.00 of $1,000.00" in body, "the row states its own settlement"
+    assert re.search(r"Remaining:\s*\$600\.00", " ".join(strip_tags(body).split()))
+    assert "paid $400.00 of $1,000.00" not in body
 
 
 def test_a_late_charge_is_flagged_as_past_due(client, payments):
@@ -143,7 +145,7 @@ def test_a_late_charge_is_flagged_as_past_due(client, payments):
     body = client.get(payments).content.decode()
 
     assert "Past due" in body
-    assert "1,000.00 past due" in " ".join(body.split()), "the summary says how much is late"
+    assert re.search(r"Past due\s*\$1,000.00", " ".join(strip_tags(body).split()))
 
 
 def test_an_expected_payment_is_labelled_as_expected(client, payments):
@@ -155,7 +157,7 @@ def test_an_expected_payment_is_labelled_as_expected(client, payments):
 
     body = client.get(payments).content.decode()
 
-    assert "Payment expected" in body
+    assert "Expected—not received" in body
     assert "1,000.00" in body, "the balance does not drop for money that has not arrived"
 
 
@@ -169,7 +171,7 @@ def test_a_charge_adjusted_to_nothing_reads_that_way(client, payments):
     )
     client.force_login(tenant)
 
-    body = " ".join(client.get(payments).content.decode().split())
+    body = " ".join(strip_tags(client.get(payments).content.decode()).split())
 
     assert "was $2,084.00, adjusted down by $2,084.00" in body
     assert "Nothing to pay" in body
@@ -233,8 +235,8 @@ def test_a_long_history_is_paginated(client, payments):
     assert client.get(payments, {"page": "nonsense"}).status_code == 200
 
 
-def test_a_voided_payment_is_not_shown(client, payments):
-    """Void rows are office bookkeeping, not the tenant's business."""
+def test_a_voided_payment_is_separate_and_not_received(client, payments):
+    """A canceled expectation remains history, never money received or a bill component."""
     tenant = make_tenant(username="ada")
     lease = make_lease(tenants=[tenant])
     payment = make_payment(
@@ -249,8 +251,10 @@ def test_a_voided_payment_is_not_shown(client, payments):
 
     body = client.get(payments).content.decode()
 
-    assert "VOID-ME" not in body
-    assert "Your charges and payments will appear here." in body
+    assert "VOID-ME" in body
+    assert "Canceled expected payment" in body
+    assert "Canceled—not received" in body
+    assert "No charges or payments recorded." not in body
 
 
 def test_a_reversal_is_shown_as_a_reversal(client, payments):
@@ -263,7 +267,7 @@ def test_a_reversal_is_shown_as_a_reversal(client, payments):
 
     body = client.get(payments).content.decode()
 
-    assert "Payment reversed" in body
+    assert "Payment undone" in body
     assert "1,000.00" in body, "the charge is outstanding again"
 
 

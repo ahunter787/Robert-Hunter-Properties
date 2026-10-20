@@ -1,15 +1,17 @@
 {% extends "management/lease_workspace.html" %}
 {% load rhp_format %}
+{% block lease_full_width %}{% if lease_section == "ledger" and lease.status != "DRAFT" %}<div class="lease-financial-history space-y-6">{% include "management/lease_financial_history.html" %}</div>{% endif %}{% endblock %}
 {% block title %}Lease — {{ lease.unit.label }} — RHP{% endblock %}
 {% block lease_content %}
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">Leasing</p>
+        <p class="rhp-eyebrow">{% if lease_section == "ledger" %}Rent & Payments{% else %}Leasing{% endif %}</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.unit.identifier }}</h1>
         <p class="mt-2 text-sm text-ink-muted">
           - <a href="{% url 'portfolio:property-detail' lease.unit.property.pk %}"
                class="font-medium text-primary underline-offset-2 hover:underline">{{ lease.unit.property.name }}</a>
         </p>
+        {% if lease_section == "ledger" %}<p class="mt-2 text-sm money-statement">{{ lease.tenant_names }} · {{ lease.start_date|date:"M j, Y" }}–{{ lease.end_date|date:"M j, Y" }}</p>{% endif %}
       </div>
       <div class="flex flex-wrap items-center gap-3">
         {% if lease.is_editable %}
@@ -33,7 +35,6 @@
 
 
 {% if lease_section == "ledger" %}
-{% if lease.needs_onboarding %}<p class="text-sm"><a class="rhp-btn rhp-btn-secondary" href="{% url 'leases:onboard' lease.pk %}" title="Enter earlier charges and payments, or an opening balance.">Set up prior lease activity</a></p>{% endif %}
 {% include "management/lease_ledger_content.html" %}
 {% elif lease_section == "terms" %}
     <section class="rhp-card">
@@ -102,6 +103,11 @@
 
     {% if lease.needs_onboarding %}
       <section class="rhp-card border-warning/30 bg-warning/5">
+        {% if ledger.charges %}
+        <h2 class="text-sm font-semibold">Confirm the billing start date</h2>
+        <p class="mt-2 text-sm">This account already has charges and payments. Review and keep its existing history instead of recreating it or entering another opening balance.</p>
+        <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-primary mt-4">Review existing account history</a>
+        {% else %}
         <h2 class="text-sm font-semibold">Set up prior lease activity</h2>
         <p class="mt-2 text-sm leading-relaxed">
           This lease began on {{ lease.start_date|date:"M j, Y" }}. Its earlier charges and payments
@@ -112,6 +118,7 @@
           <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-primary mt-4">
             Set up prior activity
           </a>
+        {% endif %}
         {% endif %}
       </section>
     {% elif lease.has_onboarding %}

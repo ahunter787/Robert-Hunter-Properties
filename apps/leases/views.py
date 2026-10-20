@@ -35,6 +35,7 @@ from apps.audit.models import AuditAction
 from apps.audit.services import events_for_lease, record
 from apps.leases import services as lease_services
 from apps.leases.forms import (
+    ExistingHistoryForm,
     LeaseEndForm,
     LeaseForm,
     LeaseReopenForm,
@@ -53,6 +54,7 @@ from apps.leases.models import (
 )
 from apps.leases.workspace import workspace_context
 from apps.ledger import services as ledger_services
+from apps.ledger.presentation import transaction_history
 from apps.properties.models import Unit
 
 logger = logging.getLogger("apps.leases")
@@ -155,13 +157,20 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # The ledger is a summary here; the full screen lives in apps.ledger.
+        # Both financial entry routes use this same authorized workspace.
         context["ledger"] = ledger_services.build_ledger(self.object)
         context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
         # E1: the rent schedule and the NNN history the rent card renders.
         context["rent_schedule"] = lease_services.schedule_rows(self.object)
         context["nnn_history"] = list(reversed(self.object.nnn_rates_ordered))
         context.update(workspace_context(self.request, self.object))
+        context.update(
+            transaction_history(
+                context["ledger"],
+                sort=self.request.GET.get("sort", "newest"),
+                history=self.request.GET.get("history", "year"),
+            )
+        )
         context["history"] = events_for_lease(self.object, limit=25)
         context["can_post_due_charges"] = ledger_services.has_due_charges_to_post(
             self.object, through=ledger_services.charges_due()
@@ -696,6 +705,47 @@ class LeaseOnboardView(ManagerRequiredMixin, View):
 
     template_name = "management/lease_onboard.html"
 
+    def _existing_history(self, request, lease):
+        from apps.leases import history_recovery
+
+        action = request.POST.get("action", "edit")
+        form = ExistingHistoryForm(
+            request.POST if request.method == "POST" and action != "confirm" else None,
+            initial={"billing_start_date": lease.start_date},
+        )
+        review = None
+        recovery_error = None
+        if request.method == "POST" and action == "confirm":
+            try:
+                history_recovery.confirm(
+                    lease.pk, token=request.POST.get("review_token", ""), actor=request.user
+                )
+            except ValidationError as exc:
+                recovery_error = " ".join(exc.messages)
+            else:
+                messages.success(
+                    request,
+                    "Billing start date confirmed. Existing charges and payments were kept; "
+                    "no financial entries were added.",
+                )
+                return redirect("leases:lease-detail", pk=lease.pk)
+        elif request.method == "POST" and action == "review" and form.is_valid():
+            try:
+                review = history_recovery.prepare(lease, actor=request.user, **form.cleaned_data)
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+        return render(
+            request,
+            "management/lease_existing_history.html",
+            {
+                "lease": lease,
+                "form": form,
+                "review": review,
+                "recovery_error": recovery_error,
+                "ledger": ledger_services.build_ledger(lease),
+            },
+        )
+
     def _context(self, lease, form):
         return {
             "lease": lease,
@@ -711,6 +761,8 @@ class LeaseOnboardView(ManagerRequiredMixin, View):
         if not lease.needs_onboarding:
             messages.info(request, "Prior activity has already been set up for this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
+        if lease.charges.exists():
+            return self._existing_history(request, lease)
         form = OnboardingForm(
             initial={
                 "method": OnboardingMethod.HISTORY,
@@ -725,6 +777,9 @@ class LeaseOnboardView(ManagerRequiredMixin, View):
         if not lease.needs_onboarding:
             messages.info(request, "Prior activity has already been set up for this lease.")
             return redirect("leases:lease-detail", pk=lease.pk)
+
+        if lease.charges.exists() or request.POST.get("history_recovery") == "1":
+            return self._existing_history(request, lease)
 
         form = OnboardingForm(request.POST)
         if form.is_valid():

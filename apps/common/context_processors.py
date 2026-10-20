@@ -24,6 +24,8 @@ def portal_navigation(request):
         "communications": "communications",
         "tenant_communications": "communications",
     }.get(namespace, "dashboard")
+    if namespace == "ledger" and name == "lease-ledger":
+        active = "leases"
     if namespace == "manage" and name.startswith("account-"):
         active = "tenants"
     if namespace == "accounts" and name not in ("home", "login"):

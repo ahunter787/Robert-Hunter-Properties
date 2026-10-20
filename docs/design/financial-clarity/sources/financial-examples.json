@@ -1,0 +1,1791 @@
+{
+  "title": "RHP financial clarity - five task examples",
+  "pages": [
+    {
+      "title": "1. One lease financial view",
+      "subtitle": "Approved amount colors | Proposed task flows | Synthetic figures",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "text",
+          "x": 30,
+          "y": 94,
+          "text": "Desktop structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 546,
+          "y": 94,
+          "text": "Phone structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 108,
+          "w": 486,
+          "h": 362,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "rect",
+          "x": 546,
+          "y": 108,
+          "w": 216,
+          "h": 400,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 135,
+          "text": "Alder Court / Studio A / Alex Example",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 135,
+          "text": "Studio A",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 163,
+          "text": "Rent & Payments",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 195,
+          "text": "Amount owed now: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 150.5,
+          "y": 195,
+          "text": "$100.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 190.254,
+          "y": 195,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 214,
+          "text": "Includes ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 86.02,
+          "y": 214,
+          "text": "$20.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 116.6,
+          "y": 214,
+          "text": " past due. Recorded charges only.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 253,
+          "text": "Payment received: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 146.265,
+          "y": 253,
+          "text": "$500.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#1c6b45"
+        },
+        {
+          "type": "text",
+          "x": 186.01899999999998,
+          "y": 253,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 272,
+          "text": "Recorded check payment; not a portal transfer.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 311,
+          "text": "Next scheduled rent: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 157.859,
+          "y": 311,
+          "text": "$1,850.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 206.787,
+          "y": 311,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 330,
+          "text": "Due Nov 1, 2026. Not yet added to the account.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 369,
+          "text": "Corrected charges: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 149.91700000000003,
+          "y": 369,
+          "text": "$600.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 189.67100000000002,
+          "y": 369,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 388,
+          "text": "Includes a ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 94.36,
+          "y": 388,
+          "text": "$120.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 130.5,
+          "y": 388,
+          "text": " charge reduced ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 205.54000000000002,
+          "y": 388,
+          "text": "$20.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#6b21a8"
+        },
+        {
+          "type": "text",
+          "x": 236.12000000000003,
+          "y": 388,
+          "text": " to ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 250.02000000000004,
+          "y": 388,
+          "text": "$100.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 286.16,
+          "y": 388,
+          "text": ".",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 169,
+          "text": "Rent & Payments",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 195,
+          "text": "Due now: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 603.02,
+          "y": 195,
+          "text": "$100.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 639.16,
+          "y": 195,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 221,
+          "text": "Past due: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 603.03,
+          "y": 221,
+          "text": "$20.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 633.61,
+          "y": 221,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 247,
+          "text": "Next rent: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 604.13,
+          "y": 247,
+          "text": "$1,850.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 648.61,
+          "y": 247,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 273,
+          "text": "Not added to account",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 299,
+          "text": "Record payment",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 325,
+          "text": "Add one-time charge",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 351,
+          "text": "Transactions",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 377,
+          "text": "Inline corrections",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 403,
+          "text": "History (expand)",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 570,
+          "text": "Labels and patterns carry meaning in grayscale; production colors remain full-color.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 530,
+          "text": "Both preserved lease/ledger URLs lead to the same financial reading surface.",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "2. Set up starting account records",
+      "subtitle": "Approved amount colors | Proposed task flows | Synthetic figures",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "text",
+          "x": 30,
+          "y": 94,
+          "text": "Desktop structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 546,
+          "y": 94,
+          "text": "Phone structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 108,
+          "w": 486,
+          "h": 362,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "rect",
+          "x": 546,
+          "y": 108,
+          "w": 216,
+          "h": 400,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 135,
+          "text": "Alder Court / Studio A / Alex Example",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 135,
+          "text": "Studio A",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 163,
+          "text": "Choose one setup method",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 195,
+          "text": "1. Choose: Full history / Starting balance",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 214,
+          "text": "Do not display both methods' inputs together.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 253,
+          "text": "2. Starting balance: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 150.53300000000002,
+          "y": 253,
+          "text": "$200.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 190.287,
+          "y": 253,
+          "text": " owed",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 272,
+          "text": "Balance as of Oct 1; charges begin Oct 1. Source: old records.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 311,
+          "text": "3. Review the resulting account",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 330,
+          "text": "One starting charge; no newly received payment.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 369,
+          "text": "Confirm starting records",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 388,
+          "text": "No calculation of implied prior receipts in this proposal.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 169,
+          "text": "Starting records",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 195,
+          "text": "Step 1 of 3",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 221,
+          "text": "Choose a method",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 247,
+          "text": "Full history",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 273,
+          "text": "Starting balance",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 299,
+          "text": "Continue",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 325,
+          "text": "Back / Cancel",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 351,
+          "text": "Only relevant fields",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 377,
+          "text": "appear in step 2.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 570,
+          "text": "Labels and patterns carry meaning in grayscale; production colors remain full-color.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 530,
+          "text": "Historical setup is not new cash; the separate receipt calculator stays out of scope.",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "3. Record a payment",
+      "subtitle": "Approved amount colors | Proposed task flows | Synthetic figures",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "text",
+          "x": 30,
+          "y": 94,
+          "text": "Desktop structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 546,
+          "y": 94,
+          "text": "Phone structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 108,
+          "w": 486,
+          "h": 362,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "rect",
+          "x": 546,
+          "y": 108,
+          "w": 216,
+          "h": 400,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 135,
+          "text": "Alder Court / Studio A / Alex Example",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 135,
+          "text": "Studio A",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 163,
+          "text": "Record payment received",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 195,
+          "text": "Amount: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 94.268,
+          "y": 195,
+          "text": "$500.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#1c6b45"
+        },
+        {
+          "type": "text",
+          "x": 134.022,
+          "y": 195,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 214,
+          "text": "Received on Oct 20, 2026. Method: Check.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 253,
+          "text": "Reference (optional)",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 272,
+          "text": "Check number or source reference; no bank credentials.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 311,
+          "text": "Or record an expected payment",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 330,
+          "text": "Expected on date; no received label or balance reduction.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 369,
+          "text": "Record ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 86.953,
+          "y": 369,
+          "text": "$500.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#1c6b45"
+        },
+        {
+          "type": "text",
+          "x": 126.707,
+          "y": 369,
+          "text": " payment",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 388,
+          "text": "Records an outside payment. Does not move money.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 169,
+          "text": "Record payment",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 195,
+          "text": "Amount: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 598.02,
+          "y": 195,
+          "text": "$500.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#1c6b45"
+        },
+        {
+          "type": "text",
+          "x": 634.16,
+          "y": 195,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 221,
+          "text": "Received on",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 247,
+          "text": "Oct 20, 2026",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 273,
+          "text": "Method: Check",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 299,
+          "text": "Reference (optional)",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 325,
+          "text": "Record payment",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 351,
+          "text": "Cancel",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 377,
+          "text": "Expected instead?",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 403,
+          "text": "Separate state label",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 570,
+          "text": "Labels and patterns carry meaning in grayscale; production colors remain full-color.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 530,
+          "text": "Received amounts green; expected payments black. Neither is bank-reconciled proof.",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "4. Correct a charge",
+      "subtitle": "Approved amount colors | Proposed task flows | Synthetic figures",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "text",
+          "x": 30,
+          "y": 94,
+          "text": "Desktop structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 546,
+          "y": 94,
+          "text": "Phone structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 108,
+          "w": 486,
+          "h": 362,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "rect",
+          "x": 546,
+          "y": 108,
+          "w": 216,
+          "h": 400,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 135,
+          "text": "Alder Court / Studio A / Alex Example",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 135,
+          "text": "Studio A",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 163,
+          "text": "Reduce this charge",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 195,
+          "text": "Current charge: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 131.56900000000002,
+          "y": 195,
+          "text": "$100.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 171.323,
+          "y": 195,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 214,
+          "text": "Original ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 83.22999999999999,
+          "y": 214,
+          "text": "$120.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 119.36999999999999,
+          "y": 214,
+          "text": " less earlier ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 173.26999999999998,
+          "y": 214,
+          "text": "$20.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#6b21a8"
+        },
+        {
+          "type": "text",
+          "x": 203.85,
+          "y": 214,
+          "text": " correction.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 253,
+          "text": "Reduce by: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 108.348,
+          "y": 253,
+          "text": "$10.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#6b21a8"
+        },
+        {
+          "type": "text",
+          "x": 141.986,
+          "y": 253,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 272,
+          "text": "Change amount, not replacement total. Reason required.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 311,
+          "text": "After this correction: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 157.848,
+          "y": 311,
+          "text": "$90.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 191.48600000000002,
+          "y": 311,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 330,
+          "text": "No refund or cash transfer. Original entries remain.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 369,
+          "text": "Review, then confirm reduction",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 388,
+          "text": "Quick-fill only changes input; never silently submits.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 169,
+          "text": "Correct charge",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 195,
+          "text": "Current: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 596.9,
+          "y": 195,
+          "text": "$100.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 633.04,
+          "y": 195,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 221,
+          "text": "Reduce / Increase",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 247,
+          "text": "Reduce by ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 608.58,
+          "y": 247,
+          "text": "$10.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#6b21a8"
+        },
+        {
+          "type": "text",
+          "x": 639.1600000000001,
+          "y": 247,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 273,
+          "text": "Result: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 591.9,
+          "y": 273,
+          "text": "$90.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 622.48,
+          "y": 273,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 299,
+          "text": "Reason",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 325,
+          "text": "Review change",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 351,
+          "text": "Confirm reduction",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 377,
+          "text": "Back / Cancel",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 403,
+          "text": "Original stays visible",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 570,
+          "text": "Labels and patterns carry meaning in grayscale; production colors remain full-color.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 530,
+          "text": "Keep corrections inline under their original charge; do not replace stored history.",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        }
+      ]
+    },
+    {
+      "title": "5. Allocate a property bill",
+      "subtitle": "Approved amount colors | Proposed task flows | Synthetic figures",
+      "width": 792,
+      "height": 612,
+      "elements": [
+        {
+          "type": "text",
+          "x": 30,
+          "y": 94,
+          "text": "Desktop structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 546,
+          "y": 94,
+          "text": "Phone structure",
+          "size": 11,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "rect",
+          "x": 30,
+          "y": 108,
+          "w": 486,
+          "h": 362,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "rect",
+          "x": 546,
+          "y": 108,
+          "w": 216,
+          "h": 400,
+          "fill": "#ffffff",
+          "stroke": "#bbbbbb"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 135,
+          "text": "Alder Court / Studio A / Alex Example",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 135,
+          "text": "Studio A",
+          "size": 13,
+          "bold": true,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 163,
+          "text": "Electricity: ",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 132.256,
+          "y": 163,
+          "text": "$237.00",
+          "size": 16,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 190.07999999999998,
+          "y": 163,
+          "text": " / 3 months",
+          "size": 16,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 195,
+          "text": "Monthly amount to allocate: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 195.127,
+          "y": 195,
+          "text": "$79.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 228.76500000000001,
+          "y": 195,
+          "text": "",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 214,
+          "text": "Compact ring + matching text; preserve unit colors.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 253,
+          "text": "Studio A: ",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 97.94200000000001,
+          "y": 253,
+          "text": "$55.00",
+          "size": 11,
+          "bold": true,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 131.58,
+          "y": 253,
+          "text": " / 69.62%",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 272,
+          "text": "Studio B: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 89.36,
+          "y": 272,
+          "text": "$24.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 119.94,
+          "y": 272,
+          "text": " / 30.38%, calculated remainder.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 311,
+          "text": "Assign remaining monthly amount to Studio B",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 330,
+          "text": "Allocation only. A vacant unit stays funded by RHP.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 369,
+          "text": "Review and save allocations",
+          "size": 11,
+          "bold": true,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 46,
+          "y": 388,
+          "text": "No tenant charges added. Bill payment is not recorded.",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 169,
+          "text": "Electricity allocation",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 195,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558.0,
+          "y": 195,
+          "text": "$79.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 588.58,
+          "y": 195,
+          "text": " per month",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 221,
+          "text": "Small ring + legend",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 247,
+          "text": "Remainder: Studio B",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 273,
+          "text": "Studio A: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 601.36,
+          "y": 273,
+          "text": "$55.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 631.94,
+          "y": 273,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 299,
+          "text": "Studio B: ",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 601.36,
+          "y": 299,
+          "text": "$24.00",
+          "size": 10,
+          "bold": false,
+          "fill": "#9c231c"
+        },
+        {
+          "type": "text",
+          "x": 631.94,
+          "y": 299,
+          "text": "",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 325,
+          "text": "Calculated remainder",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 351,
+          "text": "Review allocation",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 377,
+          "text": "Save allocations",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 558,
+          "y": 403,
+          "text": "No tenant charges yet",
+          "size": 10,
+          "bold": false,
+          "fill": "#171717"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 570,
+          "text": "Labels and patterns carry meaning in grayscale; production colors remain full-color.",
+          "size": 10,
+          "bold": false,
+          "fill": "#202326"
+        },
+        {
+          "type": "text",
+          "x": 30,
+          "y": 530,
+          "text": "Cost receipt icon, not paid-out arrow; do not recolor unit slices by status.",
+          "size": 10,
+          "bold": true,
+          "fill": "#202326"
+        }
+      ]
+    }
+  ]
+}

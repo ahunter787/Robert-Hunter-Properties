@@ -42,7 +42,7 @@
                            class="mt-1" checked>
                     <label for="cancel-{{ charge.pk }}" class="flex-1">
                       <span class="font-medium">{{ charge.description }}</span>
-                      <span class="text-ink-muted">· {{ charge.due_date|date:"M j, Y" }} · {{ charge.amount|money }} · {{ charge.get_kind_display }}</span>
+                      <span class="text-ink-muted">· {{ charge.due_date|date:"M j, Y" }} · {{ charge.amount|money }} · {{ charge|financial_charge_label }}</span>
                     </label>
                   </li>
                 {% endfor %}

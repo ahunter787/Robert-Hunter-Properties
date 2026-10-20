@@ -72,6 +72,13 @@ reason shown, it is one template line.
 
 ## Consequences
 
+**Owner-approved presentation amendment, October 20, 2026:** ADR-014's shared bill refinement now
+groups every exact due date into an expandable bill for both portals. Payment progress appears
+only for the whole bill, including a single-component bill; no component paid/remaining breakdown
+is rendered. Canceled expectations remain separately labeled history alongside other payment records.
+The existing authoritative allocation remains unchanged. Corrections still fold into their original
+charge, and tenants still do not receive private correction reasons or administrative audit metadata.
+
 **Positive**
 
 - A correction reads as a correction. The most common case — a charge raised in error and cancelled —

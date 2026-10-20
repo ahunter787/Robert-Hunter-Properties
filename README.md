@@ -9,8 +9,9 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
-**Current status: Phases 7–8 and the accepted E11 Operations Desk are merged into local `main`.
-Phase 9 operational dashboard is owner-accepted for local preservation and merge.
+**Current status: Phases 7–9 and the accepted E11 Operations Desk are merged into local `main`.
+The owner accepted the financial reading surface, expandable bills and reviewed existing-history
+recovery for local preservation and merge. Remaining financial task forms await separate review.
 Nothing has been pushed or externally deployed.**
 RHP models the
 properties and units it manages, the tenancies inside them, and the money: staff and tenants sign in,

@@ -403,7 +403,9 @@ def test_the_adjustment_amount_starts_at_what_is_still_owed(as_admin):
 
     assert response.status_code == 200
     assert response.context["form"]["amount"].value() == Decimal("600.00")
-    assert "Still owed" in body
+    assert "Still owed" not in body
+    assert "Paid or credited" not in body
+    assert "Check any suggested amount before saving" in body
     assert "600.00" in body
 
 
@@ -470,7 +472,8 @@ def test_a_settled_charge_is_not_prefilled(as_admin):
     body = response.content.decode()
 
     assert response.context["form"]["amount"].value() in (None, "")
-    assert "already settled" in body
+    assert "does not refund money" in body
+    assert "already settled" not in body
     assert "use_full_amount" not in body
 
 

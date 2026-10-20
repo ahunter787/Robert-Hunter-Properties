@@ -314,6 +314,20 @@ class OnboardingForm(StyledForm):
 # --- ending a tenancy (P4-Q1, P4-Q2) ---------------------------------------
 
 
+class ExistingHistoryForm(StyledForm):
+    billing_start_date = forms.DateField(
+        label="Billing start date",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Where future posting checks begin. Existing records before this date remain.",
+    )
+    reason = forms.CharField(
+        max_length=200,
+        label="Reason",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Explain why this date matches the account records you reviewed.",
+    )
+
+
 class LeaseEndForm(StyledForm):
     """End a tenancy: when it stops, why, and what the close-out should cancel.
 

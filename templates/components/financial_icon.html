@@ -1,0 +1,11 @@
+<svg class="financial-icon" aria-hidden="true" focusable="false" data-financial-icon="{{ kind|default:'charge' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+{% if kind == "received" %}<rect x="2" y="3" width="18" height="12" rx="2"/><path d="M13 6h-3a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3H8m3-7v8m4 6 2 2 5-6"/>
+{% elif kind == "rent" %}<path d="m3 10 9-7 9 7M5 9v12h14V9M14 12h-3a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3H9m3-7v8"/>
+{% elif kind == "expected" %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+{% elif kind == "canceled" %}<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/>
+{% elif kind == "correction" %}<path d="m7 3-4 4 4 4M3 7h10a7 7 0 1 1-6 11"/>
+{% elif kind == "cost" or kind == "recovery" %}<path d="M5 3h14v18l-3-2-4 2-4-2-3 2ZM14 7h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3m2-8v10"/>
+{% elif kind == "starting" %}<path d="M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15M6 8h3m-3 4h3m6-4h3m-3 4h3"/>
+{% elif kind == "credit" %}<circle cx="12" cy="12" r="9"/><path d="M8 12h8"/>
+{% else %}<circle cx="10" cy="13" r="8"/><path d="M12 9H9a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3H8m2-8v10m9-15v6m-3-3h6"/>{% endif %}
+</svg>

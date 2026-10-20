@@ -1,0 +1,17 @@
+{% load rhp_format %}
+<article class="financial-payment">
+  <div>
+    <p class="font-medium money-statement">{% if row.payment_entry.kind == "REVERSAL" %}{% include "components/financial_icon.html" with kind="correction" %}Payment undone{% elif row.payment_entry.status == "PENDING" %}{% include "components/financial_icon.html" with kind="expected" %}Expected payment{% elif row.payment_entry.status == "VOID" %}{% include "components/financial_icon.html" with kind="canceled" %}Canceled expected payment{% else %}{% include "components/financial_icon.html" with kind="received" %}Payment received{% endif %}</p>
+    <p class="text-sm money-statement">{{ row.date|date:"M j, Y" }} · {{ row.description }}</p>
+    <p class="text-xs money-statement">{% if row.payment_entry.status == "PENDING" %}Expected—not received{% else %}{{ row.status }}{% endif %}</p>
+    {% if row.payment_entry.reverses %}<p class="text-xs money-statement">Reverses payment from {{ row.payment_entry.reverses.payment_date|date:"M j, Y" }}. Does not refund money.</p>{% endif %}
+    {% if not lease.is_settled and row.payment_entry.status == "PENDING" and row.payment_entry.kind == "RECEIVED" %}
+      <form method="post" action="{% url 'ledger:payment-clear' row.payment_entry.pk %}" class="mt-2 inline-block">{% csrf_token %}<button class="rhp-link">Mark cleared</button></form>
+      <form method="post" action="{% url 'ledger:payment-void' row.payment_entry.pk %}" class="ml-2 inline-block">{% csrf_token %}<button class="rhp-link">Void</button></form>
+    {% elif not lease.is_settled and row.payment_entry.kind == "RECEIVED" and row.payment_entry.status == "CLEARED" and row.payment_entry.pk not in ledger.reversed_payment_ids %}<a href="{% url 'ledger:payment-reverse' row.payment_entry.pk %}" class="rhp-link mt-2 inline-block">Reverse</a>{% endif %}
+  </div>
+  <div class="text-right">
+    <p class="font-semibold {% if row.payment_entry.kind == 'REVERSAL' %}money-change{% elif row.payment_entry.status != 'CLEARED' or row.payment_entry.pk in ledger.reversed_payment_ids %}money-statement{% else %}money-received{% endif %}">{{ row.payment_entry.amount|money }}</p>
+    <p class="mt-1 text-xs money-statement">Account balance:<br><span class="{% if row.running_balance < 0 %}money-received{% elif row.running_balance > 0 %}money-owed{% else %}money-statement{% endif %}">{{ row.running_balance|absolute|money }}</span>{% if row.running_balance < 0 %} credit{% endif %}</p>
+  </div>
+</article>

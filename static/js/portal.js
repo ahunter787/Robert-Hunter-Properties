@@ -1,6 +1,18 @@
 /* Presentation only: authorization and every business mutation remain on the server. */
 (() => {
   document.documentElement.classList.add('portal-enhanced');
+  // Native summary supplies keyboard/no-script behavior. Expand the hit area without
+  // hijacking links, financial actions, form controls, or selecting/copying text.
+  document.addEventListener('click', event => {
+    const card = event.target.closest('[data-bill-card]');
+    if (!card || event.defaultPrevented || event.button !== 0) return;
+    if (event.detail !== 0 && getSelection()?.toString()) {
+      if (event.target.closest('summary')) event.preventDefault();
+      return;
+    }
+    if (event.target.closest('summary,a,button,input,select,textarea,label,form,[role="button"],[contenteditable]')) return;
+    card.open = !card.open;
+  });
   const sidebar = document.querySelector('#portal-sidebar');
   const button = document.querySelector('.portal-menu');
   const mobile = matchMedia('(max-width:900px)');

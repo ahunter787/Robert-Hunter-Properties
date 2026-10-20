@@ -8,7 +8,8 @@ Optionally override the label: ... with row=row label="Water"
 {% load rhp_format %}
 <div class="flex flex-wrap items-start justify-between gap-3 py-1">
   <span class="min-w-0">
-    <span>{{ label|default:row.component.title }}</span>
+    <span>{% include "components/financial_icon.html" with kind=row.component.charge_kind|financial_charge_icon %}{{ label|default:row.component.title }}</span>
+    {% if row.component.charge_kind == "RESPONSIBILITY" %}<span class="block text-xs money-statement">Expense Recovery · Property charges</span>{% elif row.component.charge_kind == "NNN" %}<span class="block text-xs money-statement">Triple-net (NNN)</span>{% elif row.component.charge_kind == "RENT" %}<span class="block text-xs money-statement">Base rent</span>{% endif %}
     {% if row.note %}
       <span class="block text-xs text-ink-muted">{{ row.note }}</span>
     {% endif %}
@@ -16,19 +17,16 @@ Optionally override the label: ... with row=row label="Water"
       <span class="block text-xs text-ink-muted">
         was {{ row.component.gross|money }}, adjusted
         {% if row.component.adjusted_by < 0 %}down{% else %}up{% endif %}
-        by {{ row.component.adjusted_by|absolute|money }}
+        by <span class="money-change">{{ row.component.adjusted_by|absolute|money }}</span>
       </span>
     {% endif %}
     {% if row.component.credit > 0 %}
       <span class="block text-xs text-ink-muted">
-        Credit balance from this charge: {{ row.component.credit|money }}
+        Credit balance from this charge: <span class="money-received">{{ row.component.credit|money }}</span>
       </span>
     {% endif %}
   </span>
   <span class="text-right">
-    <span class="block font-medium">{{ row.component.amount|money }}</span>
-    {% if row.component.left > 0 and row.component.left != row.component.amount %}
-      <span class="block text-xs text-ink-muted">{{ row.component.left|money }} to pay</span>
-    {% endif %}
+    <span class="block font-medium {% if row.component.net > 0 %}money-owed{% elif row.component.net < 0 %}money-received{% else %}money-statement{% endif %}">{{ row.component.net|absolute|money }}{% if row.component.net < 0 %} credit{% endif %}</span>
   </span>
 </div>

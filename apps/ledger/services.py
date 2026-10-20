@@ -174,6 +174,7 @@ class StatementCharge:
     #: category and the tenant reads "Utility" rather than a kind name (E2).
     category: str = ""
     responsibility_label: str = ""
+    charge_id: int | None = None
 
     @property
     def was_adjusted(self) -> bool:
@@ -223,6 +224,7 @@ class StatementPayment:
     reference: str
     status: str
     is_reversal: bool
+    is_reversed: bool = False
     kind: str = "payment"
 
     @property
@@ -264,7 +266,7 @@ class ResponsibilityGroup:
 
 @dataclass
 class StatementMonth:
-    """One month of a tenancy's charges, as the tenant's card reads it (E2).
+    """One exact due-date bill, shared by staff and tenant presentation (E2/E9).
 
     A reading, not a record: the month's rent, NNN and responsibilities are separate
     ledger entries that share a due date, and this sums them so a tenant sees one
@@ -278,6 +280,9 @@ class StatementMonth:
     #: Whether this month is where the tenant first meets NNN, so it can be spelled out once
     #: (ADR-021) instead of in every month of every statement.
     spells_out_nnn: bool = False
+    # Staff-only source rows are never rendered by tenant components.
+    transactions: list[TransactionRow] = field(default_factory=list)
+    running_balance: Decimal = ZERO
 
     @property
     def components(self) -> list[StatementCharge]:
@@ -286,7 +291,15 @@ class StatementMonth:
     @property
     def total(self) -> Decimal:
         """What the month costs, at the figures the charges now stand at."""
-        return sum((component.amount for component in self.components), ZERO)
+        return sum((component.net for component in self.components), ZERO)
+
+    @property
+    def paid(self) -> Decimal:
+        return sum((component.paid for component in self.components), ZERO)
+
+    @property
+    def pending(self) -> Decimal:
+        return sum((component.pending for component in self.components), ZERO)
 
     @property
     def left(self) -> Decimal:
@@ -294,31 +307,32 @@ class StatementMonth:
 
     @property
     def state(self) -> str:
-        """The month's own state: the most pressing thing in it wins."""
-        states = [component.state for component in self.components]
-        if not states:
-            return ChargeState.UNPAID
-        if ChargeState.OVERDUE in states:
-            return ChargeState.OVERDUE
-        if ChargeState.PENDING in states:
-            return ChargeState.PENDING
-        if ChargeState.PARTIAL in states:
-            return ChargeState.PARTIAL
-        if all(state == ChargeState.PAID for state in states):
-            return ChargeState.PAID
-        if all(state == ChargeState.ADJUSTMENT for state in states):
+        """One bill's progress, never a component's individual settlement state."""
+        if self.total <= ZERO and self.left <= ZERO:
             return ChargeState.ADJUSTMENT
+        if self.left <= ZERO:
+            return ChargeState.PAID
+        if self.paid > ZERO:
+            return ChargeState.PARTIAL
+        if self.pending >= self.left:
+            return ChargeState.PENDING
+        if self.date < timezone.localdate():
+            return ChargeState.OVERDUE
         return ChargeState.UNPAID
 
     @property
     def state_label(self) -> str:
         if self.state == ChargeState.ADJUSTMENT:
-            return "Nothing to pay"
+            return "Credit" if self.total < ZERO else "Nothing to pay"
+        if self.state == ChargeState.PAID:
+            return "Paid in full"
+        if self.state == ChargeState.PARTIAL and self.date < timezone.localdate():
+            return "Partly paid · Past due"
         return STATE_LABELS[self.state]
 
     @property
     def is_one_line(self) -> bool:
-        """A month of a single charge needs no card: it reads as a row."""
+        """Compatibility metadata; a single component still uses an expandable bill card."""
         return len(self.rows) == 1
 
     def _of_kind(self, kind: str) -> list[ComponentRow]:
@@ -742,6 +756,7 @@ class LeaseLedger:
                     left=max(net - paid, ZERO),
                     pending=line.pending,
                     charge_kind=charge.kind,
+                    charge_id=charge.pk,
                     category=(
                         responsibility.get_category_display() if responsibility is not None else ""
                     ),
@@ -786,24 +801,26 @@ class LeaseLedger:
 
     def statement_months(self) -> list[StatementMonth | StatementPayment]:
         """The statement grouped by due date, newest first."""
-        grouped: list[StatementMonth | StatementPayment] = []
-        for row in self.statement:
-            if isinstance(row, StatementPayment):
-                grouped.append(row)
-                continue
-            component = ComponentRow(component=row, note=self._note_for(row, row.date))
-            last = grouped[-1] if grouped else None
-            if isinstance(last, StatementMonth) and last.date == row.date:
-                last.rows.append(component)
-            else:
-                grouped.append(StatementMonth(date=row.date, rows=[component]))
+        from apps.ledger.presentation import bill_history
 
-        # "Triple-net (NNN)" on first use means the first month the tenant opens, not every
-        # month that carries one.
-        for month in grouped:
-            if isinstance(month, StatementMonth) and month.nnn_rows:
-                month.spells_out_nnn = True
-                break
+        # Shared grouping and chronology; only the public payment fields reach tenant templates.
+        grouped = []
+        for row in bill_history(self, newest=True):
+            if isinstance(row, StatementMonth):
+                grouped.append(row)
+            else:
+                payment = row.payment_entry
+                grouped.append(
+                    StatementPayment(
+                        date=row.date,
+                        amount=payment.amount,
+                        method=payment.get_method_display(),
+                        reference=payment.external_reference,
+                        status=payment.status,
+                        is_reversal=payment.kind == PaymentKind.REVERSAL,
+                        is_reversed=payment.pk in self.reversed_payment_ids,
+                    )
+                )
         return grouped
 
 

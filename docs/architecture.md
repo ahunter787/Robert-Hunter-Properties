@@ -1,5 +1,23 @@
 # RHP architecture
 
+## Financial clarity — October 20, 2026 checkpoint
+
+The two staff lease financial entry routes share the lease workspace template and view context.
+A read-only presentation projection consumes an already-authorized `LeaseLedger` for staff and
+tenant summaries. It distinguishes posted future charges from scheduled unposted rent, without
+storing balances, querying a wider tenancy scope or changing allocation/payment services.
+Financial amount styles are separate from maintenance states and unit-identification colors.
+Entry/correction form propagation follows owner review of the shared reading surface.
+The narrow existing-history recovery uses the existing onboarding URL, a signed 30-minute
+manager-bound review and a lease-row lock. It changes only the missing billing start date and
+appends an audit event; it never creates a receipt, opening balance or duplicate charges.
+The shared `bill_history` projection groups all corrected charges by exact due date into
+expandable bills, with separate payment records. `StatementMonth` retains its compatibility name
+but represents a due-date bill, including one-time charges and single-component bills. Payment
+progress is displayed only for the combined bill. Full-history running balances are calculated
+before filtering/pagination; bills precede payments on shared dates. Tenant templates omit private
+correction reasons and staff controls. No stored invoice, allocation-rule change or migration exists.
+
 RHP is a **monolith**: one Django application, one PostgreSQL database, deployed with Docker
 Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](decisions/ADR-001-monolith.md)):
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a

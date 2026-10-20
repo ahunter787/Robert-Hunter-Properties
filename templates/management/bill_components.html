@@ -1,0 +1,20 @@
+{% load rhp_format %}
+<div class="bill-breakdown">
+  {% for component in bill.transactions %}
+    <div class="bill-component">
+      <div class="min-w-0">
+        <span class="font-medium money-statement">{% include "components/financial_icon.html" with kind=component.charge_entry.kind|financial_charge_icon %}{{ component.charge_entry|financial_charge_label }}</span>
+        <span class="block text-sm money-statement">{{ component.description }}</span>
+        {% if component.charge_entry.maintenance_recharge %}<a class="block text-xs rhp-link" href="{% url 'maintenance:detail' component.charge_entry.maintenance_recharge.cost.request.public_id %}">View maintenance expense and reviewed charge</a>{% endif %}
+        {% if component.adjustments %}<span class="block text-xs money-statement">Originally {{ component.charge_entry.amount|money }}</span>{% endif %}
+        {% for adjustment in component.adjustments %}
+          <span class="mt-1 block border-l-2 border-surface-muted pl-2 text-xs money-statement">Adjusted {% if adjustment.direction == "DECREASE" %}down{% else %}up{% endif %} by <span class="money-change">{{ adjustment.amount|money }}</span> on {{ adjustment.created_at|date:"M j, Y" }} · {{ adjustment.reason }}</span>
+        {% endfor %}
+      </div>
+      <div class="text-right">
+        {% if component.payment_or_credit > 0 %}<span class="block font-medium money-received">{{ component.payment_or_credit|money }} credit</span>{% else %}<span class="block font-medium {% if component.charge > 0 %}money-owed{% else %}money-statement{% endif %}">{{ component.charge|money }}</span>{% endif %}
+        {% if not lease.is_settled %}<a href="{% url 'ledger:charge-adjust' component.charge_entry.pk %}" class="rhp-link text-sm">Adjust</a>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

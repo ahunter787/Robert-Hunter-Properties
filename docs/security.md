@@ -1,5 +1,16 @@
 # Security
 
+## Reviewed existing-history recovery — October 20, 2026
+
+Manager/admin recovery of a missing billing start date uses a 30-minute signed review bound to
+the actor, lease, date, reason and financial/lease-state fingerprint. Confirmation revalidates under
+the lease lock. Wrong actors/leases, stale state, signature changes, expiry and replay cannot save.
+Ended/settled accounts and records without existing charges are ineligible. Preview, Back and Cancel
+write nothing. Confirmation only saves the billing start date and audit event; charges/payments and
+their existing authorization, balances and history remain unchanged. No live repair runs automatically.
+
+## Existing portal safeguards
+
 Phase 8 communications follow ADR-024: explicit tenant participants, frozen household conversations,
 snapshot announcement recipients, private UUID downloads, append-only messages/versions, and manager
 only operational controls. Every read/send/read-position/download is independently scoped. New lease
@@ -251,6 +262,11 @@ The application-level floor is implemented in `apps/accounts/throttle.py` (ADR-0
   address.
 
 ## Financial integrity
+
+The October 20 financial-clarity reading surface shares existing authorized lease views and
+already-scoped ledger projections. Template styling never authorizes access or changes balances.
+Tenant summaries do not receive staff controls, correction reasons or raw audit history. Expected
+payments remain excluded from balances; colors make no claim of bank verification or cash movement.
 
 Charges and payments are append-only. Corrections are reversal or adjustment rows with an actor and a
 timestamp; history is never rewritten in place. Balances are derived from ledger entries, so a wrong

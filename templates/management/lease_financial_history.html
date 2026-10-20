@@ -1,0 +1,35 @@
+{% load rhp_format %}
+<section class="rhp-card" aria-labelledby="transactions-heading">
+  <h2 id="transactions-heading" class="text-sm font-semibold">Transactions</h2>
+  <p class="mt-1 text-xs money-statement">Open a bill to see its charges and inline corrections. Payments are separate records. Running balances use corrected amounts.</p>
+  <form method="get" class="mt-4 flex flex-wrap items-end gap-3" aria-label="Transaction display">
+    <input type="hidden" name="section" value="ledger">
+    {% for key, value in lease_list_filters.items %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}
+    <label class="text-sm" for="transaction-sort">Date order<select id="transaction-sort" name="sort" class="rhp-input mt-1 block"><option value="newest" {% if transaction_sort == "newest" %}selected{% endif %}>Newest first</option><option value="oldest" {% if transaction_sort == "oldest" %}selected{% endif %}>Oldest first</option></select></label>
+    <label class="text-sm" for="transaction-history">History<select id="transaction-history" name="history" class="rhp-input mt-1 block"><option value="year" {% if transaction_history == "year" %}selected{% endif %}>Past 12 months</option><option value="all" {% if transaction_history == "all" %}selected{% endif %}>All history</option></select></label>
+    <button type="submit" class="rhp-btn rhp-btn-secondary">Apply</button>
+  </form>
+  <p class="mt-3 text-xs money-statement">{% if transaction_history == "year" %}Showing transactions since {{ transaction_cutoff|date:"M j, Y" }}, including upcoming entries.{% else %}Showing all transactions.{% endif %} Balances include all earlier transactions.</p>
+  {% if transaction_hidden_count %}<p class="mt-2 text-sm"><a class="rhp-link" href="?section=ledger&amp;history=all&amp;sort={{ transaction_sort }}{% for key, value in lease_list_filters.items %}&amp;{{ key|urlencode }}={{ value|urlencode }}{% endfor %}">Show all history ({{ transaction_hidden_count }} older transaction{{ transaction_hidden_count|pluralize }})</a></p>{% endif %}
+  {% if transaction_rows %}
+    <ol class="mt-4 space-y-3" aria-label="Bills and separate payments">
+      {% for row in transaction_rows %}
+        <li>
+          {% if row.kind == "month" %}
+            <details class="bill-card" data-bill-card>
+              {% include "components/bill_summary.html" with bill=row show_balance=True %}
+              {% include "management/bill_components.html" with bill=row %}
+            </details>
+          {% else %}
+            {% include "management/financial_payment.html" with row=row %}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}<p class="mt-2 text-sm money-statement">{% if transaction_total %}No transactions in this period.{% else %}No charges or payments recorded.{% endif %}</p>{% endif %}
+</section>
+<section class="rhp-card">
+  <h2 class="text-sm font-semibold">Audit history</h2>
+  <p class="mt-1 text-xs text-ink-muted">Administrative changes, including who made them and why.</p>
+  {% if history %}<ul class="mt-4 space-y-3 text-sm">{% for event in history %}<li><p>{{ event.summary }}</p><p class="text-xs text-ink-muted">{{ event.created_at|date:"M j, Y, g:i A" }} · {% if event.actor %}{{ event.actor.display_name }}{% else %}RHP system{% endif %}</p></li>{% endfor %}</ul>{% else %}<p class="mt-2 text-sm text-ink-muted">No administrative changes yet.</p>{% endif %}
+</section>
