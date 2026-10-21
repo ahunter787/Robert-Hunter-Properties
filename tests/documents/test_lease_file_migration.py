@@ -24,7 +24,7 @@ BEFORE = [
 ]
 AFTER = ("documents", "0002_lease_files_become_documents")
 #: The end of the chain, so a test never leaves the schema in a half-migrated state.
-LATEST = ("leases", "0010_remove_lease_lease_document_name_and_more")
+LATEST = ("leases", "0011_lease_financial_ready_financialcutover_and_more")
 
 NOTE = "Brought in from the lease's single file when documents arrived (Phase 6)."
 
@@ -199,6 +199,8 @@ def test_a_document_the_migration_made_is_the_one_the_tenant_can_open():
 
     try:
         migrate(AFTER)
+        # Live ORM models must read the current schema, not the migration's historical state.
+        migrate(LATEST)
         document = LiveDocument.objects.get(lease_id=lease.pk)
         assert document.is_visible_to(ada)
         assert LiveDocument.objects.visible_to(ada).filter(pk=document.pk).exists()

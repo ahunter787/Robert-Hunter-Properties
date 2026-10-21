@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}RHP financial start — RHP{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  <h1 class="text-2xl font-semibold">RHP financial start</h1>
+  <p>Choose when RHP starts recording new financial activity. Original lease dates stay unchanged. This does not establish verified accounting books.</p>
+  {% if error %}<p role="alert" class="rhp-card money-owed">{{ error }}</p>{% endif %}
+  {% if cutover %}
+    <section class="rhp-card"><h2 class="font-semibold">First native financial date: {{ cutover.first_native_date|date:"M j, Y" }}</h2><p>{{ cutover.note }}</p><p>Recorded by {{ cutover.created_by }}. This date cannot be overwritten.</p></section>
+    <a href="{% url 'leases:lease-list' %}" class="rhp-btn rhp-btn-primary">Set up lease accounts</a>
+  {% elif review_token %}
+    <section class="rhp-card"><h2 class="font-semibold">Review start date</h2><p>{{ form.cleaned_data.first_native_date|date:"M j, Y" }}</p><p>{{ form.cleaned_data.note }}</p><p class="mt-3">This date limits new recurring charges. Confirming creates no charges, payments or opening balances. This is an installation-wide setting and cannot be edited afterward.</p>
+      <form method="post" class="mt-4">{% csrf_token %}<input type="hidden" name="action" value="confirm"><input type="hidden" name="review_token" value="{{ review_token }}"><button class="rhp-btn rhp-btn-primary">Confirm financial start date</button></form>
+      <a href="{% url 'leases:financial-start' %}" class="rhp-btn rhp-btn-secondary">Back</a>
+    </section>
+  {% else %}
+    <form method="post" class="rhp-card">{% csrf_token %}{% include "components/form.html" with form=form %}<button class="rhp-btn rhp-btn-primary mt-4">Review start date</button></form>
+  {% endif %}
+</div>
+{% endblock %}

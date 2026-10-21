@@ -83,6 +83,14 @@ def remove_document(document: Document, *, note: str, actor=None) -> None:
     if not note.strip():
         raise ValidationError({"note": "Say why this document is being removed."})
 
+    from apps.leases.models import LeaseOpeningRecord
+
+    if LeaseOpeningRecord.objects.filter(evidence=document).exists():
+        raise ValidationError(
+            "This document supports an immutable starting record and must be retained. "
+            "Record a correction instead of removing its evidence."
+        )
+
     summary = (
         f"Document removed: {document.title} ({document.get_category_display()}) — "
         f"{document.attachment_label}: {note.strip()}"

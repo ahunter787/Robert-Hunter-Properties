@@ -29,6 +29,8 @@ NAMES = [
     "financial-clarity-owner-notes.md",
     "financial-clarity/README.md",
     "property-accounting.md",
+    "accounting-cutover-plan.md",
+    "held-credit-repayments.md",
 ]
 
 

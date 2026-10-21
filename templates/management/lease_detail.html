@@ -108,18 +108,25 @@
         <p class="mt-2 text-sm">This account already has charges and payments. Review and keep its existing history instead of recreating it or entering another opening balance.</p>
         <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-primary mt-4">Review existing account history</a>
         {% else %}
-        <h2 class="text-sm font-semibold">Set up prior lease activity</h2>
+        <h2 class="text-sm font-semibold">Set starting account balance</h2>
         <p class="mt-2 text-sm leading-relaxed">
-          This lease began on {{ lease.start_date|date:"M j, Y" }}. Its earlier charges and payments
-          have not been entered. Recreate charges from the lease start and record prior payments,
-          or enter an opening balance from a date you choose.
+          This lease began on {{ lease.start_date|date:"M j, Y" }}. Record the stated amount owed,
+          a credit, or an explicit zero at the RHP start date. Earlier bills and payments are not recreated.
         </p>
         {% if user.is_manager_or_above %}
           <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-primary mt-4">
-            Set up prior activity
+            Set starting balance
           </a>
         {% endif %}
         {% endif %}
+      </section>
+    {% elif lease.opening_record %}
+      <section class="rhp-card">
+        <h2 class="font-semibold">Starting account · {{ lease.opening_record.cutover.first_native_date|date:"M j, Y" }}</h2>
+        <p>{{ lease.opening_record.get_kind_display }}: <span class="{% if lease.opening_record.kind == 'CREDIT' %}money-received{% elif lease.opening_record.kind == 'DEBT' %}money-owed{% endif %}">{{ lease.opening_record.amount|money }}</span></p>
+        <p class="mt-2 text-sm">Manager-entered, not independently verified. Historical aging unknown.</p>
+        <p class="mt-2 text-sm">{{ lease.opening_record.note }}</p>
+        {% if lease.opening_record.evidence %}<a class="rhp-link" href="{% url 'documents:download' lease.opening_record.evidence_id %}">{{ lease.opening_record.evidence.title }} · Staff only</a>{% endif %}
       </section>
     {% elif lease.has_onboarding %}
       {% with record=lease.onboarding_record %}

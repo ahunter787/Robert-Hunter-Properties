@@ -9,7 +9,7 @@ from apps.audit.models import AuditAction, AuditEvent
 from apps.common.forms import StyledForm
 from apps.communications.models import Announcement, Conversation
 from apps.documents.models import Document
-from apps.leases.models import Lease
+from apps.leases.models import FinancialCutover, Lease, LeaseOpeningRecord
 from apps.ledger.models import Charge, Payment
 from apps.maintenance.models import Cost, MaintenanceRequest
 from apps.properties.models import Property, Unit
@@ -34,6 +34,13 @@ class TenancyChoice(forms.ModelChoiceField):
 
 # Only these types can produce a link. Unknown/removed records retain their event.
 TARGETS = {
+    "leases.FinancialCutover": (FinancialCutover, None, (), None),
+    "leases.LeaseOpeningRecord": (
+        LeaseOpeningRecord,
+        "ledger:lease-ledger",
+        ("lease__unit__property",),
+        "lease__unit__property_id",
+    ),
     "ledger.Charge": (
         Charge,
         "ledger:lease-ledger",
@@ -192,8 +199,10 @@ def project(events):
                 context = f"{target.subject} · {target.lease.unit.label}"
             elif model is Announcement:
                 context = target.title
-            elif model in (Charge, Payment):
+            elif model in (Charge, Payment, LeaseOpeningRecord):
                 context = target.lease.unit.label
+            elif model is FinancialCutover:
+                context = "RHP financial start date"
             elif model is User:
                 context = target.display_name
                 if not target.is_tenant:
@@ -210,12 +219,21 @@ def project(events):
                     if model is Cost
                     else getattr(target, "public_id", target.pk)
                 )
-                if model in (Charge, Payment):
+                if model in (Charge, Payment, LeaseOpeningRecord):
                     key = target.lease_id
-                url = reverse(route, args=[] if route == "documents:list" else [key])
+                url = reverse(
+                    route,
+                    args=[] if route in ("documents:list", "leases:financial-start") else [key],
+                )
         rows.append(
             {
-                "label": ACTION_LABELS.get(event.action, "Recorded activity"),
+                "label": (
+                    "Starting account recorded"
+                    if event.metadata.get("workflow") == "stated_cutover"
+                    else "Financial start date set"
+                    if event.metadata.get("workflow") == "financial_cutover"
+                    else ACTION_LABELS.get(event.action, "Recorded activity")
+                ),
                 "context": context,
                 "url": url,
                 "actor": event.actor.display_name if event.actor else "Actor unavailable",

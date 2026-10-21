@@ -14,6 +14,10 @@ integration is explicitly Phase 11.
 
 ## What exists today
 
+**E10 cutover release (owner-accepted for local merge October 21):** ADR-027 supersedes initial historical reconstruction with stated
+debt/credit/zero, note and optional private evidence. Unknown aging is not dated arrears, and opening
+credits are not receipts. Existing-history recovery remains compatible; accounting B1–B5 is not included.
+
 **October 20 financial-clarity follow-up:** approved E9/E11 work shares both lease financial entry
 routes and introduces amount-level meanings without changing ledger calculations or mutations.
 The owner accepted the reading surface, expandable bills and reviewed history recovery for local
@@ -85,6 +89,12 @@ that a hand-entered period survives regeneration, and the guard that refuses to 
 retroactive tenancy.
 
 ## Acceptance criteria and evidence
+
+**E10 cutover refinement, October 21:** [Held credit and dated repayments](../design/held-credit-repayments.md)
+replaces read-time allocation with durable applications. Held credit does not lower due-now totals until
+explicitly applied. Agreed due dates/monthly installments schedule existing opening debt, not new charges.
+Future installments stay in account balance but outside due-now/past-due figures. This is cutover scope,
+not general concessions or the separately reviewed accounting implementation.
 
 **Owner-approved existing-history recovery (October 20):** an active, open account with existing
 charges but no billing start date now uses a signed review rather than the original setup form.

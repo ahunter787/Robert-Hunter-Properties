@@ -390,11 +390,11 @@ def test_the_lease_page_asks_for_the_history_to_be_placed(as_admin):
         ).split()
     )
 
-    assert "Set up prior lease activity" in body
-    assert "Its earlier charges and payments have not been entered" in body
+    assert "Set starting account balance" in body
+    assert "Earlier bills and payments are not recreated" in body
 
 
-def test_an_admin_places_the_history_through_the_screen(as_admin):
+def test_retired_history_payload_cannot_recreate_bills_through_the_screen(as_admin):
     lease = a_live_tenancy()
 
     response = as_admin.post(
@@ -409,11 +409,11 @@ def test_an_admin_places_the_history_through_the_screen(as_admin):
         },
     )
 
-    assert response.status_code == 302
+    assert response.status_code == 200
     lease.refresh_from_db()
-    assert lease.billing_start_date == lease.start_date
-    assert lease.payments.count() == 1
-    assert lease.charges.exists()
+    assert lease.billing_start_date is None
+    assert not lease.payments.exists()
+    assert not lease.charges.exists()
 
 
 def test_an_admin_states_a_rent_amount_through_the_screen(as_admin):

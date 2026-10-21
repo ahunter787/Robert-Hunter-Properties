@@ -1,5 +1,19 @@
 # Property accounting — the blueprint (E10)
 
+## October 20 cutover amendment (governs the earlier draft below)
+
+The owner approved ADR-027: tenant cutover first, with manual manager-stated debt/credit/zero, note and
+optional private evidence. No historical reconstruction, CSV import engine or verified-history claim.
+Fresh synthetic development data follows a verified archive/restore of the existing database/files.
+
+Before B1, replace the pending-payment posting row below: expected payments post nothing. Confirmation
+of receipt does not prove bank settlement. Opening credits are explicit noncash entries, not payments.
+Deposit terms do not prove held deposits. Journal idempotency identifies individual source transitions,
+and dated AR controls must distinguish future charges from earned income. Opening AP/bank outstanding
+items need evidence; no unexplained equity plug is approved. Resolve prepayment/control classification
+before the separately reviewed B1 implementation. Reconciliation and external approval gate accounting
+go-live, not tenant setup. Bank accounts, fiscal year and reviewer remain actual information to obtain.
+
 **Status:** in design. The decision is [ADR-026](../decisions/ADR-026-property-accounting.md); this is the
 working blueprint for the slices `E10-B1` … `E10-B5`. Each slice gets its own owner review before the next.
 
@@ -35,8 +49,9 @@ built and stays authoritative for its own question.
 | RHP today | Accounting term |
 | --- | --- |
 | Charge posted | Invoice / receivable accrual |
-| Payment recorded | Receipt |
-| Payment cleared | Deposit to bank |
+| Confirmed payment recorded | Receipt, not proof of bank settlement |
+| Expected payment | Expected money, not a receipt or bank transaction |
+| Bank deposit (separate evidence/event) | Movement into the bank account |
 | Repair cost recorded | Vendor bill / expense accrual |
 | Vendor payment (new) | Bill payment / disbursement |
 | Security deposit held (new movements) | Deposit liability |
@@ -113,8 +128,9 @@ report over the same journals — not a second set of entries.
 
 ## 4. Posting rules
 
-Each source row posts **exactly once**; the entry carries a `source_type`/`source_id` so re-running the
-poster is idempotent, and a posted entry is immutable. Corrections are reversing entries.
+Each explicit source event posts **exactly once**. Identity must distinguish receipt confirmation,
+cancellation, reversal and actual bank movement, not only the mutable source row's primary key.
+The exact event-key contract is approved before B1. Posted journals remain immutable.
 
 | Source event | Debit | Credit | Property | Notes |
 | --- | --- | --- | --- | --- |
@@ -125,11 +141,13 @@ poster is idempotent, and a posted entry is immutable. Corrections are reversing
 | Charge, `RESPONSIBILITY` (other) | 1100 AR | 4900 Other income | ✓ | |
 | Charge, `MANUAL` | 1100 AR | mapping chosen at entry, default 4900 | ✓ | Admin/manger picks the income account |
 | Charge, `ADJUSTMENT` | reverse the original charge's income line | 1100 AR | ✓ | Uses the `adjusts` link; a reduction is a debit to income |
-| Charge, `OPENING` | 1100 AR | 9000 Opening equity | ✓ | Brought-forward balance (E4) |
-| Payment recorded (`PENDING`) | 1010 Undeposited funds | 1100 AR | ✓ | Money received, not yet in the bank |
-| Payment cleared | 1000 Operating bank | 1010 Undeposited funds | ✓ | By method; cash/check may skip 1010 if cleared immediately — the design posts the two steps always, so the trail is uniform |
-| Payment voided | reverse 1010/1100 | | ✓ | |
-| Payment reversed | reverse both entries | | ✓ | Separate act, separate entry |
+| Starting debt (`OPENING`) | Opening AR control | Approved opening counterpart | ✓ | Noncash; part of reviewed opening books, never new rental income |
+| Starting credit | Approved opening counterpart | Approved credit/prepayment control | ✓ | Exact classification is a B1 review prerequisite; never a receipt |
+| Payment expected (`PENDING`) | — | — | ✓ | No financial posting: money has not been received |
+| Confirmed payment (current `CLEARED`) | Receipt/clearing account | Tenant control | ✓ | Receipt is not evidence that a bank deposit occurred; finalize mappings before B1 |
+| Actual bank deposit (B3) | Bank | Receipt/clearing account | ✓ | Separate evidenced bank movement; never inferred from the payment status label |
+| Expected payment canceled (`VOID`) | — | — | ✓ | No receipt was posted to undo |
+| Confirmed receipt corrected/reversed | Reverse the receipt's approved posting | | ✓ | Not a payout or refund; actual bank facts remain separately reconciled |
 | Repair cost, `INCREASE` | 5000 Repairs | 2100 AP (vendor) | ✓ | |
 | Repair cost, `DECREASE` (correction) | 2100 AP | 5000 Repairs | ✓ | Uses `corrects` |
 | Repair recharge to tenant | 1100 AR | 4300 Maintenance recoveries | ✓ | The expense stays an expense; the recovery is income |
@@ -164,14 +182,16 @@ usable immediately.
 ## 6. Controls and invariants (what the tests assert)
 
 1. **Every journal entry balances** — debits equal credits, to the cent.
-2. **AR control equals the tenant ledger**: `1100` balance = Σ `build_ledger(lease).balance` over open and
-   settled tenancies (settled accounts net to zero).
+2. **Dated tenant controls tie to the dated subledger** on the same effective-date basis. The B1
+   specification defines separate credit/prepayment classification. Do not compare an unfiltered
+   current statement containing upcoming charges with an as-of earned-income/AR report.
 3. **AP control**: `2100` = Σ recorded repair costs (net of corrections) − Σ disbursements.
-4. **Deposits**: `2000` = Σ deposit events (received − refunded − withheld), and each lease's register
-   agrees with its `Lease.deposit` figure at onboarding.
+4. **Deposits**: the liability equals approved held-deposit openings plus received − refunded −
+   withheld movements. `Lease.deposit` is the contractual requirement, not proof of funds held.
 5. **Three-way reconciliation**: statement closing balance = cleared balance = adjusted cash balance, else
    reconciliation refuses.
-6. **Posting is idempotent**: each source row posts once; re-running the poster creates nothing.
+6. **Posting is idempotent** per explicit source event; re-running creates nothing and later transitions
+   are not suppressed by an earlier event for the same payment row.
 7. **Immutability**: posted entries cannot be edited or deleted; a correction is a reversing entry with an
    actor and reason, and both entries are visible.
 8. **Authorization**: chart and mappings admin-only; journals and disbursements manager-and-above;
@@ -182,13 +202,15 @@ usable immediately.
 
 ## 7. Opening balances (starting the books mid-year)
 
-The books start at a stated **as-of date** (the first day of the month the owner switches on accounting):
+Tenant cutover is separate from approval of accounting books (ADR-027). Manager-stated opening figures
+are allowed without historical evidence for tenant setup, and never presented as independently verified.
+Accounting starts at an explicitly reviewed as-of boundary, not automatically when tenant setup finishes:
 
 1. **AR** — the sum of tenant-ledger balances per tenancy at the as-of date.
-2. **Deposits** — the `Lease.deposit` figure per open tenancy.
+2. **Deposits** — actual held funds, verified for accounting; not copied from lease deposit terms.
 3. **Bank** — the operating account's balance from the last bank statement before the as-of date.
-4. **Equity plug** — the difference posts to `9000 Opening balance equity`, itemised per property so the
-   opening position is explainable.
+4. **AP, bank outstanding items and remaining balances** — reconcile the complete opening trial balance
+   and control details. Do not use an unexplained equity plug; approved opening counterparts need evidence.
 5. One **opening journal batch**, with the reconciliation evidence attached (statement PDF in Documents),
    posted once and immutable; later corrections are normal entries.
 

@@ -1,13 +1,13 @@
 {% load rhp_format %}
 <summary class="bill-summary">
   <span class="min-w-0">
-    <span class="block font-semibold money-statement">{{ bill.date|date:"F" }} {{ bill.date.day|ordinal_day }} {{ bill.date|date:"Y" }} Bill</span>
+    <span class="block font-semibold money-statement">{% if bill.is_opening %}Balance brought forward · {{ bill.date|date:"M j, Y" }}{% else %}{{ bill.date|date:"F" }} {{ bill.date.day|ordinal_day }} {{ bill.date|date:"Y" }} Bill{% endif %}</span>
     <span class="block text-xs money-statement">{{ bill.state_label }} · <span class="bill-disclosure-label"><span class="bill-show">Show breakdown</span><span class="bill-hide">Hide breakdown</span></span></span>
     {% if bill.left > 0 %}<span class="block text-sm money-statement">Remaining: <span class="money-owed">{{ bill.left|money }}</span></span>{% endif %}
     {% if bill.pending > 0 %}<span class="block text-xs money-statement">{% include "components/financial_icon.html" with kind="expected" %}Expected—not received: {{ bill.pending|money }}</span>{% endif %}
   </span>
   <span class="text-right">
     <span class="block text-lg font-semibold {% if bill.total < 0 %}money-received{% elif bill.total > 0 %}money-owed{% else %}money-statement{% endif %}">{{ bill.total|absolute|money }}{% if bill.total < 0 %} credit{% endif %}</span>
-    {% if show_balance %}<span class="mt-1 block text-xs money-statement">Account balance after bill:<br><span class="{% if bill.running_balance < 0 %}money-received{% elif bill.running_balance > 0 %}money-owed{% else %}money-statement{% endif %}">{{ bill.running_balance|absolute|money }}</span>{% if bill.running_balance < 0 %} credit{% endif %}</span>{% endif %}
+    {% if show_balance %}<span class="mt-1 block text-xs money-statement">Account balance after {% if bill.is_opening %}starting entry{% else %}bill{% endif %}:<br><span class="{% if bill.running_balance < 0 %}money-received{% elif bill.running_balance > 0 %}money-owed{% else %}money-statement{% endif %}">{{ bill.running_balance|absolute|money }}</span>{% if bill.running_balance < 0 %} credit{% endif %}</span>{% endif %}
   </span>
 </summary>

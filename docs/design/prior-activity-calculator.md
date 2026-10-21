@@ -1,5 +1,8 @@
 # Prior lease activity calculator — scoped proposal
 
+**Superseded for initial onboarding:** the owner approved simple stated starting balances instead
+(ADR-027, October 20, 2026). No inferred-payment arithmetic will be implemented. Original proposal follows.
+
 **Status:** Planning only. Owner requested this separate scope on October 18, 2026.
 No onboarding arithmetic, historical entry, or financial service is changed by E11.
 

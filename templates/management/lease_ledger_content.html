@@ -20,6 +20,7 @@
           <div class="mt-4 flex flex-wrap gap-3">
             {% if can_post_due_charges %}<form method="post" action="{% url 'ledger:rent-charges' lease.pk %}">{% csrf_token %}<button type="submit" class="rhp-btn rhp-btn-primary">Post due charges</button></form>{% endif %}
             <a href="{% url 'ledger:payment-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">Record payment</a>
+            {% if ledger.credit > 0 and ledger.recorded_allocations %}<a href="{% url 'ledger:credit-apply' lease.pk %}" class="rhp-btn rhp-btn-secondary">Apply available credit</a>{% endif %}
             {% if lease.can_be_charged and not lease.needs_onboarding %}<a href="{% url 'ledger:charge-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">Add one-time charge</a>{% endif %}
           </div>
           {% if can_post_due_charges %}<p class="mt-3 text-sm text-ink-muted">Posts everything due through today — rent, NNN and expense recoveries. Months already posted are skipped.</p>{% endif %}
@@ -31,12 +32,11 @@
               <p class="mt-1 text-ink-muted">This account already has charges. Review and keep the existing history; do not enter another opening balance.</p>
               <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-3">Review existing account history</a>
               {% else %}
-              <p class="font-medium">Prior lease activity has not been set up, so nothing can be posted.</p>
+              <p class="font-medium">Set the starting account balance before posting charges.</p>
               <p class="mt-1 text-ink-muted">
-                This tenancy began before RHP started tracking it. Enter its earlier charges and
-                payments, or an opening balance, and posting opens up.
+                Record the amount owed, a credit, or an explicit zero. Earlier bills and payments will not be recreated.
               </p>
-              <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-3">Set up prior lease activity</a>
+              <a href="{% url 'leases:onboard' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-3">Set starting balance</a>
               {% endif %}
             </div>
           {% endif %}
@@ -44,4 +44,5 @@
         {% endif %}
       </section>
 
+      {% include "components/repayment_details.html" with staff_finance=True %}
     {% endif %}

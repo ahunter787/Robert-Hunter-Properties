@@ -1,5 +1,9 @@
 # ADR-026 — Property accounting is built in, and exported, not outsourced
 
+**Cutover amendment, October 20:** ADR-027 is approved for the tenant starting-account release before
+B1–B5. It introduces tenant-facing starting records but no GL. The blueprint's pending/receipt/bank and
+deposit assumptions require the corrections in its cutover amendment before accounting code is built.
+
 Status: Accepted for design, October 20, 2026. The owner approved this direction after the industry
 comparison below and rejected GnuCash as a backend. Implementation proceeds in the slices recorded in
 [the blueprint](../design/property-accounting.md), one owner review at a time.

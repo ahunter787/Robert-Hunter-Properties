@@ -1,5 +1,16 @@
 # RHP — master specification (governing document)
 
+**October 21 E10 refinement:** [Held credit and dated repayments](../design/held-credit-repayments.md)
+supersedes automatic credit application. Managers explicitly apply held credit; new receipts cover
+oldest due obligations only. Agreed repayment dates schedule existing opening principal without new
+charges. Only due installments enter due-now/past-due totals; full unpaid principal stays in balance.
+
+**E10 tenant cutover amendment, October 20, 2026:** ADR-027 replaces initial historical bill
+reconstruction with a stated opening debt, credit or explicit zero, note and optional private evidence.
+Keep genuine lease dates, immutable history and Decimal calculations. Opening credits are not receipts;
+unknown historical aging is not fabricated. An explicit RHP financial start and durable lease readiness
+bound native recurring charges. Accounting B1–B5 remains separately reviewed, not part of this release.
+
 This is the project specification that governs every implementation phase. It was produced during the
 RHP design conversation (ChatGPT share `6abd970f-ec50-83e8-a43f-167b0485d1e7`, 2026-09-30) and is
 reproduced here so the repository carries its own contract. When this document and any other

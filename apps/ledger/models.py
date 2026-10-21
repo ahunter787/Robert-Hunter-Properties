@@ -22,10 +22,93 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-from apps.leases.models import Lease, LeaseStatus
+from apps.leases.models import ImmutableCutoverRecord, Lease, LeaseStatus
 
 #: What an amount is never allowed to be.
 MINIMUM_AMOUNT = Decimal("0.01")
+
+
+class AllocationAccount(models.Model):
+    """Marker: this tenancy uses recorded applications, never read-time allocation."""
+
+    lease = models.OneToOneField(Lease, on_delete=models.PROTECT, related_name="allocation_account")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Recorded allocations for lease {self.lease_id}"
+
+
+class RepaymentPlan(ImmutableCutoverRecord):
+    lease = models.ForeignKey(Lease, on_delete=models.PROTECT, related_name="repayment_plans")
+    charge = models.ForeignKey("Charge", on_delete=models.PROTECT)
+    previous = models.OneToOneField("self", null=True, blank=True, on_delete=models.PROTECT)
+    monthly_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    first_due = models.DateField()
+    agreed_on = models.DateField()
+    agreement_source = models.CharField(max_length=500)
+    explanation = models.CharField(max_length=1000)
+    reason = models.CharField(max_length=1000)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    review_key = models.CharField(max_length=64, unique=True)
+
+
+class RepaymentInstallment(ImmutableCutoverRecord):
+    plan = models.ForeignKey(RepaymentPlan, on_delete=models.PROTECT, related_name="installments")
+    key = models.UUIDField()
+    due_date = models.DateField()
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+
+    class Meta:
+        ordering = ("due_date", "pk")
+        constraints = [
+            models.UniqueConstraint(fields=["plan", "key"], name="repayment_version_key_unique"),
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=MINIMUM_AMOUNT), name="repayment_positive"
+            ),
+        ]
+
+
+class FundsApplication(ImmutableCutoverRecord):
+    """An application or its exact release. Neither is a financial charge/receipt."""
+
+    lease = models.ForeignKey(Lease, on_delete=models.PROTECT, related_name="funds_applications")
+    source_payment = models.ForeignKey("Payment", null=True, blank=True, on_delete=models.PROTECT)
+    source_charge = models.ForeignKey(
+        "Charge",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="credit_applications",
+    )
+    target = models.ForeignKey(
+        "Charge", on_delete=models.PROTECT, related_name="funds_applications"
+    )
+    installment_key = models.UUIDField(null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reverses = models.OneToOneField(
+        "self", null=True, blank=True, on_delete=models.PROTECT, related_name="release"
+    )
+    is_credit = models.BooleanField(default=False)
+    legacy_derived = models.BooleanField(default=False)
+    reason = models.CharField(max_length=1000, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    review_key = models.CharField(max_length=100, blank=True, db_index=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gte=MINIMUM_AMOUNT), name="application_positive"
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(source_payment__isnull=False, source_charge__isnull=True)
+                    | models.Q(source_payment__isnull=True, source_charge__isnull=False)
+                ),
+                name="application_one_source",
+            ),
+        ]
 
 
 class ChargeKind(models.TextChoices):
@@ -124,6 +207,7 @@ class Charge(models.Model):
         "description",
         "amount",
         "due_date",
+        "aging_unknown",
         "adjusts_id",
         "responsibility_id",
     )
@@ -138,6 +222,7 @@ class Charge(models.Model):
         max_digits=12, decimal_places=2, validators=[MinValueValidator(MINIMUM_AMOUNT)]
     )
     due_date = models.DateField()
+    aging_unknown = models.BooleanField(default=False, editable=False)
     #: The property responsibility this charge came from, for the bills a landlord
     #: passes to a unit (E2). Null for rent, NNN and one-off charges.
     responsibility = models.ForeignKey(
@@ -182,7 +267,7 @@ class Charge(models.Model):
             # Rent and manual charges only ever add to what is owed. An
             # adjustment is the one entry that may reduce it.
             models.CheckConstraint(
-                condition=models.Q(kind=ChargeKind.ADJUSTMENT)
+                condition=models.Q(kind__in=[ChargeKind.ADJUSTMENT, ChargeKind.OPENING])
                 | models.Q(direction=Direction.INCREASE),
                 name="only_adjustments_reduce_a_charge",
             ),

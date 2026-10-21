@@ -33,9 +33,9 @@
         </p>
       </div>
       <div class="rhp-card">
-        <p class="rhp-eyebrow">Credit balances</p>
+        <p class="rhp-eyebrow">Available credit</p>
         <p class="mt-2 text-3xl font-semibold">{{ totals.credits|money }}</p>
-        <p class="mt-1 text-sm text-ink-muted">paid ahead on account</p>
+        <p class="mt-1 text-sm text-ink-muted">Held until explicitly applied; separate from unpaid bills.</p>
       </div>
     </section>
 
@@ -97,11 +97,14 @@
                 <td class="py-3 pr-4 font-medium">
                   {% if row.balance_due > 0 %}
                     {{ row.balance_due|money }}
-                  {% elif row.credit > 0 %}
-                    <span class="text-success">{{ row.credit|money }} credit</span>
+                  {% elif row.balance_due < 0 %}
+                    <span class="money-received">{{ row.balance_due|absolute|money }} net credit</span>
+                  {% elif row.unpaid_charges > 0 %}
+                    <span class="money-statement">$0.00 net</span>
                   {% else %}
                     <span class="text-ink-muted">Paid in full</span>
                   {% endif %}
+                  {% if row.credit > 0 %}<span class="block text-sm money-received">{{ row.credit|money }} available credit</span>{% endif %}
                 </td>
                 <td class="py-3 pr-4 {% if row.has_arrears %}font-medium text-danger{% else %}text-ink-muted{% endif %}">
                   {% if row.has_arrears %}
@@ -134,11 +137,11 @@
                     </span>
                   {% elif row.lease.needs_onboarding %}
                     <span class="mt-1 block text-xs font-medium text-warning">
-                      Prior lease activity has not been set up, so nothing can be posted.
+                      Starting account balance has not been recorded.
                     </span>
                     <a href="{% url 'leases:onboard' row.lease.pk %}"
                        class="mt-1 inline-block text-xs font-medium text-primary underline-offset-2 hover:underline">
-                      Set up prior lease activity
+                      Set starting balance
                     </a>
                   {% elif row.lease.is_settled %}
                     <span class="mt-1 block text-xs text-ink-muted">

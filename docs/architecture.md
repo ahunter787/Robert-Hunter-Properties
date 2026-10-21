@@ -346,6 +346,14 @@ banners established.
 
 ## Property accounting (E10) — the boundary
 
+ADR-027 implements tenant cutover before accounting: one explicit financial start, durable lease
+readiness and immutable linked noncash opening entries. Historical bill reconstruction is no longer the
+initial setup UI. Existing ledgers/recovery remain compatible. No GL app is created in the cutover slice.
+
+The [October 21 refinement](design/held-credit-repayments.md) adds immutable source-linked applications
+and versioned repayment schedules. Installments schedule existing principal, not new charges. Reads
+never allocate funds; mutations lock the tenancy, and only explicit confirmation applies held credit.
+
 E10 adds a general ledger beside the ledger (ADR-026). The tenant sub-ledger stays the operational source of
 truth for what a tenancy owes; the GL posts journals from those records once per source row, and every
 balance and report is derived from journal lines rather than stored — the same rule the ledger already

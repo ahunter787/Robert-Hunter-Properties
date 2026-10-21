@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+{% block title %}Starting account — RHP{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl space-y-6">
+  <header><h1 class="text-2xl font-semibold">{% if review %}Review starting account{% else %}Set starting account balance{% endif %}</h1><p class="mt-2">{{ lease.tenant_names }} · {{ lease.unit.label }}</p><p>Lease: {{ lease.start_date|date:"M j, Y" }}–{{ lease.end_date|date:"M j, Y" }}. Original dates stay unchanged.</p></header>
+  {% if error %}<p class="rhp-card money-owed" role="alert">{{ error }}</p>{% endif %}
+  {% if opening %}
+    <section class="rhp-card"><h2 class="font-semibold">Starting account already recorded</h2><p>{{ opening.get_kind_display }}: {{ opening.amount|money }} as of {{ opening.cutover.first_native_date|date:"M j, Y" }}.</p><p>Manager-entered, not independently verified. Corrections belong on the ledger; do not enter another starting balance.</p></section>
+  {% elif not cutover %}
+    <section class="rhp-card"><p>An administrator must set the RHP financial start date before starting accounts can be recorded.</p>{% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user.role == 'SUPERADMIN' %}<a href="{% url 'leases:financial-start' %}" class="rhp-btn rhp-btn-primary mt-4">Set RHP financial start</a>{% endif %}</section>
+  {% elif review %}
+    <section class="rhp-card"><h2 class="font-semibold">Balance brought forward · {{ review.date|date:"M j, Y" }}</h2><p>{% if review.kind == 'CREDIT' %}Tenant has a credit{% elif review.kind == 'DEBT' %}Tenant owes RHP{% else %}No starting balance{% endif %}: <span class="{% if review.kind == 'CREDIT' %}money-received{% elif review.kind == 'DEBT' %}money-owed{% endif %}">{{ review.amount|money }}</span></p><p class="mt-2">{{ review.note }}</p>{% if form.cleaned_data.evidence %}<p>Supporting document: {{ form.cleaned_data.evidence.title }} · Staff only</p>{% endif %}<p class="mt-3">Manager-entered, not independently verified. Historical aging is unknown. This establishes the starting account balance. It does not record money received or recreate earlier bills.</p>
+      <form method="post" class="mt-4">{% csrf_token %}<input type="hidden" name="action" value="confirm"><input type="hidden" name="review_token" value="{{ review.token }}"><button class="rhp-btn rhp-btn-primary">Confirm starting account</button></form>
+      {% if review.repayment %}<h3 class="mt-4 font-semibold">Agreed payment dates</h3><p>{{ review.repayment.data.explanation }}</p><ol>{% for item in review.repayment.items %}<li>{{ item.date|date:"M j, Y" }} — <span class="money-owed">{{ item.amount|money }}</span></li>{% endfor %}</ol><p>These are repayments of the starting debt, not additional charges.</p>{% endif %}
+      <form method="post" class="mt-3">{% csrf_token %}<input type="hidden" name="action" value="edit">{% for field in form %}{{ field.as_hidden }}{% endfor %}<button class="rhp-btn rhp-btn-secondary">Back</button></form>
+    </section>
+  {% else %}
+    <section class="rhp-card"><p>Starting date: {{ cutover.first_native_date|date:"M j, Y" }}. Enter the amount you understand is owed or held as credit. Supporting records are optional; this is not a verification claim.</p>
+      <form method="post" class="mt-4" novalidate>{% csrf_token %}<input type="hidden" name="action" value="review">{% include "components/form.html" with form=form %}<button class="rhp-btn rhp-btn-primary mt-4">Review starting account</button></form>
+      <a href="{% url 'documents:upload' %}?lease={{ lease.pk }}" class="rhp-link mt-3 inline-block">Upload an optional supporting document</a><p class="text-sm">Leave tenant visibility off. Return here to select it; uploading a document does not establish a starting balance.</p>
+    </section>
+  {% endif %}
+  <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+</div>
+{% endblock %}

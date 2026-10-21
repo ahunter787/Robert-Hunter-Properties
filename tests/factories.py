@@ -263,7 +263,7 @@ def make_payment(
     """A recorded payment. Cleared by default, because that is the common case."""
     if lease is None:
         lease = make_lease()
-    return Payment.objects.create(
+    payment = Payment.objects.create(
         lease=lease,
         amount=amount,
         payment_date=payment_date or timezone.localdate(),
@@ -271,6 +271,18 @@ def make_payment(
         status=status,
         **fields,
     )
+    # Recorded-allocation accounts must exercise the same receipt allocation as services.
+    # Older fixture accounts intentionally retain legacy read-only projection semantics.
+    from apps.ledger.applications import allocate_receipt
+    from apps.ledger.models import AllocationAccount, PaymentKind
+
+    if (
+        status == PaymentStatus.CLEARED
+        and payment.kind == PaymentKind.RECEIVED
+        and AllocationAccount.objects.filter(lease=lease).exists()
+    ):
+        allocate_receipt(payment)
+    return payment
 
 
 # --- Lease terms (E1) -----------------------------------------------------

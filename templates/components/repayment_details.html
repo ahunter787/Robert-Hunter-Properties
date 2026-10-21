@@ -1,0 +1,15 @@
+{% load rhp_format %}
+{% if ledger.recorded_allocations %}
+{% if ledger.repayment_plans or ledger.application_history or ledger.undated_starting_debt %}
+<section class="rhp-card mt-4" aria-label="Credits and starting-debt repayments">
+  {% for plan in ledger.repayment_plans %}
+    <h2 class="font-semibold">Starting-debt repayment plan</h2><p>{{ plan.explanation }}</p>
+    <p class="text-sm">Arrangement confirmed {{ plan.agreed_on|date:"M j, Y" }}. Recording this arrangement does not verify the original historical due dates.</p>
+  {% endfor %}
+  {% if ledger.repayment_plans %}<details class="mt-3"><summary>View repayment schedule</summary><ol class="mt-3 space-y-2">{% for row in ledger.obligations %}{% if row.key %}<li>{{ row.date|date:"M j, Y" }} — <span class="money-owed">{{ row.amount|money }}</span> · {% if row.left == 0 %}Covered{% else %}Remaining <span class="money-owed">{{ row.left|money }}</span>{% endif %}</li>{% endif %}{% endfor %}</ol></details>{% endif %}
+  {% if staff_finance and not lease.is_settled %}{% for line in ledger.charges %}{% if line.charge.kind == 'OPENING' and line.charge.direction == 'INCREASE' %}<div class="mt-3 flex flex-wrap gap-3"><a href="{% url 'ledger:repayment-plan' lease.pk %}" class="rhp-btn rhp-btn-secondary">{% if ledger.repayment_plans %}Change repayment plan{% else %}Set starting-debt payment dates{% endif %}</a><a href="{% url 'ledger:opening-correct' lease.pk %}" class="rhp-btn rhp-btn-secondary">Correct starting debt</a></div>{% endif %}{% endfor %}{% endif %}
+  {% if ledger.plan_history %}<details class="mt-4"><summary>Repayment arrangement history</summary>{% for plan in ledger.plan_history %}<div class="mt-3 border-t pt-3"><p>Recorded {{ plan.created_at|date:"M j, Y" }} · First payment {{ plan.first_due|date:"M j, Y" }}{% if plan.monthly_amount %} · {{ plan.monthly_amount|money }} monthly{% endif %}</p><p>{{ plan.explanation }}</p>{% if staff_finance %}<p class="text-sm">Staff only: {{ plan.agreement_source }} · {{ plan.reason }}</p>{% endif %}<details><summary>View recorded dates</summary><ol>{% for item in plan.installments.all %}<li>{{ item.due_date|date:"M j, Y" }} — {{ item.amount|money }}</li>{% endfor %}</ol></details></div>{% endfor %}</details>{% endif %}
+  {% if ledger.application_history %}<details class="mt-4"><summary>Payment and credit applications</summary><ul class="mt-3 space-y-2">{% for application in ledger.application_history %}<li>{% if application.reverses_id %}Application released{% elif application.is_credit %}Credit applied{% else %}Payment applied{% endif %}: <span class="{% if application.reverses_id %}money-correction{% else %}money-received{% endif %}">{{ application.amount|money }}</span> · {{ application.created_at|date:"M j, Y" }}{% if application.legacy_derived %} · Legacy-derived, not a manager-confirmed decision{% endif %}{% if staff_finance and application.can_undo and not lease.is_settled %} · <a class="rhp-link" href="{% url 'ledger:credit-undo' lease.pk application.pk %}">Review undo</a>{% endif %}</li>{% endfor %}</ul></details>{% endif %}
+</section>
+{% endif %}
+{% endif %}

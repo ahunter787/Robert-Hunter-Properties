@@ -8,10 +8,12 @@ sharing one namespace would leave the earlier set of routes unreachable through
 from django.urls import path
 
 from apps.leases import views
+from apps.leases.cutover_views import FinancialStartView, StartingAccountView
 
 app_name = "leases"
 
 urlpatterns = [
+    path("financial-start/", FinancialStartView.as_view(), name="financial-start"),
     path("leases/", views.LeaseListView.as_view(), name="lease-list"),
     path("leases/new/", views.LeaseCreateView.as_view(), name="lease-create"),
     path("leases/<int:pk>/", views.LeaseDetailView.as_view(), name="lease-detail"),
@@ -45,5 +47,5 @@ urlpatterns = [
         views.RentPeriodRemoveView.as_view(),
         name="rent-period-remove",
     ),
-    path("leases/<int:pk>/onboarding/", views.LeaseOnboardView.as_view(), name="onboard"),
+    path("leases/<int:pk>/onboarding/", StartingAccountView.as_view(), name="onboard"),
 ]

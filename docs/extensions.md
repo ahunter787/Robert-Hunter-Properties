@@ -33,7 +33,7 @@ parser accepts the longer form.
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md); October 20 financial reading surface, expandable bills and history recovery owner-accepted for local merge; remaining forms deferred [record](design/financial-implementation.md) |
-| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **In design** — [ADR-026](decisions/ADR-026-property-accounting.md) |
+| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **Building** — tenant cutover, held credit and dated repayments owner-accepted for local merge October 21; [record](design/held-credit-repayments.md), [ADR-027](decisions/ADR-027-simple-cutover.md); accounting [ADR-026](decisions/ADR-026-property-accounting.md) remains separately reviewed |
 | **E11** | **Operations desk application migration** — persistent sidebar, unified Properties and existing portal workflows; RHP domain rules preserved | Presentation | In main — [owner accepted October 19, 2026](design/implementation.md); local merge authorized, no push |
 | **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | In main — owner accepted for local merge; [Phase 8](phases/phase-08-communications.md), ADR-024 |
 
@@ -237,6 +237,10 @@ ability to extend a term) are the parts Phase 3 and Phase 4 are still missing.
 
 ## 5. E4 — Retroactive onboarding
 
+**October 21, 2026 E10 refinement:** [Held credit and dated repayments](design/held-credit-repayments.md)
+adds manager-confirmed credit application and payment dates/installments for starting debt only.
+Installments never create charges. Broader E3 concessions and accounting remain separately reviewed.
+
 **Status: built** — in `main`; the decision record is
 [ADR-016](decisions/ADR-016-retroactive-onboarding.md). Owner's words: *"all of the RHP tenants have a
 currently live lease, and I do not intend to wait for their lease to expire to enroll them into this new
@@ -435,6 +439,16 @@ New visual examples remain local until a permitted Outline upload path works; te
 ecosystem verification are separate from asset-publication completion.
 
 ## 11. E10 — RHP property accounting
+
+**October 21 refinement accepted for local merge:** [Held credit and dated repayments](design/held-credit-repayments.md)
+keeps credits separate until manager-confirmed application and schedules existing opening debt without
+new charges. Only due installments count as payable/overdue; full principal stays in account balance.
+The tenant-cutover refinement does not implement B1–B5; financial expansion pauses for accounting review.
+
+**Tenant-cutover implementation accepted for local merge October 21:** the owner approved ADR-027 and the simple first release
+in `design/accounting-cutover-plan.md`. Manual stated balances do not require verified source history.
+The development database is archived/restored before a fresh synthetic database is selected. B1–B5
+accounting remains separately reviewed; no GL, bank matching or tax-readiness is delivered by cutover.
 
 **Status: in design** — the decision is [ADR-026](decisions/ADR-026-property-accounting.md) and the working
 blueprint is [the property-accounting study](design/property-accounting.md).

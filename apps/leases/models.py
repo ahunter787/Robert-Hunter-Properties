@@ -101,6 +101,88 @@ class OnboardingMethod(models.TextChoices):
     POSITION = "POSITION", "Enter an opening balance"
 
 
+class ImmutableCutoverQuerySet(models.QuerySet):
+    def update(self, **kwargs):
+        raise ValidationError("Starting records cannot be overwritten. Use a linked correction.")
+
+    def delete(self):
+        raise ValidationError("Starting records cannot be deleted.")
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        raise ValidationError("Starting records cannot be overwritten.")
+
+
+class ImmutableCutoverRecord(models.Model):
+    objects = ImmutableCutoverQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args, **kwargs):
+        if self.pk and type(self).objects.filter(pk=self.pk).exists():
+            raise ValidationError("Starting records cannot be overwritten.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Starting records cannot be deleted.")
+
+
+class FinancialCutover(ImmutableCutoverRecord):
+    """One explicitly approved first native date for this RHP installation."""
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    first_native_date = models.DateField()
+    note = models.CharField(max_length=1000)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(id=1), name="one_rhp_cutover")]
+
+    def __str__(self):
+        return f"RHP financial start: {self.first_native_date}"
+
+
+class LeaseOpeningRecord(ImmutableCutoverRecord):
+    """Manager-stated opening amount, never independent verification or a receipt."""
+
+    class Kind(models.TextChoices):
+        DEBT = "DEBT", "Tenant owes RHP"
+        CREDIT = "CREDIT", "Tenant has a credit"
+        ZERO = "ZERO", "No starting balance"
+
+    lease = models.OneToOneField("Lease", on_delete=models.PROTECT, related_name="opening_record")
+    cutover = models.ForeignKey(FinancialCutover, on_delete=models.PROTECT)
+    kind = models.CharField(max_length=8, choices=Kind.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    note = models.CharField(max_length=1000)
+    charge = models.OneToOneField("ledger.Charge", on_delete=models.PROTECT, null=True, blank=True)
+    evidence = models.ForeignKey(
+        "documents.Document", on_delete=models.PROTECT, null=True, blank=True
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    review_key = models.CharField(max_length=64, unique=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(kind="ZERO", amount=0, charge__isnull=True)
+                    | models.Q(
+                        kind__in=["DEBT", "CREDIT"],
+                        amount__gte=Decimal("0.01"),
+                        charge__isnull=False,
+                    )
+                ),
+                name="opening_kind_amount_matches",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.amount} (lease {self.lease_id})"
+
+
 class LeaseQuerySet(models.QuerySet):
     """The lease questions the rest of the application asks, answered in one place."""
 
@@ -151,6 +233,7 @@ class Lease(models.Model):
     """A tenancy: a term, a rent, and the people on it, for one unit."""
 
     unit = models.ForeignKey(Unit, on_delete=models.PROTECT, related_name="leases")
+    financial_ready = models.BooleanField(default=False, editable=False)
     start_date = models.DateField()
     end_date = models.DateField()
     monthly_rent = models.DecimalField(
@@ -459,6 +542,11 @@ class Lease(models.Model):
         cutover is what unlocks charging — the onboarding record says how it was
         placed, while the cutover says from when RHP bills.
         """
+        if self.financial_ready or self.billing_start_date is not None:
+            return False
+        cutover = FinancialCutover.objects.first()
+        if cutover is not None:
+            return self.status == LeaseStatus.ACTIVE and self.start_date < cutover.first_native_date
         return (
             self.status == LeaseStatus.ACTIVE
             and self.is_retroactive

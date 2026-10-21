@@ -258,10 +258,10 @@ def test_a_tenancy_waiting_to_be_set_up_is_told_so_wherever_it_is_read(as_admin,
     lease_list = " ".join(as_admin.get(reverse("leases:lease-list")).content.decode().split())
     setup_url = reverse("leases:onboard", args=[lease.pk])
 
-    assert "Prior lease activity has not been set up, so nothing can be posted." in ledger_page
+    assert "Set the starting account balance before posting charges." in ledger_page
     assert setup_url in ledger_page
     assert "Post due charges" not in ledger_page
-    assert "Prior lease activity has not been set up" in overview
+    assert "Starting account balance has not been recorded" in overview
     assert setup_url in overview
     assert "Needs setup" in lease_list
 

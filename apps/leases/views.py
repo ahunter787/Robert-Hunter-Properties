@@ -47,6 +47,7 @@ from apps.leases.forms import (
     RentPeriodForm,
 )
 from apps.leases.models import (
+    FinancialCutover,
     Lease,
     LeaseStatus,
     OnboardingMethod,
@@ -249,7 +250,16 @@ class LeaseActivateView(ManagerRequiredMixin, View):
         try:
             with transaction.atomic():
                 lease.status = LeaseStatus.ACTIVE
-                lease.save(update_fields=["status", "updated_at"])
+                cutover = FinancialCutover.objects.first()
+                boundary = (
+                    cutover.first_native_date if cutover else timezone.localdate().replace(day=1)
+                )
+                if lease.start_date >= boundary:
+                    lease.billing_start_date = lease.start_date
+                    lease.financial_ready = True
+                lease.save(
+                    update_fields=["status", "billing_start_date", "financial_ready", "updated_at"]
+                )
                 schedule = lease_services.generate_rent_schedule(lease, actor=request.user)
                 created = ledger_services.generate_charges(
                     lease, through=through, actor=request.user

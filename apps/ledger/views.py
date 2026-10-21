@@ -330,6 +330,10 @@ class ChargeAdjustView(ManagerRequiredMixin, View):
 
     def get(self, request, pk):
         charge = self._charge(pk)
+        from apps.ledger.applications import current_plans
+
+        if any(plan.charge_id == pk for plan in current_plans(charge.lease)):
+            return redirect("ledger:opening-correct", pk=charge.lease_id)
         line = self._line(charge)
         initial = {"direction": Direction.DECREASE}
         if line is not None and line.outstanding > ZERO:
@@ -339,6 +343,10 @@ class ChargeAdjustView(ManagerRequiredMixin, View):
 
     def post(self, request, pk):
         charge = self._charge(pk)
+        from apps.ledger.applications import current_plans
+
+        if any(plan.charge_id == pk for plan in current_plans(charge.lease)):
+            return redirect("ledger:opening-correct", pk=charge.lease_id)
         line = self._line(charge)
 
         data = request.POST

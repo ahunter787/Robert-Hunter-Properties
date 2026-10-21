@@ -51,8 +51,11 @@
         </div>
 
         <div class="rhp-card">
-          <p class="rhp-eyebrow">{% if ledger.credit > 0 %}Credit balance{% else %}Account balance{% endif %}</p>
-          {% if ledger.credit > 0 %}<p class="mt-2 text-3xl font-semibold money-received">{{ ledger.credit|money }}</p>{% else %}<p class="mt-2 text-3xl font-semibold {% if ledger.balance_due > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.balance_due|money }}</p>{% if ledger.not_yet_due > 0 %}<p class="mt-1 text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}{% endif %}
+          <p class="rhp-eyebrow">{% if ledger.balance_due < 0 %}Credit balance{% elif ledger.credit > 0 %}Account balance after available credit{% else %}Account balance{% endif %}</p>
+          <p class="mt-2 text-3xl font-semibold {% if ledger.balance_due < 0 %}money-received{% elif ledger.balance_due > 0 %}money-owed{% else %}money-statement{% endif %}">{{ ledger.balance_due|absolute|money }}</p>
+          {% if ledger.not_yet_due > 0 %}<p class="mt-1 text-sm text-ink-muted">Includes upcoming charges.</p>{% endif %}
+          {% if ledger.credit > 0 %}<p class="mt-2 text-sm">Available credit: <span class="money-received">{{ ledger.credit|money }}</span>. Not applied to unpaid bills.</p>{% endif %}
+          {% if ledger.future_repayments > 0 %}<p class="mt-2 text-sm">Includes <span class="money-owed">{{ ledger.future_repayments|money }}</span> in future repayments—not due now.</p>{% endif %}
         </div>
 
         <div class="rhp-card">

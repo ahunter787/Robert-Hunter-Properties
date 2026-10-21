@@ -31,7 +31,7 @@ def _snapshot(lease):
     if (
         not lease.needs_onboarding
         or lease.account_status != LeaseAccountStatus.OPEN
-        or not lease.charges.exists()
+        or not (lease.charges.exists() or lease.payments.exists())
     ):
         raise ValidationError("This lease is not eligible to confirm existing account history.")
     data = {
@@ -65,6 +65,7 @@ def prepare(lease, *, billing_start_date, reason, actor):
         raise ValidationError("Enter a reason of no more than 200 characters.")
     ledger = build_ledger(lease)
     dates = [line.charge.due_date for line in ledger.charges]
+    dates += [payment.payment_date for payment in ledger.payments]
     payload = {
         "lease": lease.pk,
         "actor": actor.pk,

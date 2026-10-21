@@ -1,5 +1,14 @@
 # Database
 
+The [held-credit refinement](design/held-credit-repayments.md) adds immutable source-linked allocation
+and reversal records, allocation initialization, and repayment schedule versions/installments. No stored
+balance, additional receipt or installment charge is introduced. Legacy-derived applications are labeled.
+
+ADR-027 adds immutable `FinancialCutover` and `LeaseOpeningRecord`, durable `Lease.financial_ready`, and
+`Charge.aging_unknown`. Nonzero opening records link protected OPENING entries with debit/credit direction;
+zero records establish readiness without a fake transaction. Credit entries never become Payment rows.
+All schema changes have migrations; legacy financial history is not rewritten.
+
 PostgreSQL 17, accessed through the Django ORM. There is exactly one database and no cross-database
 joins, no stored procedures, and no ORM bypass without a comment explaining why.
 

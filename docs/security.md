@@ -1,5 +1,20 @@
 # Security
 
+## Held credit and repayments — October 21
+
+Manager/admin confirmation is required to apply/release held credit or set/replace repayment terms.
+Services lock the tenancy, validate source/target scope and available amounts, and reject stale signed
+reviews. Tenants see their own public schedule/application history; private agreement source/reasons
+remain staff-only. Settled locks and immutable correction history apply to all new mutations.
+
+## Simple cutover — ADR-027
+
+Only administrators set the installation financial date; manager-and-above roles review and confirm
+individual starting accounts. Services reauthorize active actors, lock state and verify signed reviews.
+Notes/evidence are staff-only; tenant views expose only their account entry and explicitly shared files.
+Evidence selection is scoped to the lease and revalidated at confirmation. Opening credits are not
+receipts. Archived development backups include private data and stay in restricted ignored storage.
+
 ## Reviewed existing-history recovery — October 20, 2026
 
 Manager/admin recovery of a missing billing start date uses a 30-minute signed review bound to

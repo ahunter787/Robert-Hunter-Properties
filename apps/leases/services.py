@@ -22,6 +22,7 @@ from apps.audit.services import record
 from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
+    FinancialCutover,
     Lease,
     LeaseAccountStatus,
     LeaseOnboarding,
@@ -489,6 +490,10 @@ def onboard_lease(
     from apps.ledger import services as ledger_services
     from apps.ledger.models import ChargeKind
 
+    if FinancialCutover.objects.exists():
+        raise ValidationError(
+            "Use the reviewed starting account workflow; historical reconstruction is retired."
+        )
     if method not in OnboardingMethod.values:
         raise ValidationError({"method": "Choose how this tenancy is being brought in."})
     if lease.status == LeaseStatus.DRAFT:

@@ -10,6 +10,8 @@ A private local prototype may use a read-only development-data snapshot; never p
 
 ## Study index
 
+- [Simple cutover first — approved plan, owner answers and implementation](accounting-cutover-plan.md)
+
 - [Financial clarity and editing-workflow audit — findings](financial-audit.md)
 - [Financial language, icons and approved amount colors](financial-vocabulary.md)
 - [Financial clarity — first implementation release and review checkpoint](financial-implementation.md)
@@ -25,6 +27,7 @@ A private local prototype may use a read-only development-data snapshot; never p
 - [Decisions and owner feedback](decisions.md)
 - [Publication and reproducible artifacts](publication.md)
 - [Property accounting — a built-in ledger, exported for the accountant](property-accounting.md)
+- [Held credit and starting-debt repayment refinement](held-credit-repayments.md)
 
 ## Review sequence
 

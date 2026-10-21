@@ -9,6 +9,17 @@ The product specification, non-goals, and phased plan live in
 [`docs/harness/master-spec.md`](docs/harness/master-spec.md) and
 [`docs/roadmap.md`](docs/roadmap.md).
 
+**Current E10 work:** the owner accepted the tenant-cutover release for local preservation and merge
+on October 21, 2026. Set one administrator-approved financial start at `/manage/financial-start/`,
+then review stated starting debt, credit or zero on existing leases. No historical bill reconstruction
+or fabricated receipts. Accounting B1–B5 is not implemented. The archived/fresh development workflow
+and future launch safeguards are in [the initialization runbook](docs/workflows/cutover-initialization.md).
+The [held-credit and monthly-repayment refinement](docs/design/held-credit-repayments.md) adds explicit
+credit application and dated starting-debt repayments; installments never add charges. Existing derived
+applications are retained until explicitly released. Further financial expansion pauses for the
+separately reviewed accounting extension and industry-practice audit. Known browser-review gaps remain
+recorded; acceptance for a local merge is not accounting go-live or production approval.
+
 **Current status: Phases 7–9 and the accepted E11 Operations Desk are merged into local `main`.
 The owner accepted the financial reading surface, expandable bills and reviewed existing-history
 recovery for local preservation and merge. Remaining financial task forms await separate review.

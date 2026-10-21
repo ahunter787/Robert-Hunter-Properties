@@ -46,20 +46,23 @@ def bill_history(ledger, *, newest=False):
         # signed effect; do not alter the existing allocation engine or classify it as cash.
         net = source.charge - source.payment_or_credit
         component = replace(component, net=net, left=max(net - component.paid, Decimal("0.00")))
-        bill = bills.setdefault(component.date, StatementMonth(date=component.date))
+        key = (component.date, component.charge_kind == ChargeKind.OPENING)
+        bill = bills.setdefault(key, StatementMonth(date=component.date))
         bill.rows.append(
             ComponentRow(component=component, note=ledger._note_for(component, component.date))
         )
     payments = []
     for row in transactions:
         if row.charge_entry is not None:
-            bills[row.date].transactions.append(row)
+            bills[(row.date, row.charge_entry.kind == ChargeKind.OPENING)].transactions.append(row)
         else:
             payments.append(row)
     # Bills precede payments on the same date in BOTH display directions. Running balances
     # are calculated in chronological order before changing the direction of date groups.
     days = {}
-    for date, bill in bills.items():
+    for (date, _opening), bill in sorted(
+        bills.items(), key=lambda pair: (pair[0][0], not pair[0][1])
+    ):
         days.setdefault(date, []).append(bill)
     for row in payments:
         days.setdefault(row.date, []).append(row)
@@ -115,6 +118,7 @@ def financial_summary(ledger):
     empty = not ledger.charges and not ledger.payments
     paid_in_full = (
         ledger.balance_due == 0
+        and ledger.unpaid_charges == 0
         and any(row.net > 0 for row in ledger.statement_charges)
         and not ledger.pending_payments
     )

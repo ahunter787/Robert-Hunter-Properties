@@ -83,8 +83,8 @@ def project(user):
         ),
         (
             "credits",
-            "Credit balances",
-            "Credits are kept separate from other tenancies' debts.",
+            "Available credit",
+            "Unapplied credit, kept separate from unpaid bills and other tenancies' debts.",
             True,
         ),
         (
@@ -175,7 +175,7 @@ def project(user):
         # TransactionRow already absorbs signed corrections into their original charge.
         for transaction in account.transactions:
             charge = transaction.charge_entry
-            if charge and transaction.date >= month:
+            if charge and transaction.date >= month and not charge.aging_unknown:
                 if transaction.date.year != today.year or transaction.date.month != today.month:
                     continue
                 amount = transaction.charge - transaction.payment_or_credit

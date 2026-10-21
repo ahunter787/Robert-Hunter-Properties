@@ -677,7 +677,8 @@ def test_the_next_charge_reads_net_and_ignores_settled_charges():
 
     assert ledger.next_charge is not None
     assert ledger.next_charge.title == soonest.description
-    assert ledger.next_charge.left == Decimal("300.00"), "what is left, not the gross"
+    assert ledger.next_charge.left == Decimal("500.00"), "future charges do not consume held credit"
+    assert ledger.credit == Decimal("200.00")
 
 
 def test_the_statement_costs_no_extra_queries(django_assert_num_queries):

@@ -1,5 +1,9 @@
 # ADR-016: Bringing a live tenancy into RHP
 
+**October 20, 2026:** Initial historical reconstruction and synthetic historical receipts are
+superseded by [ADR-027](ADR-027-simple-cutover.md). This document retains the old rationale and
+existing-history recovery; no old financial entries are rewritten by the new cutover.
+
 - **Status:** Accepted (extension E4, approved 2026-10-03)
 - **Date:** 2026-10-03
 - **Context:** every RHP tenancy is live now, and none of them began in RHP
