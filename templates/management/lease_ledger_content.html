@@ -5,6 +5,18 @@
         <p class="mt-2 text-sm text-ink-muted">Activate this lease before posting charges or recording payments.</p>
         <a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">View lease</a>
       </section>
+    {% elif lease.status == "FUTURE" %}
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">This tenancy has not started</h2>
+        <p class="mt-2 text-sm text-ink-muted">
+          It begins {{ lease.start_date|date:"M j, Y" }}. Rent, NNN and recoveries are posted from that
+          date; nothing is owed and nothing is in arrears yet.
+        </p>
+        <p class="mt-2 text-sm text-ink-muted">
+          A security deposit received before move-in is held on its own register and never treated as rent.
+        </p>
+        <a href="{% url 'ledger:deposit' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">Security deposit</a>
+      </section>
     {% else %}
       <section aria-labelledby="financial-summary-heading">
         <h2 id="financial-summary-heading" class="sr-only">Financial summary</h2>

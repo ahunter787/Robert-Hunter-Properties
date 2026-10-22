@@ -41,6 +41,7 @@ from apps.accounts.throttle import LoginThrottle, client_ip
 from apps.accounts.tokens import invitation_token_generator
 from apps.audit.models import AuditAction
 from apps.common.workspaces import section_navigation
+from apps.leases import services as lease_services
 from apps.leases.models import Lease, LeaseStatus
 from apps.leases.views import visible_lease_for as leases_visible_for
 from apps.ledger import services as ledger_services
@@ -108,6 +109,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
         if request.user.is_rhp_staff:
             return redirect("manage:home")
 
+        lease_services.activate_due_leases(actor=request.user)
         lease = leases_visible_for(request.user)
         ledger = ledger_services.build_ledger(lease) if lease else None
         from apps.communications.summary import communications_summary
@@ -223,6 +225,7 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
     template_name = "management/home.html"
 
     def get_context_data(self, **kwargs):
+        lease_services.activate_due_leases(actor=self.request.user)
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context["is_admin"] = user.is_admin_or_above

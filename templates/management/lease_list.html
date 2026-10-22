@@ -67,6 +67,10 @@
                     <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Active</span>
                   {% elif lease.status == "DRAFT" %}
                     <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Draft</span>
+                  {% elif lease.status == "FUTURE" %}
+                    <span class="mt-1 block rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      Upcoming · starts {{ lease.start_date|date:"M j, Y" }}
+                    </span>
                   {% elif lease.is_settled %}
                     <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">
                       Ended · settled account

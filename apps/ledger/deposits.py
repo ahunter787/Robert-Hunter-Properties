@@ -136,8 +136,8 @@ def record(
                 raise ValidationError(
                     {"reason": "Say what was retained and why — the tenant is entitled to know."}
                 )
-        if kind == DepositKind.RECEIVED and lease.status != "ACTIVE":
-            raise ValidationError("Record deposit money while the tenancy is running.")
+        if kind == DepositKind.RECEIVED and lease.status not in ("ACTIVE", "FUTURE"):
+            raise ValidationError("Record deposit money while the tenancy is running or upcoming.")
 
     if evidence is not None and (evidence.lease_id != lease.pk or evidence.tenant_visible):
         raise ValidationError("Choose a staff-only document filed against this tenancy.")

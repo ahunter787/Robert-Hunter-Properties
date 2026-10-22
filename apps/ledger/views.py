@@ -20,6 +20,7 @@ from apps.accounts.permissions import (
     ManagerRequiredMixin,
     TenantAreaMixin,
 )
+from apps.leases import services as lease_services
 from apps.leases.models import Lease
 from apps.leases.views import LeaseDetailView
 from apps.leases.workspace import workspace_context
@@ -62,6 +63,9 @@ class LedgerOverviewView(ManagerRequiredMixin, TemplateView):
     template_name = "management/ledger_overview.html"
 
     def get_context_data(self, **kwargs):
+        # Start any scheduled tenancy whose day has arrived before the desk is read
+        # (no task queue; ADR-029 D1). Idempotent.
+        lease_services.activate_due_leases(actor=self.request.user)
         context = super().get_context_data(**kwargs)
         search = self.request.GET.get("q", "").strip()
         arrears_only = self.request.GET.get("arrears") == "1"
@@ -399,6 +403,7 @@ class TenantPaymentsView(TenantAreaMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        lease_services.activate_due_leases(actor=self.request.user)
         lease = Lease.objects.visible_for(self.request.user)
         ledger = services.build_ledger(lease) if lease else None
         statement = ledger.statement_months() if ledger else []

@@ -10,6 +10,7 @@ charges and when. Two rules hold everything together (ADR-013):
 """
 
 import datetime as dt
+import logging
 from dataclasses import dataclass, field
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -22,6 +23,7 @@ from apps.audit.services import record
 from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
+    FinancialCutover,
     Lease,
     LeaseAccountStatus,
     LeaseStatus,
@@ -33,6 +35,8 @@ from apps.ledger.models import ChargeKind
 
 #: The smallest amount a rent period or an NNN rate may carry.
 MINIMUM_AMOUNT = Decimal("0.01")
+
+logger = logging.getLogger("apps.leases")
 
 
 def _date_label(value: dt.date) -> str:
@@ -453,6 +457,114 @@ def remove_rent_period(period: RentPeriod, *, actor=None) -> None:
         summary=f"Rent from {_date_label(effective_from)} removed",
         effective_from=effective_from,
     )
+
+
+# --- starting a tenancy: scheduled first, then running (M2, ADR-029 D1) ----
+
+
+@dataclass(frozen=True)
+class Activation:
+    """What activating did: the resulting status, the schedule work and any charges."""
+
+    lease: Lease
+    status: str
+    schedule: object
+    created: list
+    through: dt.date | None
+
+    @property
+    def is_future(self) -> bool:
+        return self.status == LeaseStatus.FUTURE
+
+
+@transaction.atomic
+def activate_lease(lease: Lease, *, actor=None, automatic: bool = False) -> Activation:
+    """Move a draft to scheduled or active, or start a scheduled tenancy when its day comes.
+
+    The status is never chosen by hand: a complete lease whose term starts later is
+    ``FUTURE``, and it becomes ``ACTIVE`` when its start date arrives. The schedule is
+    worked out up front so the future amounts are known; charges are raised only for a
+    running tenancy, because a future charge is not owed yet (ADR-029 D1).
+    """
+    from apps.ledger import services as ledger_services
+
+    lease = Lease.objects.select_for_update().get(pk=lease.pk)
+    today = timezone.localdate()
+    if automatic:
+        # The calendar starts the tenancy; no person is the actor, even if a page read
+        # happened to trigger the check.
+        actor = None
+    if automatic:
+        if lease.status != LeaseStatus.FUTURE or lease.start_date > today:
+            raise ValidationError("That tenancy is not due to start.")
+        target = LeaseStatus.ACTIVE
+    else:
+        if lease.status != LeaseStatus.DRAFT:
+            raise ValidationError("Only a draft lease can be activated.")
+        if not lease.lease_tenants.exists():
+            raise ValidationError("Add at least one tenant before activating this lease.")
+        target = LeaseStatus.ACTIVE if lease.start_date <= today else LeaseStatus.FUTURE
+
+    cutover = FinancialCutover.objects.first()
+    boundary = cutover.first_native_date if cutover else today.replace(day=1)
+    if lease.start_date >= boundary:
+        # Billing starts with the term; no retroactive placement is needed.
+        lease.billing_start_date = lease.start_date
+        lease.financial_ready = True
+    lease.status = target
+    lease.save(update_fields=["status", "billing_start_date", "financial_ready", "updated_at"])
+
+    schedule = generate_rent_schedule(lease, actor=actor)
+    created: list = []
+    through = None
+    if target == LeaseStatus.ACTIVE:
+        through = ledger_services.charges_due()
+        created = ledger_services.generate_charges(lease, through=through, actor=actor)
+        record(
+            actor,
+            AuditAction.LEASE_ACTIVATED,
+            obj=lease,
+            lease=lease,
+            summary=f"Lease for {lease.unit.label} activated",
+            template=lease.template,
+            start_date=lease.start_date,
+            end_date=lease.end_date,
+            automatic=automatic,
+        )
+    else:
+        record(
+            actor,
+            AuditAction.LEASE_SCHEDULED,
+            obj=lease,
+            lease=lease,
+            summary=f"Lease for {lease.unit.label} scheduled to start {lease.start_date:%d %B %Y}",
+            template=lease.template,
+            start_date=lease.start_date,
+            end_date=lease.end_date,
+        )
+    return Activation(
+        lease=lease, status=target, schedule=schedule, created=created, through=through
+    )
+
+
+def activate_due_leases(actor=None) -> list[Activation]:
+    """Start every scheduled tenancy whose day has arrived; safe to call repeatedly.
+
+    Called by the management command and by the screens that read leases, because RHP has
+    no task queue. A tenancy that cannot start yet (for example one that still needs a
+    starting account) is left scheduled and logged rather than failing the whole page.
+    """
+    today = timezone.localdate()
+    due = Lease.objects.filter(status=LeaseStatus.FUTURE, start_date__lte=today).order_by(
+        "start_date", "pk"
+    )
+    activated = []
+    for lease in due:
+        try:
+            activated.append(activate_lease(lease, actor=actor, automatic=True))
+        except ValidationError as exc:
+            logger.warning("scheduled lease %s could not start: %s", lease.pk, exc)
+    return activated
 
 
 # --- ending a tenancy, and closing its money (P4-Q1, P4-Q2, P4-Q3) ---------

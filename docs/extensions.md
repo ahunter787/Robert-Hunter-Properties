@@ -452,6 +452,13 @@ records what RHP keeps (append-only derived sub-ledger, corrections as entries, 
 due-date charging), what it changes (deposits, lifecycle, party) and what is operational work (scheduled
 posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately reviewed.
 
+**October 21 M2a accepted — [ADR-029](decisions/ADR-029-lease-future-and-people.md):** a signed tenancy
+whose term has not begun is `FUTURE` (scheduled, not active, posting nothing), starts automatically by
+date, and may coexist with the current active lease on its unit; a deposit may be received before
+move-in. The person/login split (M2b) is the next slice. Evidence: TurboTenant's automatic
+Upcoming/Draft statuses, AppFolio's pre-move-in resident checklist, PropertyBoss contacts with an optional
+portal login, DoorLoop's independent portal access.
+
 **October 21 refinement accepted for local merge:** [Held credit and dated repayments](design/held-credit-repayments.md)
 keeps credits separate until manager-confirmed application and schedules existing opening debt without
 new charges. Only due installments count as payable/overdue; full principal stays in account balance.

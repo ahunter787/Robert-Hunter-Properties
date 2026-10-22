@@ -137,6 +137,18 @@ class PropertyDetailView(ManagerRequiredMixin, WorkspaceMixin, DetailView):
             for unit in units
             if unit.current_lease is not None
         ]
+        # A unit may be vacant today and already let for a later date. The occupancy
+        # rule stays ACTIVE-only; this is a pointer, not a second occupancy definition.
+        from apps.leases.models import Lease, LeaseStatus
+
+        upcoming = {
+            lease.unit_id: lease
+            for lease in Lease.objects.filter(
+                unit__property=self.object, status=LeaseStatus.FUTURE
+            ).order_by("start_date")
+        }
+        for unit in units:
+            unit.upcoming_lease = upcoming.get(unit.pk)
         if self.object.has_map_pin:
             context["map_embed_url"] = embed_url(
                 self.object.latitude,
@@ -390,6 +402,11 @@ class UnitDetailView(ManagerRequiredMixin, WorkspaceMixin, DetailView):
 
         context = super().get_context_data(**kwargs)
         context["maintenance"] = maintenance_summary(self.request.user, unit=self.object)
+        from apps.leases.models import LeaseStatus
+
+        context["upcoming_lease"] = (
+            self.object.leases.filter(status=LeaseStatus.FUTURE).order_by("start_date").first()
+        )
         return context
 
 

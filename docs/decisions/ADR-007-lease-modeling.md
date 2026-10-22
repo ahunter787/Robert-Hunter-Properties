@@ -42,7 +42,8 @@ tenancy history is refused by the database, exactly as deleting a property with 
 
 ### Status is explicit, not inferred from the calendar
 
-`LeaseStatus` is `DRAFT`, `ACTIVE`, `ENDED`, moved by a named action (`Activate lease`, `End lease`),
+`LeaseStatus` is `DRAFT`, `FUTURE`, `ACTIVE`, `ENDED` (the future state and its automatic start are
+[ADR-029](ADR-029-lease-future-and-people.md) M2a), moved by a named action (`Activate lease`, `End lease`),
 both POST-only. A lease whose end date has passed is **not** silently ended: it appears as *ending soon*
 or *overdue to end* and waits for a person. This matters because
 

@@ -31,8 +31,7 @@ from apps.accounts.permissions import (
     ManagerRequiredMixin,
     TenantAreaMixin,
 )
-from apps.audit.models import AuditAction
-from apps.audit.services import events_for_lease, record
+from apps.audit.services import events_for_lease
 from apps.leases import services as lease_services
 from apps.leases.forms import (
     LeaseEndForm,
@@ -45,7 +44,6 @@ from apps.leases.forms import (
     RentPeriodForm,
 )
 from apps.leases.models import (
-    FinancialCutover,
     Lease,
     LeaseStatus,
     RentPeriod,
@@ -73,6 +71,13 @@ RULE_CLEARED_MESSAGE = (
 class LeaseListView(ManagerRequiredMixin, ListView):
     template_name = "management/lease_list.html"
     context_object_name = "leases"
+
+    def get(self, request, *args, **kwargs):
+        # RHP has no task queue: reading the lease desk starts any tenancy whose day
+        # has arrived. Idempotent, and the management command does the same on deploy.
+        lease_services.activate_due_leases(actor=request.user)
+        return super().get(request, *args, **kwargs)
+
     paginate_by = 25
 
     def get_queryset(self):
@@ -148,6 +153,10 @@ class LeaseCreateView(ManagerRequiredMixin, CreateView):
 class LeaseDetailView(ManagerRequiredMixin, DetailView):
     template_name = "management/lease_detail.html"
     context_object_name = "lease"
+
+    def get(self, request, *args, **kwargs):
+        lease_services.activate_due_leases(actor=request.user)
+        return super().get(request, *args, **kwargs)
 
     def get_queryset(self):
         return Lease.objects.select_related("unit__property").prefetch_related(
@@ -227,52 +236,20 @@ class LeaseUpdateView(ManagerRequiredMixin, UpdateView):
 
 
 class LeaseActivateView(ManagerRequiredMixin, View):
-    """Draft → active: work out the rent schedule, then raise the first charges.
+    """Draft → scheduled or active: work out the rent schedule, then raise what is due.
 
     For a step-up or triple-net lease this is where the whole term's amounts come
-    into being, so nobody has to remember a rise (E1, ADR-013). A fixed lease has
-    nothing to generate and behaves exactly as it did before.
+    into being, so nobody has to remember a rise (E1, ADR-013). A lease whose term
+    starts later is scheduled, not marked active: an upcoming tenancy takes no
+    obligation until its day arrives (M2, ADR-029 D1).
     """
 
     http_method_names = ["post"]
 
     def post(self, request, pk):
         lease = get_object_or_404(Lease, pk=pk)
-        if lease.status != LeaseStatus.DRAFT:
-            messages.error(request, "Only a draft lease can be activated.")
-            return redirect("leases:lease-detail", pk=lease.pk)
-        if not lease.lease_tenants.exists():
-            messages.error(request, "Add at least one tenant before activating this lease.")
-            return redirect("leases:lease-detail", pk=lease.pk)
-
-        through = ledger_services.charges_due()
         try:
-            with transaction.atomic():
-                lease.status = LeaseStatus.ACTIVE
-                cutover = FinancialCutover.objects.first()
-                boundary = (
-                    cutover.first_native_date if cutover else timezone.localdate().replace(day=1)
-                )
-                if lease.start_date >= boundary:
-                    lease.billing_start_date = lease.start_date
-                    lease.financial_ready = True
-                lease.save(
-                    update_fields=["status", "billing_start_date", "financial_ready", "updated_at"]
-                )
-                schedule = lease_services.generate_rent_schedule(lease, actor=request.user)
-                created = ledger_services.generate_charges(
-                    lease, through=through, actor=request.user
-                )
-                record(
-                    request.user,
-                    AuditAction.LEASE_ACTIVATED,
-                    obj=lease,
-                    lease=lease,
-                    summary=f"Lease for {lease.unit.label} activated",
-                    template=lease.template,
-                    start_date=lease.start_date,
-                    end_date=lease.end_date,
-                )
+            result = lease_services.activate_lease(lease, actor=request.user)
         except IntegrityError:
             messages.error(
                 request,
@@ -284,20 +261,29 @@ class LeaseActivateView(ManagerRequiredMixin, View):
             return redirect("leases:lease-detail", pk=lease.pk)
 
         details = []
-        if schedule.changed:
-            details.append(schedule.summary())
-        if created:
-            count = len(created)
-            details.append(
-                f"{count} charge{'' if count == 1 else 's'} posted, the latest due "
-                f"{through:%d %B %Y}."
-            )
+        if result.is_future:
+            details.append(f"scheduled to start {lease.start_date:%d %B %Y}")
+            if result.schedule.changed:
+                details.append(result.schedule.summary())
+            details.append("No charges are posted until the tenancy starts.")
         else:
-            details.append(f"No charge has fallen due yet ({through:%d %B %Y}).")
-        logger.info("lease activated pk=%s by=%s", lease.pk, request.user.pk)
-        messages.success(
-            request, f"{lease.unit.label} now has an active lease. " + " ".join(details)
+            if result.schedule.changed:
+                details.append(result.schedule.summary())
+            if result.created:
+                count = len(result.created)
+                details.append(
+                    f"{count} charge{'' if count == 1 else 's'} posted, the latest due "
+                    f"{result.through:%d %B %Y}."
+                )
+            else:
+                details.append(f"No charge has fallen due yet ({result.through:%d %B %Y}).")
+        logger.info(
+            "lease activated pk=%s status=%s by=%s",
+            lease.pk,
+            result.status,
+            request.user.pk,
         )
+        messages.success(request, f"{lease.unit.label}: " + " ".join(details))
         return redirect("leases:lease-detail", pk=lease.pk)
 
 
@@ -718,12 +704,19 @@ class LeaseDeleteView(AdminRequiredMixin, DeleteView):
     success_url = reverse_lazy("leases:lease-list")
 
     def _refuse_non_draft(self):
-        """Only drafts are deletable. Checked after the role gate."""
+        """Drafts, and scheduled tenancies with nothing attached yet, are deletable."""
         if self.object.status == LeaseStatus.DRAFT:
+            return None
+        if self.object.status == LeaseStatus.FUTURE and not (
+            self.object.charges.exists()
+            or self.object.payments.exists()
+            or self.object.deposit_entries.exists()
+            or self.object.documents.exists()
+        ):
             return None
         messages.error(
             self.request,
-            "An active or ended lease is never deleted — end it instead, so the history stays.",
+            "This lease is kept as history — end it instead, so the record stays.",
         )
         return redirect("leases:lease-detail", pk=self.object.pk)
 
@@ -739,7 +732,7 @@ class LeaseDeleteView(AdminRequiredMixin, DeleteView):
         lease = self.object
         response = super().form_valid(form)
         logger.info("lease deleted pk=%s by=%s", lease.pk, self.request.user.pk)
-        messages.success(self.request, "The draft lease was deleted.")
+        messages.success(self.request, "The lease was deleted.")
         return response
 
 
@@ -760,6 +753,7 @@ class TenantLeaseView(TenantAreaMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        lease_services.activate_due_leases(actor=self.request.user)
         lease = visible_lease_for(self.request.user)
         context["lease"] = lease
         context["lease_is_current"] = bool(lease and lease.is_current)

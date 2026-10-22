@@ -559,8 +559,9 @@ AMENDMENT, 2026-10-07 (owner-decided as P4-Q1, and recorded in ADR-020). This ph
 defined three states but never said what they mean for a tenancy's money, and left the
 end of a tenancy without a reason. Both are now specified:
 
-- Occupancy and money have separate lifecycles. `LeaseStatus` is `DRAFT`, `ACTIVE`, or
-  `ENDED`; `LeaseAccountStatus` is `OPEN` or `SETTLED`. An ended tenancy may still have an
+- Occupancy and money have separate lifecycles. `LeaseStatus` is `DRAFT`, `FUTURE`, `ACTIVE`, or
+  `ENDED` (a scheduled tenancy is `FUTURE` until its start date; ADR-029); `LeaseAccountStatus` is
+  `OPEN` or `SETTLED`. An ended tenancy may still have an
   open financial account while money is collected or corrected.
 - Ending a tenancy is an act by a staff member, and requires a citable reason: a code
   (tenant ended early, end of term or not renewed, eviction, sale or transfer, mutual
@@ -592,6 +593,23 @@ settlement rule above keeps its meaning but now has the path it promised:
   desk corrects the arrears through the existing adjustment path.
 
 
+
+AMENDMENT, 2026-10-22 (lease lifecycle conformance, recorded in ADR-029 M2a). A lease now
+has a scheduled state, so a signed renewal can be represented before its term starts:
+
+- `LeaseStatus` adds `FUTURE`: the terms are agreed but the term has not begun. Status is assigned
+  from the dates, not chosen by hand: activating a future-dated lease schedules it, and a scheduled
+  lease becomes active when its start date arrives (idempotent; a management command and the screens
+  that read leases perform the check).
+- A future tenancy is not occupancy and takes no obligations: no rent, NNN or recovery charges, no
+  arrears, no statement, and it cannot be ended or settled. Its rent schedule is computed up front so
+  the future amounts are known.
+- A future lease may coexist with the active lease on the same unit; the one-active-lease rule is
+  unchanged and still applies only to `ACTIVE`.
+- A security deposit may be received and held before the term starts; it remains held-deposit money,
+  never rent.
+- A tenant on a future lease sees the upcoming terms read-only and no money; the person/login split
+  (a person may exist without a portal login) is M2b and is not part of this amendment.
 
 PHASE 4 — RENT LEDGER
 ---------------------

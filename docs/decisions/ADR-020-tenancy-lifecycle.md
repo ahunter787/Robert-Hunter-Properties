@@ -11,9 +11,10 @@
 (1) *Deposits (live now):* a nonzero recorded security deposit no longer blocks settlement forever — the
 deposit register's held balance must be zero and a move-out outcome recorded, which is the path this ADR
 previously said did not exist. The occupancy/account split itself is unchanged.
-(2) *A future state (staged, M2):* a signed tenancy whose start date is ahead becomes `FUTURE`, so
+(2) *A future state (M2a, [ADR-029](ADR-029-lease-future-and-people.md)):* a signed tenancy whose start date is ahead becomes `FUTURE`, so
 occupancy **starting** is calendar-driven and idempotent while occupancy **ending** remains a person's
-act with a citable reason. Until that change lands, the states remain `DRAFT/ACTIVE/ENDED` as below.
+act with a citable reason. The future state is now implemented (M2a); the states below remain the
+historical record of this ADR.
 
 ## Context
 

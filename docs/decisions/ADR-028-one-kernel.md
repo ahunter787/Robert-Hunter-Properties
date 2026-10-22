@@ -139,8 +139,8 @@ ADR and branch.
 | Opening balance | One immutable opening record + linked `OPENING` entry | Conversion charge/credit at go-live | **Keep** |
 | Rent rule | Raised on its due date, never ahead (P4-Q7) | Recurring charges post on schedule | **Keep** the rule; **record** the operational gap: system-scheduled posting in Phase 12 |
 | Deposit | Lease field, no disposition, settlement dead end | Escrow/held liability + disposition | **Change** (D5) |
-| Lease lifecycle | DRAFT/ACTIVE/ENDED | DRAFT/FUTURE/ACTIVE/PAST/ENDED | **Change** (D6, M2) — `PAST` stays derived/ENDED |
-| Party | Person = login | Person record + optional portal login | **Change** (D7, M2) |
+| Lease lifecycle | DRAFT/ACTIVE/ENDED | DRAFT/FUTURE/ACTIVE/PAST/ENDED | **Change** (D6) — M2a implemented as DRAFT/FUTURE/ACTIVE/ENDED ([ADR-029](ADR-029-lease-future-and-people.md)); `PAST` stays derived/ENDED |
+| Party | Person = login | Person record + optional portal login | **Change** (D7) — M2b, next slice; design in [ADR-029](ADR-029-lease-future-and-people.md) D2 |
 | Property dimension | Lease → unit → property chain; E2 unit shares | Every posting names a property | **Keep**; make property mandatory on GL postings in B1 |
 | GL, AP, banks, reconciliation | Absent | Built in | **Build** (ADR-026 B1–B5) |
 | Trust/escrow | Out of scope (RHP owns its properties) | Trust modules exist for third-party managers | **Keep** ADR-026 boundary; deposit liability still applies |

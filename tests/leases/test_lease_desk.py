@@ -237,7 +237,7 @@ def test_only_a_draft_can_be_deleted(client):
     response = client.post(reverse("leases:lease-delete", args=[active.pk]), follow=True)
 
     assert Lease.objects.filter(pk=active.pk).exists()
-    assert b"never deleted" in response.content
+    assert b"kept as history" in response.content
 
 
 def test_a_draft_can_be_deleted_by_an_admin(client):

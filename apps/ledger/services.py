@@ -1053,6 +1053,10 @@ NOT_CHARGEABLE = {
     LeaseStatus.DRAFT: (
         "A draft lease has no ledger yet: its terms can still change. Activate the lease first."
     ),
+    LeaseStatus.FUTURE: (
+        "This tenancy has not started. Charges begin with its term; a deposit may be recorded "
+        "in the meantime."
+    ),
     LeaseStatus.ENDED: (
         "This tenancy has ended. Its terms are history and do not change; its money can still "
         "be recorded and corrected, but nothing new can be charged on it."

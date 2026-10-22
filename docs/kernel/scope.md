@@ -16,7 +16,7 @@ number:
 
 Industry products keep them separate for a reason: occupancy can end while money is still owed, and a
 property can spend money that no tenancy will ever be charged for. RHP already separated the two
-lifecycles ([ADR-020](../decisions/ADR-020-tenancy-lifecycle.md): occupancy `DRAFT/ACTIVE/ENDED`, account
+lifecycles ([ADR-020](../decisions/ADR-020-tenancy-lifecycle.md): occupancy `DRAFT/FUTURE/ACTIVE/ENDED`, account
 `OPEN/SETTLED`); this document states how the money side reaches the GL.
 
 ## Where each piece lives
@@ -120,6 +120,15 @@ The GL is a **posting target**, not a second calculation:
 - It never re-derives a tenant balance from bank data, never re-allocates a payment, and never edits a
   posted journal: corrections are reversing entries, as everywhere in RHP.
 - Cash basis is a report view over the same entries; it is not a second set of journals.
+
+## Upcoming tenancies and people (ADR-029)
+
+A signed tenancy whose start date is ahead is `FUTURE`: scheduled, not occupancy, and **not an
+obligation**. It posts no rent, NNN or recovery, shows no arrears, and cannot be ended or settled; its
+rent schedule is known up front, and the first charges are raised when it starts automatically. A
+security deposit may be received and held before move-in — it stays deposit money, never rent. The party
+model is still `LeaseTenant → accounts.User`; M2b will separate a person from a login, with portal access
+as an optional per-person permission (PropertyBoss/DoorLoop pattern).
 
 ## Known limitations (recorded, not hidden)
 

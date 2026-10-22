@@ -25,6 +25,10 @@
           {% if user.is_admin_or_above %}
             <a href="{% url 'leases:lease-delete' lease.pk %}" class="rhp-btn rhp-btn-secondary">Delete draft</a>
           {% endif %}
+        {% elif lease.status == "FUTURE" %}
+          {% if user.is_admin_or_above %}
+            <a href="{% url 'leases:lease-delete' lease.pk %}" class="rhp-btn rhp-btn-secondary">Delete upcoming lease</a>
+          {% endif %}
         {% elif lease.status == "ACTIVE" %}
           <a href="{% url 'leases:lease-end' lease.pk %}" class="rhp-btn rhp-btn-secondary">End this tenancy</a>
         {% elif lease.status == "ENDED" %}
@@ -44,11 +48,25 @@
           <span class="rounded bg-success/10 px-2 py-0.5 text-xs font-medium text-success">Active</span>
         {% elif lease.status == "DRAFT" %}
           <span class="rounded bg-surface-muted px-2 py-0.5 text-xs font-medium text-ink-muted">Draft</span>
+        {% elif lease.status == "FUTURE" %}
+          <span class="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            Upcoming · starts {{ lease.start_date|date:"M j, Y" }}
+          </span>
         {% else %}
           <span class="rounded bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">Ended</span>
         {% endif %}
       </div>
 
+      {% if lease.status == "FUTURE" %}
+        <div class="mt-4 rounded-card bg-primary/5 p-4 text-sm" role="status">
+          <p class="font-medium">This tenancy is scheduled, not started.</p>
+          <p class="mt-1 text-ink-muted">
+            It begins {{ lease.start_date|date:"M j, Y" }}. Rent and other charges appear only from that
+            date; a security deposit received earlier is held on the deposit register and is not rent.
+          </p>
+          <a href="{% url 'ledger:deposit' lease.pk %}" class="rhp-link mt-2 inline-block">Security deposit record</a>
+        </div>
+      {% endif %}
       {% if lease.ended_on or lease.status == "ENDED" %}
         <div class="mt-4 rounded-card bg-surface-muted p-4 text-sm">
           <p>

@@ -1,5 +1,13 @@
 # Security
 
+## Upcoming tenancies — ADR-029 M2a
+
+A `FUTURE` tenancy is visible to its own tenant (the same `visible_for` scoping as any lease) but posts no
+money, so there is nothing to expose or protect on the payment page. It cannot be ended or settled, and a
+manager screen read that starts a due tenancy is an idempotent, audited transition with a null actor
+(system). Deposits received before move-in use the same manager-only register and audit event as any
+deposit.
+
 ## Accounting kernel consolidation — ADR-028
 
 Single allocation engine: balances are read from recorded `FundsApplication` rows; the retired read-time

@@ -43,6 +43,7 @@ class LeaseStatus(models.TextChoices):
     """The occupancy lifecycle of a tenancy."""
 
     DRAFT = "DRAFT", "Draft"
+    FUTURE = "FUTURE", "Upcoming"
     ACTIVE = "ACTIVE", "Active"
     ENDED = "ENDED", "Ended"
 
@@ -297,7 +298,10 @@ class Lease(models.Model):
         choices=LeaseStatus.choices,
         default=LeaseStatus.DRAFT,
         db_index=True,
-        help_text="Draft until staff activate it; ended is history and read-only.",
+        help_text=(
+            "Draft until staff activate it; upcoming until the term starts; ended is history "
+            "and read-only."
+        ),
     )
     account_status = models.CharField(
         max_length=10,
@@ -388,6 +392,16 @@ class Lease(models.Model):
     def is_current(self) -> bool:
         today = timezone.localdate()
         return self.status == LeaseStatus.ACTIVE and self.start_date <= today <= self.end_date
+
+    @property
+    def is_future(self) -> bool:
+        """A scheduled tenancy whose term has not begun (M2, ADR-029 D1)."""
+        return self.status == LeaseStatus.FUTURE
+
+    @property
+    def is_upcoming(self) -> bool:
+        """The date-based question behind the stored status: the term starts later."""
+        return self.start_date > timezone.localdate()
 
     @property
     def has_started(self) -> bool:

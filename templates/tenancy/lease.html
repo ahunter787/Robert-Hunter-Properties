@@ -14,7 +14,12 @@
           - {{ lease.unit.property.name }} · {{ lease.unit.property.address_line }}
         </p>
 
-        {% if lease.is_settled %}
+        {% if lease.is_future %}
+          <div class="rhp-alert mt-4 border-primary/30 bg-primary/5" role="status">
+            This tenancy begins {{ lease.start_date|date:"M j, Y" }}. Your lease terms are here; rent and
+            payments start from that date.
+          </div>
+        {% elif lease.is_settled %}
           <div class="rhp-alert mt-4 border-warning/30 bg-warning/5 text-warning" role="status">
             This tenancy ended on {{ lease.stopped_on|date:"M j, Y" }} and the account is settled — nothing is owed
             and nothing is held. Your statements stay here to read.

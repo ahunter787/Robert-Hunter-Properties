@@ -16,6 +16,11 @@
         <h1 class="text-lg font-semibold tracking-tight">Your account</h1>
       {% endif %}
     </section>
+    {% if lease.is_future %}
+      <p class="rhp-alert border-primary/30 bg-primary/5" role="status">
+        Your tenancy begins {{ lease.start_date|date:"M j, Y" }}. Nothing is due before then.
+      </p>
+    {% endif %}
     {% include "maintenance/summary.html" %}
     {% include "communications/summary.html" %}
 
