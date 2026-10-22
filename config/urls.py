@@ -20,6 +20,7 @@ urlpatterns = [
     path("manage/people/", include("apps.contacts.urls_management")),
     path("manage/", include("apps.responsibilities.urls_management")),
     path("manage/ledger/", include("apps.ledger.urls_management")),
+    path("manage/accounting/", include("apps.accounting.urls_management")),
     path("manage/", include("apps.documents.urls_management")),
     path("lease/", include("apps.leases.urls_tenant")),
     path("lease/", include("apps.properties.urls_tenant")),

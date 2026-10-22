@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Chart of accounts — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-5xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Chart of accounts</h1>
+      <p class="mt-2 text-sm text-ink-muted">System accounts may be renamed but not deleted; control accounts move only from kernel source events.</p>
+    </div>
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Normal</th><th>Flags</th><th>Mappings</th></tr></thead>
+        <tbody>
+          {% for account in accounts %}
+            <tr>
+              <td>{{ account.code }}</td>
+              <td>{{ account.name }}</td>
+              <td>{{ account.get_kind_display }}</td>
+              <td>{{ account.get_normal_side_display }}</td>
+              <td>{% if account.is_system %}<span class="rhp-badge">system</span>{% endif %}{% if account.is_control %}<span class="rhp-badge-warning">control</span>{% endif %}{% if not account.is_active %}<span class="rhp-badge-warning">inactive</span>{% endif %}</td>
+              <td class="text-ink-muted">{% for mapping in account.mappings.all %}{{ mapping.event_key }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -22,6 +22,7 @@ def portal_navigation(request):
         "tenant_documents": "documents",
         "tenant_maintenance": "maintenance",
         "communications": "communications",
+        "accounting": "accounting",
         "tenant_communications": "communications",
     }.get(namespace, "dashboard")
     if namespace == "ledger" and name == "lease-ledger":
@@ -40,6 +41,7 @@ def portal_navigation(request):
             ("people", "People", "contacts:person-list"),
             ("leases", "Leases", "leases:lease-list"),
             ("ledger", "Rent & Payments", "ledger:overview"),
+            ("accounting", "Accounting", "accounting:overview"),
             ("recoveries", "Expense recoveries", "responsibilities:overview"),
             ("maintenance", "Maintenance", "maintenance:list"),
             ("communications", "Communications", "communications:index"),

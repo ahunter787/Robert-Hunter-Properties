@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}{{ entry.source_key }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:journal-list' %}" class="underline-offset-2 hover:underline">Journals</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ entry.source_key }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">{{ entry.event_type }} · {{ entry.posted_on|date:"M j, Y" }}{% if entry.property %} · {{ entry.property.name }}{% endif %}{% if entry.lease %} · {{ entry.lease.unit.label }}{% endif %}</p>
+      {% if entry.memo %}<p class="mt-1 text-sm">{{ entry.memo }}</p>{% endif %}
+    </div>
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Account</th><th>Memo</th><th class="text-right">Debit</th><th class="text-right">Credit</th></tr></thead>
+        <tbody>
+          {% for line in entry.lines.all %}
+            <tr><td>{{ line.account.code }} {{ line.account.name }}</td><td class="text-ink-muted">{{ line.memo }}</td><td class="text-right">{{ line.debit|money }}</td><td class="text-right">{{ line.credit|money }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-sm text-ink-muted">Journals are immutable. A correction is a new reversing entry tied to this source event.</p>
+  </div>
+{% endblock %}

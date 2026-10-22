@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Accounting controls — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Controls</h1>
+      <p class="mt-2 text-sm text-ink-muted">The AR control is not adjusted to agree with a report. A difference is a missing or duplicate source event, and stays visible until found.</p>
+    </div>
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Tenant receivable</h2>
+      <dl class="workspace-facts mt-3">
+        <div><dt>1200 Tenant AR</dt><dd>{{ tie.control|money }} net of 2400</dd></div>
+        <div><dt>Lease sub-ledger</dt><dd>{{ tie.subledger|money }}</dd></div>
+        <div><dt>Difference</dt><dd class="{% if tie.difference %}money-owed{% else %}money-received{% endif %}">{{ tie.difference|money }}</dd></div>
+      </dl>
+    </section>
+  </div>
+{% endblock %}

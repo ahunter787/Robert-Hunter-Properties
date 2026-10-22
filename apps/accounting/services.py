@@ -310,6 +310,34 @@ def post_application(application, *, actor=None) -> JournalEntry | None:
     )
 
 
+def unposted_count() -> int:
+    """How many existing source events have no journal yet."""
+    from apps.ledger.models import Charge, FundsApplication, Payment, PaymentKind, PaymentStatus
+
+    missing = 0
+    missing += sum(
+        1
+        for charge in Charge.objects.all()
+        if not JournalEntry.objects.filter(source_key=f"charge:{charge.pk}:created").exists()
+    )
+    for payment in Payment.objects.all():
+        if payment.kind == PaymentKind.REVERSAL:
+            key = f"payment:{payment.reverses_id}:reversed"
+        elif payment.status == PaymentStatus.CLEARED:
+            key = f"payment:{payment.pk}:recorded"
+        else:
+            continue
+        if not JournalEntry.objects.filter(source_key=key).exists():
+            missing += 1
+    for application in FundsApplication.objects.all():
+        transition = "released" if application.reverses_id else "applied"
+        if not JournalEntry.objects.filter(
+            source_key=f"application:{application.pk}:{transition}"
+        ).exists():
+            missing += 1
+    return missing
+
+
 def trial_balance(*, as_of=None, property=None):
     """Every account's debit/credit activity up to ``as_of``, in code order."""
     lines = JournalLine.objects.select_related("account", "entry")

@@ -115,9 +115,11 @@ The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, 
 - `manage.py accounting_sync` bridges existing sub-ledger history idempotently;
   `manage.py accounting_status` prints the trial balance, AR tie and unposted events. A pytest
   fixture reseeds the chart in flushed transaction-test databases.
-- Not yet built: staff screens, the B1 opening-journal UI, B2 deposit/AP posting, B3 bank accounts and
-  reconciliation, write-off as a first-class action, and a production data load. Deposit rows stay
-  out of B1. These are the next slices, not missing pieces of the journal engine.
+- Staff screens now exist under `/manage/accounting/`: overview with trial balance and AR tie, chart,
+  journal list/detail and the control page. They are manager-only and derived entirely from lines.
+- Not yet built: the B1 opening-balance UI, B2 deposit/AP posting, B3 bank accounts and reconciliation,
+  write-off as a first-class action, and a production data load. Deposit rows stay out of B1. These are
+  the next slices, not missing pieces of the journal engine.
 
 ## Consequences
 

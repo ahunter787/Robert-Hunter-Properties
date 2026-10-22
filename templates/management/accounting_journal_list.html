@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Journals — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-5xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Journals</h1>
+      </div>
+      <a href="{% url 'accounting:chart' %}" class="rhp-btn rhp-btn-secondary">Chart</a>
+    </div>
+    <form method="get" class="flex flex-wrap items-end gap-3">
+      <div class="min-w-64 flex-1"><label class="rhp-label" for="q">Search source key or event</label><input class="rhp-field" type="search" id="q" name="q" value="{{ search }}" placeholder="charge:42:created"></div>
+      <button class="rhp-btn rhp-btn-secondary" type="submit">Search</button>
+    </form>
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Date</th><th>Source</th><th>Event</th><th>Property / lease</th><th>Lines</th><th>Memo</th></tr></thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td>{{ entry.posted_on|date:"M j, Y" }}</td>
+              <td><a href="{% url 'accounting:journal-detail' entry.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">{{ entry.source_key }}</a></td>
+              <td>{{ entry.event_type }}</td>
+              <td>{{ entry.property.name|default:"—" }}{% if entry.lease %} · {{ entry.lease.unit.label }}{% endif %}</td>
+              <td>{{ entry.lines.all|length }}</td>
+              <td class="text-ink-muted">{{ entry.memo }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-ink-muted">No journals yet. They appear as charges and receipts are posted.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+      <p class="text-sm text-ink-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}.</p>
+    {% endif %}
+  </div>
+{% endblock %}

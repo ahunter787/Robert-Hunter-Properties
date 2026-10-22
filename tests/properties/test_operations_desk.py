@@ -44,6 +44,7 @@ def test_sidebar_order_and_no_redundant_middle_navigation(client, manager):
         "People",
         "Leases",
         "Rent & Payments",
+        "Accounting",
         "Expense recoveries",
         "Maintenance",
         "Communications",
