@@ -277,7 +277,38 @@ def post_payment(payment, *, transition: str, actor=None) -> JournalEntry:
 
 def post_application(application, *, actor=None) -> JournalEntry | None:
     """A credit application moves held tenant credit to AR; receipts are already in AR."""
-    if application.source_deposit_id or application.source_payment_id:
+    if application.source_deposit_id:
+        deposit = application.source_deposit
+        if deposit.kind != "WITHHELD":
+            return None
+        amount = _money(application.amount)
+        released = application.reverses_id is not None
+        if released:
+            lines = [
+                {"account": "1200", "debit": amount, "memo": "Released retained deposit"},
+                {"account": "2300", "credit": amount, "memo": "Released retained deposit"},
+            ]
+            event_type = "deposit.application_released"
+            key = f"application:{application.pk}:released"
+        else:
+            lines = [
+                {"account": "2300", "debit": amount, "memo": "Retained deposit applied"},
+                {"account": "1200", "credit": amount, "memo": "Retained deposit applied"},
+            ]
+            event_type = "deposit.applied"
+            key = f"application:{application.pk}:applied"
+        return post_journal(
+            source_key=key,
+            event_type=event_type,
+            posted_on=(
+                application.created_at.date() if application.created_at else timezone.localdate()
+            ),
+            lines=lines,
+            lease=application.lease,
+            memo=f"Deposit application {application.pk}",
+            actor=actor,
+        )
+    if application.source_payment_id:
         return None
     source_charge = application.source_charge
     if source_charge is None or source_charge.kind != "OPENING":
@@ -477,3 +508,54 @@ def post_opening_batch(*, as_of, note, lines, actor=None):
         lines=len(prepared),
     )
     return batch
+
+
+def post_deposit(entry) -> JournalEntry | None:
+    """Post deposit money received or returned; retention waits for its E6 charge."""
+    if entry.kind not in ("RECEIVED", "RETURNED"):
+        return None
+    amount = _money(entry.amount)
+    if entry.kind == "RECEIVED":
+        lines = [
+            {"account": "1450", "debit": amount, "memo": "Security deposit received"},
+            {"account": "2300", "credit": amount, "memo": "Security deposit held"},
+        ]
+        event_type = "deposit.received"
+    elif entry.kind == "RETURNED":
+        lines = [
+            {"account": "2300", "debit": amount, "memo": "Security deposit returned"},
+            {"account": "1450", "credit": amount, "memo": "Security deposit refund paid"},
+        ]
+        event_type = "deposit.returned"
+    else:
+        # WITHHELD: the documented method raises the E6 charge first; NOT_COLLECTED is zero.
+        return None
+    return post_journal(
+        source_key=f"deposit:{entry.pk}:{entry.kind.lower()}",
+        event_type=event_type,
+        posted_on=entry.date,
+        lines=lines,
+        lease=entry.lease,
+        memo=f"Security deposit {entry.get_kind_display().lower()}",
+        actor=entry.created_by,
+    )
+
+
+def deposit_control_tie():
+    """GL security-deposit liability against the held-deposit register.
+
+    A retention posts nothing until its E6 charge exists, so a nonzero difference is the
+    expected pending disposition until then; it is never adjusted away.
+    """
+    from apps.leases.models import Lease
+    from apps.ledger.deposits import held
+
+    register = ZERO
+    for lease in Lease.objects.exclude(status="DRAFT"):
+        register += held(lease)
+    gl = account_balance("2300")
+    return {
+        "control": gl.quantize(MONEY),
+        "register": register.quantize(MONEY),
+        "difference": (gl - register).quantize(MONEY),
+    }

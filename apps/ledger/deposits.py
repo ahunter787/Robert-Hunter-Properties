@@ -155,6 +155,9 @@ def record(
     )
     entry.full_clean()
     entry.save()
+    from apps.accounting.services import post_deposit
+
+    post_deposit(entry)
     audit_record(
         actor,
         AuditAction.DEPOSIT_CHANGED,

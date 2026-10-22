@@ -373,8 +373,11 @@ Implemented in development on `rhp-e10-kernel`:
   journal list/detail, a control page and the reviewed opening-balance sheet (`/manage/accounting/opening/`),
   all manager-only and derived from lines. The opening screen posts one balanced, immutable opening
   journal and records an `ACCOUNTING_OPENING_POSTED` audit event.
-- Still absent: B2 deposits/AP, B3 banks, a first-class write-off action, production data load. Deposits
-  and bank rows are outside B1.
+- B2 deposit movement has started: security deposit **received** posts Dr 1450 / Cr 2300 and **returned**
+  posts Dr 2300 / Cr 1450 through the same kernel contract. A retention posts nothing until its E6 charge;
+  applying a retained deposit to an existing AR bill moves 2300 to 1200. `deposit_control_tie()` compares
+  the GL liability to the register and reports the pending-retention difference rather than hiding it.
+- Still absent: B2 vendor bills/AP, B3 banks, a first-class write-off action, production data load.
 - The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
   tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
   equation the tests assert and is recorded in the implementation note of ADR-032.

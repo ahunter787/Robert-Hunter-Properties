@@ -32,6 +32,16 @@ class Command(BaseCommand):
         if tie["difference"] != ZERO:
             self.stderr.write(self.style.ERROR("AR control does not tie to the tenant ledger."))
 
+        deposit = services.deposit_control_tie()
+        self.stdout.write(
+            f"Deposit liability {deposit['control']}  register {deposit['register']}  "
+            f"difference {deposit['difference']}"
+        )
+        if deposit["difference"] != ZERO:
+            self.stdout.write(
+                "  (a pending retained-deposit disposition is the expected difference until E6)"
+            )
+
         missing = services.unposted_count()
         self.stdout.write(f"unposted source events: {missing}")
         if missing:
