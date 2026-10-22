@@ -14,6 +14,24 @@ items need evidence; no unexplained equity plug is approved. Resolve prepayment/
 before the separately reviewed B1 implementation. Reconciliation and external approval gate accounting
 go-live, not tenant setup. Bank accounts, fiscal year and reviewer remain actual information to obtain.
 
+## October 22 B1 readiness amendment (governs the earlier draft below)
+
+The B1 contract is now written down in [B1 readiness](b1-readiness.md) and
+[ADR-032](../decisions/ADR-032-b1-readiness.md). Where this blueprint's earlier draft differs, the
+readiness document governs:
+
+- **Chart:** readiness §2 (numbered owner chart, undeposited funds, AR/AP/deposit/credit control accounts,
+  opening equity, property dimension). The draft chart in §3.2 is historical.
+- **Posting matrix:** readiness §5, including receipt vs bank settlement, opening debt/credit counterparts,
+  write-off and deposit rows. The draft table in §4 is historical.
+- **Journal identity:** readiness §4 (`<model>:<pk>:<transition>`, unique, balanced, immutable, same
+  transaction), not a mutable row identity.
+- **AR control:** readiness §6 — the GL control must tie exactly to the subledger; no direct journal to AR,
+  AP or any control account.
+- **Retained deposit:** readiness §9 — the GL disposition mapping is an open unknown (E5 register order vs
+  industry charge-then-apply, with E6 missing). B1 must not post it until the external reviewer agrees.
+- **Boundary:** readiness §10 — no B1 code until the owner's business facts and external sign-off exist.
+
 **Status:** in design. The decision is [ADR-026](../decisions/ADR-026-property-accounting.md); this is the
 working blueprint for the slices `E10-B1` … `E10-B5`. Each slice gets its own owner review before the next.
 
@@ -78,10 +96,10 @@ built and stays authoritative for its own question.
 - **Every line names a property where the source has one**; portfolio-level lines (owner draws, bank
   transfers) carry no property and never appear in property reports.
 
-### 3.2 The default chart of accounts
+### 3.2 The default chart of accounts — superseded by [B1 readiness §2](b1-readiness.md#2-chart-of-accounts-proposed-locked-for-b1)
 
-Administrator-editable; **system accounts** (marked ★) may be renamed but not deleted while they carry
-history. The Schedule E mapping is a proposal for the owner's accountant to confirm, not tax advice.
+The table below is the earlier working draft, kept for context. The locked proposal is readiness §2; do not
+implement from this table.
 
 | Code | Name | Kind | Normal | Schedule E (proposed) |
 | --- | --- | --- | --- | --- |
@@ -127,6 +145,11 @@ meaningful and testable. A **cash-basis report view** (and a Schedule E cash sum
 report over the same journals — not a second set of entries.
 
 ## 4. Posting rules
+
+> **Superseded by [B1 readiness §5](b1-readiness.md#5-posting-matrix-for-b1) and §4 (journal contract).**
+> The table below is the earlier working draft, kept for context. In particular: a receipt credits
+> undeposited funds (not AR directly), bank settlement is a separate B3 event, opening credits use the
+> tenant-credit liability account, and retained-deposit disposition is an open unknown (readiness §9).
 
 Each explicit source event posts **exactly once**. Identity must distinguish receipt confirmation,
 cancellation, reversal and actual bank movement, not only the mutable source row's primary key.

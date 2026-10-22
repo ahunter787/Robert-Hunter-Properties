@@ -27,6 +27,7 @@ A private local prototype may use a read-only development-data snapshot; never p
 - [Decisions and owner feedback](decisions.md)
 - [Publication and reproducible artifacts](publication.md)
 - [Property accounting — a built-in ledger, exported for the accountant](property-accounting.md)
+- [B1 readiness — chart, posting contract, AR control and reconciliation](b1-readiness.md)
 - [Held credit and starting-debt repayment refinement](held-credit-repayments.md)
 
 ## Review sequence

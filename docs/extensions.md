@@ -457,6 +457,19 @@ records what RHP keeps (append-only derived sub-ledger, corrections as entries, 
 due-date charging), what it changes (deposits, lifecycle, party) and what is operational work (scheduled
 posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately reviewed.
 
+**October 22 B1 readiness complete — [ADR-032](decisions/ADR-032-b1-readiness.md):** the B1 contract is
+written down in [B1 readiness](design/b1-readiness.md): a numbered owner chart of accounts with system
+control accounts and a property dimension, an accrual journal set with cash-basis reports as a view, a
+unique `<model>:<pk>:<transition>` posting contract (balanced, immutable, same-transaction, replay-safe),
+a rule that no manual journal may touch AR/AP/deposit/credit/bank control accounts, and the AR-control,
+deposit and clearing reconciliations that must tie exactly. One evidence conflict is retained rather than
+guessed: the GL mapping for a retained deposit that is applied to AR after withholding (E5 order vs the
+industry's charge-then-apply order, with E6 missing) is blocked pending external review, and B1 does not
+post it. **B1 implementation is not started**: it waits on the owner's business facts (bank accounts,
+fiscal year/entity/tax basis, opening-balance source, external reviewer, state deposit rules) and that
+reviewer's confirmation of the chart, opening journal and the retained-deposit mapping. No GL table,
+migration or production change is included.
+
 **October 22 M2b implemented — [ADR-030](decisions/ADR-030-people-and-portal-logins.md):** a lease
 party is a `contacts.Person` (tenant, adult occupant, guarantor or authorized contact); the portal
 login is an optional link on that person's lease membership, mirrored on the membership for scoped
@@ -482,9 +495,12 @@ in `design/accounting-cutover-plan.md`. Manual stated balances do not require ve
 The development database is archived/restored before a fresh synthetic database is selected. B1–B5
 accounting remains separately reviewed; no GL, bank matching or tax-readiness is delivered by cutover.
 
-**Status: Building** — the decision for the stack is [ADR-026](decisions/ADR-026-property-accounting.md),
-the kernel direction is [ADR-028](decisions/ADR-028-one-kernel.md), and the working blueprint is
-[the property-accounting study](design/property-accounting.md).
+**Status: Building — B1 ready for review, not started.** The decision for the stack is
+[ADR-026](decisions/ADR-026-property-accounting.md), the kernel direction is
+[ADR-028](decisions/ADR-028-one-kernel.md), the working blueprint is
+[the property-accounting study](design/property-accounting.md), and the B1 contract is
+[B1 readiness](design/b1-readiness.md) / [ADR-032](decisions/ADR-032-b1-readiness.md). B1 code waits on
+the owner's business facts and external review named there.
 
 This extension adds landlord-side accounting only for properties Robert Hunter Properties owns. It is not
 third-party property-management accounting and does not change the tenant rent ledger. The owner's question

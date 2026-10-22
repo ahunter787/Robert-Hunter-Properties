@@ -133,6 +133,18 @@ A retained amount not applied to AR is a released liability whose income recogni
 (B2); no damage charge is invented here (E6). The statutory return window is jurisdiction-specific and
 is recorded as an owner-fact unknown, not hard-coded.
 
+## General-ledger boundary (B1 readiness, ADR-032)
+
+The GL is a double-entry, accrual journal set posted only from kernel source transitions. Every journal
+is balanced, immutable and identified by the unique source key `<model>:<pk>:<transition>`; a replay is a
+no-op, a correction is a linked reversal plus a new source event, and no manual journal may touch tenant
+AR, AP, deposits held, tenant credits, undeposited funds or a bank account. The AR, AP, deposit and credit
+control accounts must equal their sub-ledgers exactly; differences are investigated, never adjusted away.
+B1 readiness also fixes the chart, the property dimension and the receipt-versus-bank-settlement split.
+The retained-deposit GL disposition remains an explicit unknown pending external review; see
+[readiness §9](../design/b1-readiness.md). B1 implementation is not started and waits on the owner's
+business facts and that review.
+
 ## Upcoming tenancies and people (ADR-029)
 
 A signed tenancy whose start date is ahead is `FUTURE`: scheduled, not occupancy, and **not an

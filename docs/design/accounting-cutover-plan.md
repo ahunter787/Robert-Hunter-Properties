@@ -58,7 +58,7 @@ The in-app accounting direction remains approved in ADR-026. The separately revi
 
 | Slice | Deliverable |
 | --- | --- |
-| B1 | Chart, mappings, balanced immutable journals, explicit source-event posting, trial balance and dated AR controls. |
+| B1 | Chart, mappings, balanced immutable journals, explicit source-event posting, trial balance and dated AR controls. **Readiness complete (ADR-032); implementation not started — see [B1 readiness](b1-readiness.md).** |
 | B2 | Vendor bills/payments, held-deposit movements, AP and deposit registers. |
 | B3 | Bank accounts, statement CSV import, matching, outstanding items and approved reconciled opening books. |
 | B4 | Property/portfolio statements, control tie-outs, aging and accountant-reviewed report mappings. |
@@ -68,6 +68,10 @@ Before B1, finish the posting matrix: expected payments post nothing; receipt st
 settlement; deposit requirements are not proof of held funds. Opening credit/prepayment classification,
 future-charge recognition and event-specific idempotency must be resolved before its implementation.
 Opening controls cannot be posted twice or forced into equality by an unexplained equity plug.
+**October 22:** these are resolved in [B1 readiness](b1-readiness.md) and
+[ADR-032](../decisions/ADR-032-b1-readiness.md), except the retained-deposit disposition mapping, which
+is a recorded unknown pending external review; B1 implementation remains not started and waits on the
+owner facts and reviewer sign-off in readiness §10.
 
 Bank reconciliation means matching actual bank-statement lines to recorded receipts and payments.
 Outstanding checks/deposits explain timing differences. Unexplained differences remain visible and

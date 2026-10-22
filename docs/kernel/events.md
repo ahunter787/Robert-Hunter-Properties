@@ -16,7 +16,14 @@ Two rules for every row:
   amount; it is immutable, and a correction is a reversing entry. No unexplained equity plug is ever
   approved to force a control to agree.
 
-The classification decisions below are settled before B1.
+The classification decisions below are settled before B1. **October 22 B1 readiness
+([ADR-032](../decisions/ADR-032-b1-readiness.md), [readiness §4–§6](../design/b1-readiness.md)):** the
+journal identity is the unique source key shown here; journals are balanced, immutable, posted in the
+same transaction as the source transition, and no manual journal may touch a control account. The GL
+control must tie to the sub-ledger exactly. One row remains open: a withheld deposit's GL disposition when
+part of it is applied to AR after withholding (the register order in ADR-031 versus the industry's
+charge-then-apply order, with E6 missing). B1 must not post that row until the external reviewer agrees to
+a clearing-account adaptation or RHP waits for E6.
 
 ## The five classification questions
 
