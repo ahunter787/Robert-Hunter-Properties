@@ -1,0 +1,366 @@
+"""Posting service: the only writer of journals (B1, ADR-032).
+
+Every journal is a double-entry reading of one explicit kernel source transition. It is
+balanced, immutable, and keyed by ``<model>:<pk>:<transition>``; replaying the transition
+returns the existing journal instead of posting a second time. No caller may hand-write a
+journal line against a control account.
+"""
+
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.utils import timezone
+
+from apps.accounting.models import (
+    AccountMapping,
+    ChartAccount,
+    JournalEntry,
+    JournalLine,
+)
+
+ZERO = Decimal("0.00")
+MONEY = Decimal("0.01")
+CONTROL_CODES = {"1110", "1120", "1200", "1450", "2100", "2300", "2400"}
+
+
+def _money(value) -> Decimal:
+    try:
+        amount = Decimal(value)
+    except Exception as exc:  # noqa: BLE001 - a bad amount is a validation failure
+        raise ValidationError("A journal amount must be a decimal number.") from exc
+    if amount <= ZERO:
+        raise ValidationError("A journal line must be greater than zero.")
+    return amount.quantize(MONEY)
+
+
+def ensure_seeded():
+    """Restore the seeded chart if a flushed test database has lost it."""
+    from django.db import OperationalError, ProgrammingError
+
+    try:
+        if ChartAccount.objects.exists():
+            return
+        from apps.accounting.seed import seed_defaults
+
+        seed_defaults()
+    except OperationalError, ProgrammingError:
+        # A historical-migration test may not have the accounting tables yet.
+        return
+
+
+def account(code: str) -> ChartAccount:
+    ensure_seeded()
+    try:
+        return ChartAccount.objects.get(code=code, is_active=True)
+    except ChartAccount.DoesNotExist as exc:
+        raise ValidationError(f"The chart has no active account {code}.") from exc
+
+
+def mapping(event_key: str) -> ChartAccount:
+    ensure_seeded()
+    row = AccountMapping.objects.select_related("account").filter(event_key=event_key).first()
+    if row is None or not row.account.is_active:
+        raise ValidationError(f"The chart has no active mapping for {event_key}.")
+    return row.account
+
+
+def post_journal(
+    *,
+    source_key: str,
+    event_type: str,
+    posted_on,
+    lines,
+    lease=None,
+    property=None,
+    memo: str = "",
+    actor=None,
+) -> JournalEntry:
+    """Post one balanced journal, or return the one already posted for ``source_key``."""
+    if not source_key or not event_type or posted_on is None:
+        raise ValidationError("A journal needs a source key, an event type and a date.")
+    ensure_seeded()
+    existing = JournalEntry.objects.filter(source_key=source_key).first()
+    if existing is not None:
+        return existing
+
+    prepared = []
+    total_debit = ZERO
+    total_credit = ZERO
+    for row in lines:
+        if isinstance(row["account"], str):
+            chart_account = account(row["account"])
+        else:
+            chart_account = row["account"]
+        if not chart_account.is_active:
+            raise ValidationError(f"Account {chart_account.code} is inactive.")
+        debit = ZERO if not row.get("debit") else _money(row["debit"])
+        credit = ZERO if not row.get("credit") else _money(row["credit"])
+        if (debit > ZERO) == (credit > ZERO):
+            raise ValidationError("A journal line is either a debit or a credit, never both.")
+        total_debit += debit
+        total_credit += credit
+        prepared.append(
+            {
+                "account": chart_account,
+                "debit": debit,
+                "credit": credit,
+                "property": row.get("property") or property,
+                "memo": row.get("memo", ""),
+            }
+        )
+    if not prepared:
+        raise ValidationError("A journal needs at least one line.")
+    if total_debit != total_credit:
+        raise ValidationError(
+            f"The journal does not balance: debits {total_debit}, credits {total_credit}."
+        )
+    if property is None and lease is not None:
+        property = lease.unit.property
+
+    try:
+        with transaction.atomic():
+            entry = JournalEntry.objects.create(
+                source_key=source_key,
+                event_type=event_type,
+                posted_on=posted_on,
+                property=property,
+                lease=lease,
+                memo=memo[:500],
+                created_by=actor if getattr(actor, "is_authenticated", False) else None,
+            )
+            JournalLine.objects.bulk_create([JournalLine(entry=entry, **line) for line in prepared])
+    except IntegrityError:
+        # A concurrent poster won the unique source key; its journal is the truth.
+        return JournalEntry.objects.get(source_key=source_key)
+    return entry
+
+
+def post_manual_journal(*, source_key, posted_on, lines, memo, actor, property=None):
+    """A reviewed manual journal, refused on any control account (ADR-032 D4)."""
+    for row in lines:
+        chart_account = (
+            account(row["account"]) if isinstance(row["account"], str) else row["account"]
+        )
+        if chart_account.is_control or chart_account.code in CONTROL_CODES:
+            raise ValidationError(
+                "Control accounts move only from kernel source events; a manual journal "
+                "cannot touch them."
+            )
+    return post_journal(
+        source_key=source_key,
+        event_type="manual",
+        posted_on=posted_on,
+        lines=lines,
+        property=property,
+        memo=memo,
+        actor=actor,
+    )
+
+
+def _income_account(charge) -> ChartAccount:
+    if charge.kind == "NNN":
+        return mapping("charge.NNN")
+    if charge.kind == "RESPONSIBILITY":
+        category = getattr(getattr(charge, "responsibility", None), "category", None)
+        if category == "UTILITY":
+            return mapping("charge.UTILITY")
+        if category == "MAINTENANCE":
+            return mapping("charge.MAINTENANCE")
+        return mapping("charge.OTHER")
+    if charge.kind == "MANUAL":
+        return mapping("charge.MANUAL")
+    if charge.kind == "RENT":
+        return mapping("charge.RENT")
+    return mapping("charge.DEFAULT")
+
+
+def _original_account(charge) -> ChartAccount:
+    original = getattr(charge, "adjusts", None)
+    if original is None:
+        return mapping("charge.DEFAULT")
+    entry = JournalEntry.objects.filter(source_key=f"charge:{original.pk}:created").first()
+    if entry is not None:
+        for line in entry.lines.select_related("account"):
+            if line.account.code != "1200":
+                return line.account
+    return _income_account(original)
+
+
+def post_charge(charge, *, actor=None) -> JournalEntry:
+    """Post a charge or its correction exactly once."""
+    amount = _money(charge.amount)
+    if charge.kind == "ADJUSTMENT":
+        original = charge.adjusts
+        if original is not None and original.kind == "OPENING" and original.direction == "DECREASE":
+            # An opening credit lives in 2400, not AR; correcting it moves 2400/3070.
+            if charge.direction == "INCREASE":
+                lines = [
+                    {"account": "2400", "debit": amount, "memo": charge.description},
+                    {"account": "3070", "credit": amount, "memo": charge.description},
+                ]
+            else:
+                lines = [
+                    {"account": "3070", "debit": amount, "memo": charge.description},
+                    {"account": "2400", "credit": amount, "memo": charge.description},
+                ]
+        else:
+            income = _original_account(charge)
+            if charge.direction == "DECREASE":
+                lines = [
+                    {"account": income, "debit": amount, "memo": charge.description},
+                    {"account": "1200", "credit": amount, "memo": charge.description},
+                ]
+            else:
+                lines = [
+                    {"account": "1200", "debit": amount, "memo": charge.description},
+                    {"account": income, "credit": amount, "memo": charge.description},
+                ]
+        event_type = "charge.adjustment"
+    elif charge.kind == "OPENING" and charge.direction == "DECREASE":
+        # A brought-forward credit is money owed to the tenant, not a receivable reduction.
+        lines = [
+            {"account": "3070", "debit": amount, "memo": charge.description},
+            {"account": "2400", "credit": amount, "memo": charge.description},
+        ]
+        event_type = "charge.opening_credit"
+    elif charge.kind == "OPENING":
+        lines = [
+            {"account": "1200", "debit": amount, "memo": charge.description},
+            {"account": "3070", "credit": amount, "memo": charge.description},
+        ]
+        event_type = "charge.opening_debt"
+    else:
+        income = _income_account(charge)
+        lines = [
+            {"account": "1200", "debit": amount, "memo": charge.description},
+            {"account": income, "credit": amount, "memo": charge.description},
+        ]
+        event_type = f"charge.{charge.kind.lower()}"
+    return post_journal(
+        source_key=f"charge:{charge.pk}:created",
+        event_type=event_type,
+        posted_on=charge.due_date,
+        lines=lines,
+        lease=charge.lease,
+        memo=f"{charge.get_kind_display()}: {charge.description}",
+        actor=actor,
+    )
+
+
+def post_payment(payment, *, transition: str, actor=None) -> JournalEntry:
+    """Post a receipt, a late clearing, or a reversal; pending money posts nothing."""
+    amount = _money(payment.amount)
+    if transition == "reversed":
+        lines = [
+            {"account": "1200", "debit": amount, "memo": f"Reverse payment {payment.pk}"},
+            {"account": "1450", "credit": amount, "memo": "Reversed receipt"},
+        ]
+        event_type = "payment.reversed"
+    else:
+        lines = [
+            {"account": "1450", "debit": amount, "memo": payment.get_method_display()},
+            {"account": "1200", "credit": amount, "memo": "Tenant payment received"},
+        ]
+        event_type = "payment.received"
+    return post_journal(
+        source_key=f"payment:{payment.pk}:{transition}",
+        event_type=event_type,
+        posted_on=payment.payment_date,
+        lines=lines,
+        lease=payment.lease,
+        memo=f"Payment {payment.pk} {payment.get_status_display().lower()}",
+        actor=actor,
+    )
+
+
+def post_application(application, *, actor=None) -> JournalEntry | None:
+    """A credit application moves held tenant credit to AR; receipts are already in AR."""
+    if application.source_deposit_id or application.source_payment_id:
+        return None
+    source_charge = application.source_charge
+    if source_charge is None or source_charge.kind != "OPENING":
+        return None
+    if source_charge.direction != "DECREASE":
+        return None
+    amount = _money(application.amount)
+    released = application.reverses_id is not None
+    if released:
+        lines = [
+            {"account": "1200", "debit": amount, "memo": "Released tenant credit"},
+            {"account": "2400", "credit": amount, "memo": "Released tenant credit"},
+        ]
+        event_type = "credit.released"
+        key = f"application:{application.pk}:released"
+    else:
+        lines = [
+            {"account": "2400", "debit": amount, "memo": "Tenant credit applied"},
+            {"account": "1200", "credit": amount, "memo": "Tenant credit applied"},
+        ]
+        event_type = "credit.applied"
+        key = f"application:{application.pk}:applied"
+    return post_journal(
+        source_key=key,
+        event_type=event_type,
+        posted_on=application.created_at.date() if application.created_at else timezone.localdate(),
+        lines=lines,
+        lease=application.lease,
+        memo=f"Credit application {application.pk}",
+        actor=actor,
+    )
+
+
+def trial_balance(*, as_of=None, property=None):
+    """Every account's debit/credit activity up to ``as_of``, in code order."""
+    lines = JournalLine.objects.select_related("account", "entry")
+    if as_of is not None:
+        lines = lines.filter(entry__posted_on__lte=as_of)
+    if property is not None:
+        lines = lines.filter(property=property)
+    totals = {}
+    for line in lines:
+        row = totals.setdefault(
+            line.account.code,
+            {"account": line.account, "debit": ZERO, "credit": ZERO},
+        )
+        row["debit"] += line.debit
+        row["credit"] += line.credit
+    return [totals[code] for code in sorted(totals)]
+
+
+def account_balance(code: str, *, as_of=None, property=None) -> Decimal:
+    lines = JournalLine.objects.filter(account__code=code)
+    if as_of is not None:
+        lines = lines.filter(entry__posted_on__lte=as_of)
+    if property is not None:
+        lines = lines.filter(property=property)
+    debit = sum((line.debit for line in lines), ZERO)
+    credit = sum((line.credit for line in lines), ZERO)
+    chart_account = account(code)
+    return (debit - credit) if chart_account.normal_side == "DEBIT" else (credit - debit)
+
+
+def net_tenant_receivable(*, as_of=None, property=None) -> Decimal:
+    """AR less tenant credits held: the number the tenant sub-ledger must equal."""
+    return account_balance("1200", as_of=as_of, property=property) - account_balance(
+        "2400", as_of=as_of, property=property
+    )
+
+
+def ar_control_tie(*, as_of=None, property=None):
+    """Compare the GL control to the tenant sub-ledger; any difference is a defect."""
+    from apps.leases.models import Lease
+    from apps.ledger.services import build_ledger
+
+    leases = Lease.objects.exclude(status="DRAFT").select_related("unit__property")
+    if property is not None:
+        leases = leases.filter(unit__property=property)
+    subledger = ZERO
+    for lease in leases:
+        subledger += build_ledger(lease).balance_due
+    control = net_tenant_receivable(as_of=as_of, property=property)
+    return {
+        "control": control.quantize(MONEY),
+        "subledger": subledger.quantize(MONEY),
+        "difference": (control - subledger).quantize(MONEY),
+    }

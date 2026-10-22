@@ -237,7 +237,7 @@ Opening books are a reviewed, owner/accountant-supplied set of facts, not a reco
   were held (kernel rule).
 - Opening balances cannot be posted twice: each batch has a source key and is reviewed.
 
-## 7. Idempotency and invariants to test (when B1 is built)
+## 7. Idempotency and invariants to test (implemented in development)
 
 Planned invariant tests, named now so B1's review can check them:
 
@@ -260,8 +260,9 @@ Planned invariant tests, named now so B1's review can check them:
 10. **Reversal:** a reversed source cannot be reposted; a correction is a new event and both histories
     remain visible.
 
-The B1 implementation is expected to add these as real tests; this readiness document does not claim they
-exist today.
+The B1 engine implements these in `apps/accounting` and `tests/accounting`: balanced journals, unique
+source keys with replay, immutable journals/lines, no manual control postings, AR control ties, and
+tenancy-scoped data (journals point at a lease/property; no tenant-facing journal query exists yet).
 
 ## 8. What B1 will not do
 
@@ -357,4 +358,21 @@ are Robert's to give when his owner account is created; the builder does not sup
 - **Waits for the owner's designation (optional):** external CPA review of the chart/opening journal; the
   builder does not decide the CPA's authority.
 
-No GL table, migration, owner data import or production change is included in this readiness pass.
+## 13. B1 engine — implementation status (2026-10-22)
+
+Implemented in development on `rhp-e10-kernel`:
+
+- `apps/accounting`: chart/mapping/journal models, seeded chart (data migration), posting service,
+  control/trial-balance functions, kernel hooks, a `post_save` hook for opening-credit applications,
+  `accounting_sync` and `accounting_status` commands, and a chart fixture for flushed test databases.
+- Tested: `tests/accounting` covers balanced postings, mapping by charge kind, adjustments, opening
+  debt/credit, receipts/reversals, pending→cleared, replay, immutability, manual-control refusal,
+  opening-credit application/release, receipt-application no-op, generated charges, the AR control tie,
+  backfill idempotency and the status command.
+- Still absent: staff screens/trial-balance page, B1 opening-journal UI, B2 deposits/AP, B3 banks,
+  a first-class write-off action, production data load. Deposits and bank rows are outside B1.
+- The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
+  tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
+  equation the tests assert and is recorded in the implementation note of ADR-032.
+
+No owner data or production initialization is included.

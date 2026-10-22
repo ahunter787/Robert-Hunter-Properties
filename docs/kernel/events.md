@@ -1,6 +1,9 @@
 # Kernel event vocabulary and posting matrix
 
 **Status:** Approved direction, October 21, 2026 — [ADR-028](../decisions/ADR-028-one-kernel.md) D9.
+**Implemented in development, October 22:** the B1 journal engine reads these events through
+`apps/accounting` ([ADR-032](../decisions/ADR-032-b1-readiness.md)); charge, payment, adjustment and
+opening-credit events post now, while deposit/bank rows remain later slices.
 This is the **one** matrix the tenant sub-ledger and the general ledger post from. The GL is built in
 slices B1–B5 ([blueprint](../design/property-accounting.md)); rows marked *B1*/*B2*/*B3* are the slice
 that implements the GL side. The tenant AR column is the sub-ledger fact that exists today (or is added

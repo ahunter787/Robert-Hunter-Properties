@@ -457,6 +457,12 @@ records what RHP keeps (append-only derived sub-ledger, corrections as entries, 
 due-date charging), what it changes (deposits, lifecycle, party) and what is operational work (scheduled
 posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately reviewed.
 
+**October 22 B1 engine implemented — [ADR-032](decisions/ADR-032-b1-readiness.md):** the B1 journal
+engine is building in development: `apps/accounting` adds the seeded chart, immutable sourced journals,
+kernel posting hooks for charges/adjustments/payments/opening credits, AR-control and trial-balance
+services, and `accounting_sync`/`accounting_status` commands. The next B1 work is staff screens and the
+opening-journal UI; B2/B3 remain later slices. The earlier readiness record follows.
+
 **October 22 B1 readiness complete — [ADR-032](decisions/ADR-032-b1-readiness.md):** the B1 contract is
 written down in [B1 readiness](design/b1-readiness.md): a numbered owner chart of accounts with system
 control accounts and a property dimension, an accrual journal set with cash-basis reports as a view, a
@@ -497,7 +503,7 @@ in `design/accounting-cutover-plan.md`. Manual stated balances do not require ve
 The development database is archived/restored before a fresh synthetic database is selected. B1–B5
 accounting remains separately reviewed; no GL, bank matching or tax-readiness is delivered by cutover.
 
-**Status: Building — B1 ready for review, not started.** The decision for the stack is
+**Status: Building — B1 journal engine implemented in development, B1 screens and B2/B3 next.** The decision for the stack is
 [ADR-026](decisions/ADR-026-property-accounting.md), the kernel direction is
 [ADR-028](decisions/ADR-028-one-kernel.md), the working blueprint is
 [the property-accounting study](design/property-accounting.md), and the B1 contract is

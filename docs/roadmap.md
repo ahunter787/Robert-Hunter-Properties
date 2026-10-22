@@ -43,7 +43,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
 | E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
-| E10 | RHP property accounting — general-ledger style books | Building — tenant cutover accepted; core kernel (ADR-028), M2 (ADR-029/030) and E5 (ADR-031) complete; **B1 readiness complete (ADR-032), B1 implementation not started — waits on owner business facts and external review** | ADR-026 / ADR-027 / ADR-028 / ADR-029 / ADR-030 / ADR-031 / ADR-032 | `rhp-e10-kernel` |
+| E10 | RHP property accounting — general-ledger style books | Building — tenant cutover accepted; core kernel (ADR-028), M2 (ADR-029/030) and E5 (ADR-031) complete; **B1 journal engine implemented in development (ADR-032): chart, immutable sourced journals, charge/payment/credit hooks, AR control and trial balance**; next B1 screens/opening UI, then B2/B3 | ADR-026 / ADR-027 / ADR-028 / ADR-029 / ADR-030 / ADR-031 / ADR-032 | `rhp-e10-kernel` |
 | E11 | Operations desk — shared shell and application migration | In main — owner accepted October 19, 2026; local merge authorized | [Implementation](design/implementation.md) | `codex/operations-desk` |
 | E12 | Tenant–RHP messaging (`P8-E1`) — conversations, unread state, protected attachments and email | In main — owner accepted for local merge | [ADR-024](decisions/ADR-024-communications.md) | folded |
 

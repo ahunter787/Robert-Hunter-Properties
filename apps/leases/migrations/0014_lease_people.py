@@ -63,6 +63,7 @@ class Migration(migrations.Migration):
     atomic = False
 
     dependencies = [
+        ("accounts", "0002_phase1_roles_profiles_throttle"),
         ("contacts", "0001_lease_people"),
         ("leases", "0013_future_lease_state"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

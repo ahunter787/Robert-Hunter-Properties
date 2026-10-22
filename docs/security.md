@@ -1,5 +1,14 @@
 # Security
 
+## General ledger — ADR-032
+
+Only the accounting posting service writes journals. It refuses manual entries against tenant AR,
+accounts payable, deposits held, tenant credits, undeposited funds or bank accounts; those move only from
+kernel source events. Journals and lines are immutable, source-keyed and posted in the same transaction as
+their source. No ledger/journal screen exists yet; when one does, manager-only server-side authorization
+and tenant isolation apply as everywhere else (journals carry a lease/property dimension and are never
+exposed through a tenant-scoped query).
+
 ## Move-out settlement — ADR-031
 
 A retained deposit is applied to a bill only through the same manager-only signed review as held credit;

@@ -1195,6 +1195,9 @@ def _create_rent_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
         due_date=due,
         source="rent generation",
     )
+    from apps.accounting.services import post_charge
+
+    post_charge(charge, actor=_actor(actor))
     return [charge]
 
 
@@ -1228,6 +1231,9 @@ def _create_nnn_charge(lease: Lease, due: dt.date, *, actor) -> list[Charge]:
         due_date=due,
         source="NNN generation",
     )
+    from apps.accounting.services import post_charge
+
+    post_charge(charge, actor=_actor(actor))
     return [charge]
 
 
@@ -1351,6 +1357,9 @@ def create_charge(
         due_date=due_date,
         source="starting account" if opening else "manual charge",
     )
+    from apps.accounting.services import post_charge
+
+    post_charge(charge, actor=_actor(actor))
     return charge
 
 
@@ -1412,6 +1421,9 @@ def create_adjustment(
         direction=direction,
         reason=reason,
     )
+    from apps.accounting.services import post_charge
+
+    post_charge(adjustment, actor=_actor(actor))
     return adjustment
 
 
@@ -1513,6 +1525,10 @@ def record_payment(
         status=status,
         external_reference=external_reference,
     )
+    if status == PaymentStatus.CLEARED:
+        from apps.accounting.services import post_payment
+
+        post_payment(payment, transition="recorded", actor=_actor(actor))
     return payment
 
 
@@ -1538,6 +1554,9 @@ def clear_payment(payment: Payment, *, actor=None) -> Payment:
         amount=payment.amount,
         payment_date=payment.payment_date,
     )
+    from apps.accounting.services import post_payment
+
+    post_payment(payment, transition="cleared", actor=_actor(actor))
     return payment
 
 
@@ -1607,6 +1626,9 @@ def reverse_payment(payment: Payment, *, reason: str, actor=None) -> Payment:
         reversed_payment=str(payment.pk),
         reason=reason,
     )
+    from apps.accounting.services import post_payment
+
+    post_payment(payment, transition="reversed", actor=_actor(actor))
     return reversal
 
 

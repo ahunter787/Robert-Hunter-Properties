@@ -97,6 +97,28 @@ questionnaire. The owner has a CPA, but whether that CPA is the authority over t
 call; RHP neither requires nor appoints a reviewer. Bank accounts are B3 data entered through the registry
 and provider-agnostic connection adapter, not code constants (readiness §2.1).
 
+## Implementation note (2026-10-22)
+
+The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, no B2/B3):
+
+- `apps/accounting` adds `ChartAccount`, `AccountMapping`, `JournalEntry` and `JournalLine`, with
+  the chart and mappings seeded by a data migration.
+- `post_journal` is the only writer: unique `source_key`, balanced lines, same-transaction posting,
+  replay returns the existing journal, and journals/lines are immutable. Manual journals to control
+  accounts are refused.
+- The kernel hooks post `Charge` creation (rent, NNN, responsibility, manual, adjustment, opening
+  debt/credit), generated scheduled charges, cleared/cleared-later/reversed payments, and opening-credit
+  applications/releases. Receipt applications remain allocations (the receipt is already in AR).
+- `ar_control_tie()` compares `1200 AR − 2400 tenant credits` to the lease sub-ledger; the test suite
+  asserts the difference is zero. `trial_balance()` and `account_balance()` derive every figure from
+  lines.
+- `manage.py accounting_sync` bridges existing sub-ledger history idempotently;
+  `manage.py accounting_status` prints the trial balance, AR tie and unposted events. A pytest
+  fixture reseeds the chart in flushed transaction-test databases.
+- Not yet built: staff screens, the B1 opening-journal UI, B2 deposit/AP posting, B3 bank accounts and
+  reconciliation, write-off as a first-class action, and a production data load. Deposit rows stay
+  out of B1. These are the next slices, not missing pieces of the journal engine.
+
 ## Consequences
 
 - B1's scope is now a closed contract: chart, journal shape, source keys, control restrictions, matrix,

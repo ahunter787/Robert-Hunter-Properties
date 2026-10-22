@@ -32,7 +32,9 @@ GL boundary — lives in [`docs/kernel/events.md`](kernel/events.md) and
 write path: `LeaseOpeningRecord` for starting accounts, persisted `FundsApplication` rows for allocation,
 and `ledger.services.create_charge` as the only charge writer. A security deposit is a held liability
 register with a move-out outcome, not a lease-only number that blocks settlement. A lease party is a
-`contacts.Person`; the portal login is an optional link on their membership (ADR-030).
+`contacts.Person`; the portal login is an optional link on their membership (ADR-030). The B1 general
+ledger now sits beside the sub-ledger in `apps/accounting`: a seeded chart, immutable source-keyed
+journals and an AR control read from the same kernel events (ADR-032).
 
 **Status: Phase 7, E11 and Phase 8 owner-accepted for the local baseline.** Identity, portfolio,
 leases, the rent ledger, tenant pages and documents are established; maintenance adds private
