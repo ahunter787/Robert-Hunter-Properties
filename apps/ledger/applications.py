@@ -104,6 +104,23 @@ def read(ledger):
                     "available": -line.net_amount - used,
                 }
             )
+    # A retained deposit is a source of credit against final charges, but it is not cash
+    # received again (ADR-031). ``is_deposit`` keeps it out of the tenant's "credit" figure.
+    for entry in ledger.lease.deposit_entries.all():
+        if entry.kind != "WITHHELD":
+            continue
+        used = sum((row.amount for row in rows if row.source_deposit_id == entry.pk), ZERO)
+        sources.append(
+            {
+                "value": f"deposit:{entry.pk}",
+                "label": f"Deposit retained {entry.date} · #{entry.pk}",
+                "available": entry.amount - used,
+                "is_deposit": True,
+            }
+        )
+    ledger.deposit_applied = sum(
+        (row.amount for row in rows if row.source_deposit_id is not None), ZERO
+    )
     ledger.credit_sources = [source for source in sources if source["available"] > ZERO]
     _project_pending(ledger)
 
@@ -136,6 +153,7 @@ def release(row, *, actor=None, reason="", review_key=""):
         lease_id=row.lease_id,
         source_payment_id=row.source_payment_id,
         source_charge_id=row.source_charge_id,
+        source_deposit_id=row.source_deposit_id,
         target_id=row.target_id,
         installment_key=row.installment_key,
         amount=row.amount,
@@ -209,6 +227,7 @@ def reconcile_correction(charge, *, actor=None, release_target=True):
                     lease=row.lease,
                     source_payment_id=row.source_payment_id,
                     source_charge_id=row.source_charge_id,
+                    source_deposit_id=row.source_deposit_id,
                     target_id=row.target_id,
                     installment_key=row.installment_key,
                     amount=kept,

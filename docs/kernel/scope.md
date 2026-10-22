@@ -121,6 +121,18 @@ The GL is a **posting target**, not a second calculation:
   posted journal: corrections are reversing entries, as everywhere in RHP.
 - Cash basis is a report view over the same entries; it is not a second set of journals.
 
+## Move-out settlement (ADR-031)
+
+A held deposit leaves the liability in exactly three ways: returned, retained, or explicitly never
+collected. A retention releases the held balance; a manager may then apply part of the retained money
+against an unpaid bill through the same signed credit review used for held credit — a recorded
+`FundsApplication` sourced from the deposit, never a new receipt. The final statement is a report over
+that same ledger plus the deposit register, not a second balance; issuing it appends an immutable audit
+snapshot, and a correction is a new issue. The forwarding address is a lease fact captured at move-out.
+A retained amount not applied to AR is a released liability whose income recognition belongs to the GL
+(B2); no damage charge is invented here (E6). The statutory return window is jurisdiction-specific and
+is recorded as an owner-fact unknown, not hard-coded.
+
 ## Upcoming tenancies and people (ADR-029)
 
 A signed tenancy whose start date is ahead is `FUTURE`: scheduled, not occupancy, and **not an

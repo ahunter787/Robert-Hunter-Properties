@@ -23,8 +23,14 @@ BEFORE = [
     ("documents", "0001_initial"),
 ]
 AFTER = ("documents", "0002_lease_files_become_documents")
+
+
 #: The end of the chain, so a test never leaves the schema in a half-migrated state.
-LATEST = ("leases", "0011_lease_financial_ready_financialcutover_and_more")
+def latest():
+    executor = MigrationExecutor(connection)
+    executor.loader.build_graph()
+    return executor.loader.graph.leaf_nodes()
+
 
 NOTE = "Brought in from the lease's single file when documents arrived (Phase 6)."
 
@@ -94,7 +100,7 @@ def test_a_lease_file_becomes_a_tenant_visible_document_row(settings):
         assert document.note == NOTE
         assert (settings.MEDIA_ROOT / document.file.name).exists()
     finally:
-        migrate(LATEST)
+        migrate(latest())
 
 
 def test_a_lease_file_without_a_name_reads_as_the_signed_lease():
@@ -110,7 +116,7 @@ def test_a_lease_file_without_a_name_reads_as_the_signed_lease():
         assert document.original_name == ""
         assert document.file.name == "lease_documents/def456.pdf"
     finally:
-        migrate(LATEST)
+        migrate(latest())
 
 
 def test_reversing_removes_the_migrated_rows_and_gives_the_field_back():
@@ -133,7 +139,7 @@ def test_reversing_removes_the_migrated_rows_and_gives_the_field_back():
         assert reversed_lease.lease_document_name == "Scan.pdf"
         assert not Document.objects.exists(), "only the rows the migration made are removed"
     finally:
-        migrate(LATEST)
+        migrate(latest())
 
 
 def test_only_the_rows_this_migration_made_are_removed_on_the_way_back():
@@ -159,7 +165,7 @@ def test_only_the_rows_this_migration_made_are_removed_on_the_way_back():
         assert not Document.objects.filter(note=NOTE).exists()
         assert restore.get_model("leases", "Lease").objects.get(pk=lease.pk).lease_file
     finally:
-        migrate(LATEST)
+        migrate(latest())
 
 
 def test_the_migration_runs_twice_without_filing_the_same_file_twice():
@@ -182,7 +188,7 @@ def test_the_migration_runs_twice_without_filing_the_same_file_twice():
 
         assert Document.objects.filter(lease_id=lease.pk, category="LEASE").count() == 1
     finally:
-        migrate(LATEST)
+        migrate(latest())
 
 
 def test_a_document_the_migration_made_is_the_one_the_tenant_can_open():
@@ -200,9 +206,9 @@ def test_a_document_the_migration_made_is_the_one_the_tenant_can_open():
     try:
         migrate(AFTER)
         # Live ORM models must read the current schema, not the migration's historical state.
-        migrate(LATEST)
+        migrate(latest())
         document = LiveDocument.objects.get(lease_id=lease.pk)
         assert document.is_visible_to(ada)
         assert LiveDocument.objects.visible_to(ada).filter(pk=document.pk).exists()
     finally:
-        migrate(LATEST)
+        migrate(latest())

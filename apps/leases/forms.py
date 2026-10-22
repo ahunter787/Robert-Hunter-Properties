@@ -312,6 +312,16 @@ class LeaseEndForm(StyledForm):
         error_messages={"required": "Add the detail behind the reason."},
         help_text="Who asked, what was agreed, what was served. Two or three sentences.",
     )
+    forwarding_address = forms.CharField(
+        max_length=500,
+        required=False,
+        label="Forwarding address (optional)",
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text=(
+            "Where the final statement and any deposit refund are sent. It can be added or "
+            "changed later on the move-out statement."
+        ),
+    )
 
     def __init__(self, *args, lease=None, **kwargs):
         super().__init__(*args, **kwargs)

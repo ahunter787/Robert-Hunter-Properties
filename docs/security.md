@@ -1,5 +1,16 @@
 # Security
 
+## Move-out settlement — ADR-031
+
+A retained deposit is applied to a bill only through the same manager-only signed review as held credit;
+the action lists the deposit as its source, validates availability and the target obligation server-side,
+and records an append-only application (an undo is a release row). The final statement is derived from
+the scoped ledger and deposit register; issuing it is manager-only and appends an immutable audit snapshot
+with the forwarding address and itemised deposit reasons. A tenant sees only their own statement through
+`visible_for`, and staff-only deposit evidence links are never rendered to them. The forwarding address is
+personal data stored on the lease and shown on the staff statement screen; it is not exposed to other
+tenants. No statutory deadline is enforced until the owner supplies the operating jurisdiction.
+
 ## People and portal logins — ADR-030 M2b
 
 A lease party is a `contacts.Person`; a portal login is an optional link on that person's lease

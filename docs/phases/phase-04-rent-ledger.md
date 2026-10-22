@@ -131,9 +131,9 @@ page, the authorization matrix, and the ledger screens.
 
 Proration (a part month is a one-off charge typed by the office); late fees and interest (manual charge with
 a reason if ever needed — see `extensions.md`); invoicing, statements and receipts as documents (Phase 6
-makes them possible); the E5 remainder of move-out settlement (final statement, forwarding address,
-withheld-to-arrears) — the held-deposit register and outcome are now present (ADR-028 D5); any payment
-provider (Phase 11).
+makes them possible); the E5 remainder of move-out settlement — delivered later as an extension, not
+inside Phase 4 (ADR-028 D5 held-deposit register; ADR-031 final statement, forwarding address and
+withheld-to-arrears); any payment provider (Phase 11).
 
 ## Known gaps and defects
 
@@ -147,10 +147,11 @@ What is still open here:
 
 - **Post-tenancy charges with their just cause (E6) are blocked by Phase 6.** Reopening a financial
   account does not restore occupancy or permit recurring rent; E6 will add the evidence-backed exception.
-- **Move-out settlement (E5) remains partial, but settlement now has a path.** A nonzero recorded deposit is
-  tracked as a held liability with an explicit move-out outcome (ADR-028 D5); the financial account can
-  settle once nothing is held and an outcome is recorded. The E5 remainder — forwarding address, final
-  statement, and applying withheld funds to outstanding arrears — is still open.
+- **Move-out settlement (E5) is built in development (ADR-031).** A retained deposit can be applied to
+  outstanding arrears through the reviewed credit action, the final statement is derived and its issue
+  recorded as an immutable snapshot, and the forwarding address is captured at move-out; the account can
+  settle once nothing is held and an outcome is recorded. Remaining: statutory deadline configuration
+  needs the owner's jurisdiction (recorded as an owner fact) and refund disbursement is B3.
 - **A unit's ledger history (E7)** — the office can see a unit's tenancies one at a time, not as a history.
 - The audit trail is written but has no browser until Phase 9.
 - Lease 14 still carries the November charge raised under the old horizon rule. It is left alone; a

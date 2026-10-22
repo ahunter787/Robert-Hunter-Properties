@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Final statement — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">
+        <a href="{% url 'payments:home' %}" class="underline-offset-2 hover:underline">Payments</a>
+      </p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Final statement</h1>
+      {% if lease %}<p class="mt-2 text-sm text-ink-muted">{{ lease.unit.display_name }} · {{ lease.unit.property.name }}</p>{% endif %}
+    </div>
+
+    {% if not statement %}
+      <p class="rhp-card text-sm text-ink-muted">The final statement is available after the tenancy ends.</p>
+    {% else %}
+      <section class="rhp-card">
+        <p class="text-sm">
+          Tenancy {{ lease.start_date|date:"M j, Y" }}–{{ lease.ended_on|date:"M j, Y" }}.
+          {{ statement.outcome_label }}{% if statement.outcome_amount > 0 %}: {{ statement.outcome_amount|money }}{% endif %}.
+        </p>
+        <dl class="workspace-facts mt-4">
+          <div><dt>Charged over the tenancy</dt><dd>{{ statement.charged|money }}</dd></div>
+          <div><dt>Paid</dt><dd>{{ statement.paid|money }}</dd></div>
+          <div><dt>Deposit received</dt><dd>{{ statement.deposit_received|money }}</dd></div>
+          <div><dt>Deposit applied to charges</dt><dd>{{ statement.deposit_applied|money }}</dd></div>
+          <div><dt>Deposit returned</dt><dd>{{ statement.deposit_returned|money }}</dd></div>
+          <div><dt>Deposit withheld</dt><dd>{{ statement.deposit_withheld|money }}</dd></div>
+          <div><dt>Still held</dt><dd>{{ statement.deposit_held|money }}</dd></div>
+        </dl>
+        {% if statement.deposit_not_collected %}<p class="mt-3 text-sm text-ink-muted">No deposit was collected.</p>{% endif %}
+      </section>
+
+      <section class="rhp-card">
+        <h2 class="text-sm font-semibold">Deposit and deductions</h2>
+        {% if statement.deposit_entries %}
+          <ul class="mt-3 space-y-2 text-sm">
+            {% for entry in statement.deposit_entries %}
+              <li class="border-t border-surface-muted pt-2">
+                <span class="font-medium">{{ entry.get_kind_display }}</span> · {{ entry.amount|money }} · {{ entry.date|date:"M j, Y" }}
+                {% if entry.reason %}· {{ entry.reason }}{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="mt-2 text-sm text-ink-muted">No deposit was recorded on this tenancy.</p>
+        {% endif %}
+      </section>
+
+      {% if statement.issued_at %}
+        <p class="text-sm text-ink-muted">Statement issued {{ statement.issued_at|date:"M j, Y" }}. If something looks wrong, contact Robert Hunter Properties.</p>
+      {% else %}
+        <p class="text-sm text-ink-muted">This is the current accounting; the office records when the statement was issued. If something looks wrong, contact Robert Hunter Properties.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+{% endblock %}

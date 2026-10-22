@@ -8,11 +8,13 @@ from django.utils import timezone
 from django.views import View
 
 from apps.accounts.permissions import ManagerRequiredMixin
+from apps.audit.models import AuditAction
+from apps.audit.services import record as audit_record
 from apps.common.forms import StyledForm
 from apps.leases.models import Lease
-from apps.ledger import deposits
+from apps.ledger import deposits, statements
 from apps.ledger import finance_reviews as reviews
-from apps.ledger.forms import DepositForm
+from apps.ledger.forms import DepositForm, ForwardingAddressForm, IssueStatementForm
 from apps.ledger.services import build_ledger
 
 
@@ -164,5 +166,69 @@ class DepositView(ManagerRequiredMixin, View):
                 "entries": deposits.entries(lease),
                 "held": deposits.held(lease),
                 "agreed": lease.deposit,
+            },
+        )
+
+
+class MoveOutStatementView(ManagerRequiredMixin, View):
+    """The final accounting: what was owed, paid, withheld and returned (E5, ADR-031)."""
+
+    template_name = "management/move_out_statement.html"
+
+    def get(self, request, pk):
+        return self.handle(request, pk)
+
+    def post(self, request, pk):
+        return self.handle(request, pk)
+
+    def handle(self, request, pk):
+        from django.db import transaction
+
+        lease = get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
+        if lease.status != "ENDED":
+            messages.error(request, "The move-out statement belongs to a tenancy that has ended.")
+            return redirect("leases:lease-detail", pk=lease.pk)
+        if request.method == "POST" and request.POST.get("action") == "address":
+            form = ForwardingAddressForm(request.POST)
+            if form.is_valid():
+                with transaction.atomic():
+                    locked = Lease.objects.select_for_update().get(pk=pk)
+                    locked.forwarding_address = form.cleaned_data["forwarding_address"].strip()
+                    locked.save(update_fields=["forwarding_address", "updated_at"])
+                    audit_record(
+                        request.user,
+                        AuditAction.MOVE_OUT_DETAILS_UPDATED,
+                        obj=locked,
+                        lease=locked,
+                        summary=f"Forwarding address recorded for {locked.unit.label}",
+                        forwarding_address=locked.forwarding_address,
+                    )
+                messages.success(request, "The forwarding address was saved.")
+                return redirect("ledger:move-out", pk=pk)
+        elif request.method == "POST" and request.POST.get("action") == "issue":
+            issue_form = IssueStatementForm(request.POST)
+            if issue_form.is_valid():
+                try:
+                    statements.issue(
+                        lease, actor=request.user, note=issue_form.cleaned_data["note"]
+                    )
+                except ValidationError as exc:
+                    messages.error(request, " ".join(exc.messages))
+                else:
+                    messages.success(request, "The final statement was recorded as issued.")
+                return redirect("ledger:move-out", pk=pk)
+
+        statement = statements.attach_issued(statements.build(lease))
+        return render(
+            request,
+            self.template_name,
+            {
+                "lease": lease,
+                "statement": statement,
+                "address_form": ForwardingAddressForm(
+                    initial={"forwarding_address": lease.forwarding_address}
+                ),
+                "issue_form": IssueStatementForm(),
+                "last_issued": statements.latest(lease),
             },
         )

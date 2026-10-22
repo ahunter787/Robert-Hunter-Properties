@@ -71,6 +71,15 @@ class FundsApplication(ImmutableCutoverRecord):
         on_delete=models.PROTECT,
         related_name="credit_applications",
     )
+    #: A retained security deposit applied to a bill. It is not a new receipt: the money
+    #: was already held as the tenant's, and this moves it against a charge (ADR-031).
+    source_deposit = models.ForeignKey(
+        "DepositEntry",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="funds_applications",
+    )
     target = models.ForeignKey(
         "Charge", on_delete=models.PROTECT, related_name="funds_applications"
     )
@@ -93,8 +102,21 @@ class FundsApplication(ImmutableCutoverRecord):
             ),
             models.CheckConstraint(
                 condition=(
-                    models.Q(source_payment__isnull=False, source_charge__isnull=True)
-                    | models.Q(source_payment__isnull=True, source_charge__isnull=False)
+                    models.Q(
+                        source_payment__isnull=False,
+                        source_charge__isnull=True,
+                        source_deposit__isnull=True,
+                    )
+                    | models.Q(
+                        source_payment__isnull=True,
+                        source_charge__isnull=False,
+                        source_deposit__isnull=True,
+                    )
+                    | models.Q(
+                        source_payment__isnull=True,
+                        source_charge__isnull=True,
+                        source_deposit__isnull=False,
+                    )
                 ),
                 name="application_one_source",
             ),

@@ -319,6 +319,10 @@ class Lease(models.Model):
         related_name="settled_lease_accounts",
     )
     settlement_note = models.CharField(max_length=200, blank=True)
+    forwarding_address = models.TextField(
+        blank=True,
+        help_text="Where the final statement and any deposit refund are sent after move-out.",
+    )
     ended_on = models.DateField(
         null=True,
         blank=True,

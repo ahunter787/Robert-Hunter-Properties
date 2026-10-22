@@ -6,7 +6,7 @@ branches until they were folded. **The tenancy-and-money work is built** too, bu
 is a specification amendment (the states and what they mean for money), recorded below and in
 [ADR-017](decisions/ADR-017-charge-lifecycle.md) and
 [ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is complete and in `main`**;
-it is the phase E6 was waiting for, so **E6 is no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
+it is the phase E6 was waiting for, so **E6 is no longer blocked** — it follows **E5 (move-out settlement), built in development (ADR-031)**. **E3
 (concessions) is proposed**, re-scoped by the owner's own 2022 example; **E7 (a unit's ledger history)
 and E8 (early termination) are proposed; **E10 (property accounting) is building** — the owner's decision to
 build it, and to export to an accountant rather than integrate an external ledger, is
@@ -29,7 +29,7 @@ parser accepts the longer form.
 | **E2** | **Property responsibilities charged to the unit** (`P4-E2`) — utilities and maintenance recovered from the tenant, with the tenant's month readable | Additive | **In `main`** — [ADR-014](decisions/ADR-014-property-responsibilities.md) |
 | **E3** | **Concessions** (`P4-E3`) — forgiveness, a deferral plan, and the term extension that goes with them | Additive | Proposed, re-scoped — see section 4 |
 | **E4** | **Retroactive onboarding** (`P4-E4`) — bringing a tenancy that started before RHP in, without inventing a debt | Core-semantic | **In `main`** — [ADR-016](decisions/ADR-016-retroactive-onboarding.md) |
-| **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | Proposed — next up; the owner's "P4-E5 is good" (P4-Q6) |
+| **E5** | **Move-out settlement** (`P4-E5`) — the deposit returned or withheld, deductions with their reasons, a final statement, a forwarding address | Additive | **Built in development** — [ADR-031](decisions/ADR-031-move-out-settlement.md): retained deposit applied to arrears through the reviewed credit action, derived final statement with issued snapshot, forwarding address; state deadline remains an owner fact |
 | **E6** | **Post-tenancy charges with their evidence** (`P4-E6`) — damage, cleaning, an unpaid balance, an NSF fee, an early termination fee, each carrying a reason code, the lease clause it rests on and its documents | Additive | **Proposed** — was waiting on Phase 6, which is now built; the owner's decision: a charge always has its evidence from the day it exists |
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
@@ -327,8 +327,13 @@ unnecessary — a lease can be re-onboarded through the screens while it has no 
 
 ## 6. E5 — Move-out settlement (`P4-E5`)
 
-**Status: proposed**, agreed in principle by the owner (P4-Q6: *"P4-E5 is good"*), and the next piece
-now that the lifecycle work and Phase 6 are behind us.
+**Status: built in development (ADR-031), 2026-10-22.** Agreed in principle by the owner (P4-Q6:
+*"P4-E5 is good"*). The remainder — applying a retained deposit to arrears, the final statement, and
+the forwarding address — is implemented on the existing deposit register and ledger: a retention is
+released from held money, a manager applies part of it against a bill through the reviewed credit
+action (never as a new receipt), and a derived statement records what was charged, paid, withheld,
+returned and still owed, with an immutable issue snapshot and a tenant-portal copy. The statutory
+return window is state-specific and is recorded as an owner-fact unknown rather than guessed.
 
 The lifecycle correction now permits settlement of an ended, zero-balance account with no pending payment
 and no nonzero recorded deposit. Managers can reopen only the financial account with a reason. That is

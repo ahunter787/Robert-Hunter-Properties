@@ -144,3 +144,27 @@ class DepositForm(forms.Form):
         self.fields["evidence"].queryset = Document.objects.filter(
             lease=lease, tenant_visible=False
         )
+
+
+class ForwardingAddressForm(forms.Form):
+    """Where the final statement and any refund are sent after move-out."""
+
+    forwarding_address = forms.CharField(
+        max_length=500,
+        required=False,
+        label="Forwarding address",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Street, city, state and postal code. It can be added later.",
+    )
+
+
+class IssueStatementForm(forms.Form):
+    """Mark the final accounting as issued; the event records who and when."""
+
+    note = forms.CharField(
+        max_length=500,
+        required=False,
+        label="Note for the record",
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Optional: how it was delivered or what was said.",
+    )

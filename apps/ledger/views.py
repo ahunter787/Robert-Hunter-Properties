@@ -388,6 +388,29 @@ class ChargeAdjustView(ManagerRequiredMixin, View):
 # --- The tenant's own money -----------------------------------------------
 
 
+class TenantFinalStatementView(TenantAreaMixin, TemplateView):
+    """The tenant's own final accounting after a tenancy ends (E5, ADR-031)."""
+
+    template_name = "tenancy/final_statement.html"
+
+    def get_context_data(self, **kwargs):
+        from apps.ledger import statements
+
+        context = super().get_context_data(**kwargs)
+        # A tenant may have moved between RHP properties; the most recent ended tenancy
+        # owns the final statement even when a newer current lease exists.
+        lease = Lease.objects.for_tenant(self.request.user).filter(status="ENDED").order_by(
+            "-ended_on", "-pk"
+        ).first() or Lease.objects.visible_for(self.request.user)
+        context["lease"] = lease
+        context["statement"] = (
+            statements.attach_issued(statements.build(lease))
+            if lease is not None and lease.status == "ENDED"
+            else None
+        )
+        return context
+
+
 class TenantPaymentsView(TenantAreaMixin, TemplateView):
     """A tenant's own payment history: what was charged, what was paid.
 

@@ -37,7 +37,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
 | E2 | Property responsibilities charged to the unit | **In `main`** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | folded |
 | E4 | Retroactive onboarding, and a stated rent schedule | **Retired** — the stated-rent part is in `main`; the onboarding mechanism is retired by ADR-028 (ADR-027 supersedes it) | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | folded |
-| E5 | Move-out settlement — the deposit, deductions, a final statement | Proposed — the next piece | — | — |
+| E5 | Move-out settlement — the deposit, deductions, a final statement | Built in development — ADR-031; awaiting review/merge | ADR-031 | `rhp-e10-kernel` |
 | E6 | Post-tenancy charges with their evidence | Proposed — no longer blocked by Phase 6 | — | — |
 | E7 | A unit's ledger history | Proposed | — | — |
 | E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |

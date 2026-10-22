@@ -453,6 +453,7 @@ def confirm(lease_id, *, token, actor):
                         lease=lease,
                         source_payment_id=row.source_payment_id,
                         source_charge_id=row.source_charge_id,
+                        source_deposit_id=row.source_deposit_id,
                         target=charge,
                         installment_key=matching.key,
                         amount=portion,

@@ -20,6 +20,9 @@
     </div>
 
     {% if lease %}
+      {% if lease.is_ended %}
+        <p class="text-sm"><a class="rhp-link" href="{% url 'payments:final-statement' %}">Read your final statement</a></p>
+      {% endif %}
       {% if lease.is_future %}
         <p class="rhp-alert border-primary/30 bg-primary/5" role="status">
           Your tenancy begins {{ lease.start_date|date:"M j, Y" }}. Nothing is due yet; this page fills in

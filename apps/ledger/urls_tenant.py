@@ -13,4 +13,5 @@ app_name = "payments"
 
 urlpatterns = [
     path("", views.TenantPaymentsView.as_view(), name="home"),
+    path("final-statement/", views.TenantFinalStatementView.as_view(), name="final-statement"),
 ]

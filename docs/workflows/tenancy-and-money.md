@@ -54,8 +54,10 @@ Settlement is a separate act. It requires:
 - a zero account balance, with no credit remaining;
 - no pending payment; and
 - nothing left held on the security-deposit register, and a recorded move-out outcome (returned,
-  itemised retention, or explicitly not collected) — ADR-028 D5. The E5 remainder is the final statement
-  and applying a retention to outstanding arrears.
+  itemised retention, or explicitly not collected) — ADR-028 D5 — and, after ADR-031, a retained
+  deposit can be applied to outstanding arrears through the reviewed credit action, the final statement
+  records the whole account, and the forwarding address is captured at move-out. The remaining external
+  dependencies are the owner's state deadline rule and refund disbursement (B3).
 
 Settlement records the timestamp, manager, optional note, and an audit event. Reopening requires a reason,
 records another audit event, and changes only `account_status` to `OPEN`. It never changes `ended_on`,
@@ -83,7 +85,8 @@ The defect led to three durable rules:
 
 ## Deliberately later
 
-- P4-E5: deposit disposition, deductions, forwarding address, and final statement.
+- P4-E5: deposit disposition, deductions, forwarding address, and final statement — built in
+  development (ADR-031); state deadline configuration awaits the owner's jurisdiction.
 - P4-E6: post-tenancy charges carrying a reason code, governing lease clause, and supporting evidence.
 - P4-E7: a staff-only unit ledger history spanning tenancies.
 - P3-E2: tenant-requested early termination.

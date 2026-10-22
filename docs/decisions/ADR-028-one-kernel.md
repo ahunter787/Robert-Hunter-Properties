@@ -209,7 +209,8 @@ scoping methods are real duplication, but they are not this change. They consoli
 
 - B1 chart/classification of the credit and prepayment controls (kernel events records the decision; the
   chart is B1 work).
-- E5 remainder: forwarding address, final statement, and withholding applied to outstanding AR.
+- E5 remainder: forwarding address, final statement, and withholding applied to outstanding AR —
+  implemented in [ADR-031](ADR-031-move-out-settlement.md).
 - Phase 12: scheduled posting of recurring charges, and the browser/print verification gaps already
   recorded in the cutover plan.
 - M2 design detail (FUTURE promotion points; Person migration sequence) belongs to its own ADR when it

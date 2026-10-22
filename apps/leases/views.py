@@ -365,6 +365,7 @@ class LeaseEndView(ManagerRequiredMixin, View):
                 reason=form.cleaned_data["reason"],
                 note=form.cleaned_data["note"],
                 keep=keep,
+                forwarding_address=form.cleaned_data.get("forwarding_address", ""),
                 actor=request.user,
             )
         except ValidationError as exc:

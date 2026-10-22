@@ -583,6 +583,7 @@ def end_lease(
     reason: str,
     note: str,
     keep=(),
+    forwarding_address: str = "",
     actor=None,
 ) -> list:
     """End a running tenancy: the paperwork, then the money (P4-Q1, P4-Q2).
@@ -613,10 +614,11 @@ def end_lease(
     lease.ended_on = ended_on
     lease.end_reason = reason
     lease.end_reason_note = note.strip()
+    lease.forwarding_address = (forwarding_address or "").strip()
     _set_status(
         lease,
         LeaseStatus.ENDED,
-        fields=["ended_on", "end_reason", "end_reason_note"],
+        fields=["ended_on", "end_reason", "end_reason_note", "forwarding_address"],
     )
     adjustments = ledger_services.close_out_lease(
         lease,
@@ -641,6 +643,7 @@ def end_lease(
         end_reason_note=lease.end_reason_note,
         closed_out=len(adjustments),
         kept=len(list(keep)),
+        forwarding_address=lease.forwarding_address,
     )
     return adjustments
 

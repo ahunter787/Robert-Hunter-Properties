@@ -622,6 +622,18 @@ login is optional:
   optionally invite them, and link an existing unlinked tenant account. No second authentication model
   is introduced.
 
+AMENDMENT, 2026-10-22 (move-out settlement, recorded in ADR-031). The E5 remainder is implemented:
+
+- A retained security deposit can be applied against an unpaid final bill through the reviewed credit
+  action; it is a recorded application sourced from the deposit, never a new receipt. The remainder is
+  returned or explicitly not collected; then the account can settle.
+- The final statement is derived from the same ledger and deposit register (charges, payments, deposit
+  received/applied/returned/withheld, outcome) and can be issued; issuing appends an immutable audit
+  snapshot and a correction is a new statement. The tenant sees their own copy.
+- The forwarding address is captured at move-out or on the statement screen and is audited.
+- The statutory return/itemisation deadline is jurisdiction-specific: RHP records the issue date and
+  does not enforce a guessed deadline. Post-tenancy damage charges remain E6; refund disbursement is B3.
+
 PHASE 4 — RENT LEDGER
 ---------------------
 

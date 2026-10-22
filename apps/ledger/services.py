@@ -399,6 +399,7 @@ class LeaseLedger:
     lease: Lease
     charges: list[ChargeLine] = field(default_factory=list)
     payments: list[Payment] = field(default_factory=list)
+    deposit_applied: Decimal = ZERO
     reversed_payment_ids: set = field(default_factory=set)
     obligations: list = field(default_factory=list)
     credit_sources: list = field(default_factory=list)
@@ -431,12 +432,20 @@ class LeaseLedger:
         """Positive: owed. Negative: a credit on the account."""
         charged = sum((line.charge.balance_effect for line in self.charges), ZERO)
         paid = sum((payment.amount for payment in self.effective_payments), ZERO)
-        return (charged - paid).quantize(ZERO)
+        # A retained deposit applied to a bill moves held money, not new cash.
+        return (charged - paid - self.deposit_applied).quantize(ZERO)
 
     @property
     def credit(self) -> Decimal:
-        """Unapplied credit held for this tenant: money available, not yet applied."""
-        return sum((source["available"] for source in self.credit_sources), ZERO)
+        """Unapplied credit held for this tenant: money available, not yet applied.
+
+        A retained security deposit is available to apply to final charges but is not the
+        tenant's spendable credit; it is shown separately on the move-out statement.
+        """
+        return sum(
+            (source["available"] for source in self.credit_sources if not source.get("is_deposit")),
+            ZERO,
+        )
 
     @property
     def future_repayments(self):
@@ -969,6 +978,7 @@ def build_ledgers(leases) -> dict[int, LeaseLedger]:
             "payments",
             "funds_applications",
             "repayment_plans__installments",
+            "deposit_entries",
         )
     result = {}
     for lease in leases:
