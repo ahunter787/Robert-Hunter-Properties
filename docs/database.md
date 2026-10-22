@@ -127,6 +127,8 @@ and `lease_document_name` (ADR-022).
 | `accounting_accountmapping` | event key → default account for charges/write-offs | unique `event_key`; seeded by data migration |
 | `accounting_journalentry` | one balanced, sourced, immutable journal | unique `source_key` (`model:pk:transition`); source event type, posting date, property/lease dimension, `reversal_of` one-to-one; updates/deletes refused; corrections are reversing entries |
 | `accounting_journalline` | a debit or credit line | exactly one side positive via `CheckConstraint`; nonnegative; immutable; account/property dimensions |
+| `accounting_openingbalancebatch` | a reviewed opening balance sheet | unique key, date, source/review note, creator, one journal; immutable once posted |
+| `accounting_openingbalanceline` | one opening debit/credit | exactly one side positive; asset/liability/equity accounts only; optional property |
 | `ledger_depositentry` | the held-deposit register: received, returned, retained, or explicitly not collected | append-only (`save()` refuses edits, `delete()` raises); `CheckConstraint` makes zero legal only for `NOT_COLLECTED`; a retention and a "not collected" require a reason; optional private `documents_document` evidence; the derived `received − returned − withheld` is what RHP holds (ADR-028 D5). No row is ever inferred from `Lease.deposit` |
 | `audit_audit_event` | who changed what, and when | `actor` (`SET_NULL`), `lease` (`SET_NULL`), `action`, `object_type`/`object_id`, `summary`, a small JSON `metadata`, `created_at`; indexed on `(object_type, object_id)`, `(lease, created_at)`, `(action, created_at)` and `created_at` |
 

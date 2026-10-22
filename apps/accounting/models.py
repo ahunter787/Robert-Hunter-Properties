@@ -186,3 +186,70 @@ class JournalLine(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Journal lines are immutable; post a reversing entry instead.")
+
+
+class OpeningBalanceBatch(models.Model):
+    """A reviewed opening journal: the balance sheet RHP starts its GL from.
+
+    Values are owner/onboarding facts supplied at go-live. The batch is a durable, immutable
+    record of what was posted; corrections are new batches or reversing entries, never edits.
+    """
+
+    key = models.UUIDField(unique=True)
+    as_of = models.DateField()
+    note = models.CharField(max_length=500)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    journal = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="opening_batch"
+    )
+
+    class Meta:
+        ordering = ("-as_of", "-pk")
+
+    def __str__(self):
+        return f"Opening balances {self.as_of}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            stored = (
+                type(self).objects.filter(pk=self.pk).values("as_of", "note", "journal_id").first()
+            )
+            if stored is not None and stored["journal_id"] is not None:
+                if any(
+                    stored[field] != getattr(self, field)
+                    for field in ("as_of", "note", "journal_id")
+                ):
+                    raise ValidationError("A posted opening batch is immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Opening batches are never deleted; reverse the journal instead.")
+
+
+class OpeningBalanceLine(models.Model):
+    batch = models.ForeignKey(OpeningBalanceBatch, on_delete=models.CASCADE, related_name="lines")
+    account = models.ForeignKey(ChartAccount, on_delete=models.PROTECT)
+    property = models.ForeignKey(
+        "properties.Property", null=True, blank=True, on_delete=models.PROTECT
+    )
+    debit = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
+    credit = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
+    memo = models.CharField(max_length=300, blank=True)
+
+    class Meta:
+        ordering = ("pk",)
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(debit__gte=0) & models.Q(credit__gte=0),
+                name="opening_line_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(debit__gt=0, credit=0) | models.Q(credit__gt=0, debit=0),
+                name="opening_line_one_side",
+            ),
+        ]
+
+    def __str__(self):
+        side = f"Dr {self.debit}" if self.debit else f"Cr {self.credit}"
+        return f"{self.account.code} {side}"

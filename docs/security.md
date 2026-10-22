@@ -5,9 +5,9 @@
 Only the accounting posting service writes journals. It refuses manual entries against tenant AR,
 accounts payable, deposits held, tenant credits, undeposited funds or bank accounts; those move only from
 kernel source events. Journals and lines are immutable, source-keyed and posted in the same transaction as
-their source. The accounting screens (`/manage/accounting/`: overview, chart, journals, controls) are manager-only on
-the server; journals carry a lease/property dimension and are never exposed through a tenant-scoped
-query.
+their source. The accounting screens (`/manage/accounting/`: overview, chart, journals, controls, opening balances) are
+manager-only on the server; journals carry a lease/property dimension and are never exposed through a
+tenant-scoped query. Opening balances are a reviewed manager action, audited and immutable once posted.
 
 ## Move-out settlement — ADR-031
 

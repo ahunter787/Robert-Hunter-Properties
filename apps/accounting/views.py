@@ -4,6 +4,9 @@ There is deliberately no tenant-facing journal screen. The GL is an office view 
 same tenancy facts; a tenant sees their statement, not the books.
 """
 
+from django.core.exceptions import ValidationError
+from django.shortcuts import redirect, render
+from django.views import View
 from django.views.generic import DetailView, ListView, TemplateView
 
 from apps.accounting import services
@@ -75,3 +78,72 @@ class ControlTieView(ManagerRequiredMixin, TemplateView):
         context["tie"] = services.ar_control_tie()
         context["rows"] = services.trial_balance()
         return context
+
+
+class OpeningBalanceListView(ManagerRequiredMixin, ListView):
+    template_name = "management/accounting_opening_list.html"
+    context_object_name = "batches"
+
+    def get_queryset(self):
+        from apps.accounting.models import OpeningBalanceBatch
+
+        return OpeningBalanceBatch.objects.select_related("journal", "created_by").prefetch_related(
+            "lines__account"
+        )
+
+
+class OpeningBalanceCreateView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_opening_form.html"
+
+    def get(self, request):
+        from django.utils import timezone
+
+        from apps.accounting.forms import OpeningBalanceForm, OpeningLineFormSet
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": OpeningBalanceForm(initial={"as_of": timezone.localdate()}),
+                "formset": OpeningLineFormSet(),
+            },
+        )
+
+    def post(self, request):
+        from django.contrib import messages
+
+        from apps.accounting.forms import OpeningBalanceForm, OpeningLineFormSet
+
+        form = OpeningBalanceForm(request.POST)
+        formset = OpeningLineFormSet(request.POST)
+        if form.is_valid() and formset.is_valid():
+            lines = []
+            for row in formset.cleaned_data:
+                if not row or not row.get("account"):
+                    continue
+                lines.append(
+                    {
+                        "account": row["account"],
+                        "property": row.get("property"),
+                        "debit": row.get("debit") or 0,
+                        "credit": row.get("credit") or 0,
+                        "memo": row.get("memo", ""),
+                    }
+                )
+            try:
+                services.post_opening_batch(
+                    as_of=form.cleaned_data["as_of"],
+                    note=form.cleaned_data["note"],
+                    lines=lines,
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+            else:
+                messages.success(request, "Opening balances posted.")
+                return redirect("accounting:opening-list")
+        return render(
+            request,
+            self.template_name,
+            {"form": form, "formset": formset},
+        )

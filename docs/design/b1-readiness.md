@@ -370,9 +370,11 @@ Implemented in development on `rhp-e10-kernel`:
   opening-credit application/release, receipt-application no-op, generated charges, the AR control tie,
   backfill idempotency and the status command.
 - Staff screens exist under `/manage/accounting/`: overview with trial balance and AR tie, the chart,
-  journal list/detail and a control page; all manager-only and derived from lines. Still absent: the B1
-  opening-balance UI, B2 deposits/AP, B3 banks, a first-class write-off action, production data load.
-  Deposits and bank rows are outside B1.
+  journal list/detail, a control page and the reviewed opening-balance sheet (`/manage/accounting/opening/`),
+  all manager-only and derived from lines. The opening screen posts one balanced, immutable opening
+  journal and records an `ACCOUNTING_OPENING_POSTED` audit event.
+- Still absent: B2 deposits/AP, B3 banks, a first-class write-off action, production data load. Deposits
+  and bank rows are outside B1.
 - The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
   tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
   equation the tests assert and is recorded in the implementation note of ADR-032.

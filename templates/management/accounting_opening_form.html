@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Post opening balances — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:opening-list' %}" class="underline-offset-2 hover:underline">Opening balances</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Post opening balances</h1>
+      <p class="mt-2 text-sm text-ink-muted">
+        Enter the reviewed starting balance sheet. Debits and credits must agree. Only asset,
+        liability and equity accounts are allowed; a balancing opening-equity line is normal.
+      </p>
+    </div>
+    <form method="post" novalidate class="rhp-card">
+      {% csrf_token %}
+      {% include "components/form.html" with form=form %}
+      {{ formset.management_form }}
+      {% if formset.non_form_errors %}
+        <div class="rhp-alert mt-4 border-danger/30 bg-danger/5 text-danger" role="alert">
+          {% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+      {% endif %}
+      <div class="mt-6 space-y-4">
+        {% for line_form in formset %}
+          <div class="rounded-card border border-surface-muted bg-surface p-4">
+            {% include "components/form.html" with form=line_form %}
+          </div>
+        {% endfor %}
+      </div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button type="submit" class="rhp-btn rhp-btn-primary">Post opening balances</button>
+        <a href="{% url 'accounting:opening-list' %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

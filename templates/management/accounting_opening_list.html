@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Opening balances — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Opening balances</h1>
+        <p class="mt-2 text-sm text-ink-muted">The reviewed starting position of RHP's books. Each batch posts once and is never edited.</p>
+      </div>
+      <a href="{% url 'accounting:opening-create' %}" class="rhp-btn rhp-btn-primary">Post opening balances</a>
+    </div>
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Date</th><th>Source and review</th><th>Lines</th><th>Journal</th><th>Posted by</th></tr></thead>
+        <tbody>
+          {% for batch in batches %}
+            <tr>
+              <td>{{ batch.as_of|date:"M j, Y" }}</td>
+              <td>{{ batch.note }}</td>
+              <td>{{ batch.lines.all|length }}</td>
+              <td>{% if batch.journal %}<a class="rhp-link" href="{% url 'accounting:journal-detail' batch.journal.pk %}">{{ batch.journal.source_key }}</a>{% else %}—{% endif %}</td>
+              <td class="text-ink-muted">{{ batch.created_by.display_name|default:"—" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-ink-muted">No opening balances posted yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

@@ -13,6 +13,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.accounting.models import (
+    AccountKind,
     AccountMapping,
     ChartAccount,
     JournalEntry,
@@ -392,3 +393,87 @@ def ar_control_tie(*, as_of=None, property=None):
         "subledger": subledger.quantize(MONEY),
         "difference": (control - subledger).quantize(MONEY),
     }
+
+
+@transaction.atomic
+def post_opening_batch(*, as_of, note, lines, actor=None):
+    """Post a reviewed opening balance sheet. The batch and its journal are one unit.
+
+    Opening balances are the one place a control account may be debited/credited by a
+    manager, because they establish the starting position rather than adjust history. The
+    batch is immutable; a correction is another reviewed batch or a reversing entry.
+    """
+    from uuid import uuid4
+
+    from apps.accounting.models import OpeningBalanceBatch, OpeningBalanceLine
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    if not note or not note.strip():
+        raise ValidationError("Say where these opening balances came from.")
+    prepared = []
+    total_debit = ZERO
+    total_credit = ZERO
+    for row in lines:
+        chart_account = (
+            account(row["account"]) if isinstance(row["account"], str) else row["account"]
+        )
+        if chart_account.kind not in (
+            AccountKind.ASSET,
+            AccountKind.LIABILITY,
+            AccountKind.EQUITY,
+        ):
+            raise ValidationError(
+                "Opening balances may only use asset, liability and equity accounts."
+            )
+        debit = ZERO if not row.get("debit") else _money(row["debit"])
+        credit = ZERO if not row.get("credit") else _money(row["credit"])
+        if (debit > ZERO) == (credit > ZERO):
+            raise ValidationError("Each opening line is either a debit or a credit.")
+        total_debit += debit
+        total_credit += credit
+        prepared.append(
+            {
+                "account": chart_account,
+                "debit": debit,
+                "credit": credit,
+                "property": row.get("property"),
+                "memo": row.get("memo", ""),
+            }
+        )
+    if len(prepared) < 2:
+        raise ValidationError("At least two opening lines are needed.")
+    if total_debit != total_credit:
+        raise ValidationError(
+            f"Opening balances do not balance: debits {total_debit}, credits {total_credit}."
+        )
+    key = uuid4()
+    batch = OpeningBalanceBatch.objects.create(
+        key=key,
+        as_of=as_of,
+        note=note.strip(),
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    OpeningBalanceLine.objects.bulk_create(
+        [OpeningBalanceLine(batch=batch, **row) for row in prepared]
+    )
+    journal = post_journal(
+        source_key=f"opening:{key}:posted",
+        event_type="opening.balance",
+        posted_on=as_of,
+        lines=prepared,
+        memo=note.strip(),
+        actor=actor,
+    )
+    batch.journal = journal
+    batch.save(update_fields=["journal"])
+    record(
+        actor,
+        AuditAction.ACCOUNTING_OPENING_POSTED,
+        obj=batch,
+        summary=f"Opening balances posted for {as_of}",
+        total_debit=str(total_debit),
+        total_credit=str(total_credit),
+        lines=len(prepared),
+    )
+    return batch

@@ -12,4 +12,6 @@ urlpatterns = [
     path("journals/", views.JournalListView.as_view(), name="journal-list"),
     path("journals/<int:pk>/", views.JournalDetailView.as_view(), name="journal-detail"),
     path("control/", views.ControlTieView.as_view(), name="control"),
+    path("opening/", views.OpeningBalanceListView.as_view(), name="opening-list"),
+    path("opening/new/", views.OpeningBalanceCreateView.as_view(), name="opening-create"),
 ]
