@@ -170,3 +170,29 @@ class BankStatementForm(StyledForm):
             if cleaned["period_end"] < cleaned["period_start"]:
                 self.add_error("period_end", "The period ends before it starts.")
         return cleaned
+
+
+class ClosingForm(StyledForm):
+    as_of = forms.DateField(
+        label="Close through",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Every income and expense balance through this date moves to Owner's equity.",
+    )
+
+
+class OwnerTransactionForm(StyledForm):
+    bank_account = forms.ModelChoiceField(queryset=None, label="Bank account")
+    kind = forms.ChoiceField(
+        choices=[("CONTRIBUTION", "Owner contribution"), ("DRAW", "Owner draw")]
+    )
+    amount = forms.DecimalField(max_digits=12, decimal_places=2, min_value=0.01)
+    date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
+    note = forms.CharField(max_length=300, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.accounting.models import BankAccount
+
+        self.fields["bank_account"].queryset = BankAccount.objects.filter(is_active=True).order_by(
+            "name"
+        )

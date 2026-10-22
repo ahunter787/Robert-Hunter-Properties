@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Accountant exports — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Accountant exports</h1>
+      <p class="mt-2 text-sm text-ink-muted">One-way, period-scoped journal exports. Each download writes an immutable checksummed export batch and an audit event; nothing is imported back.</p>
+    </div>
+    <form method="get" class="rhp-card flex flex-wrap items-end gap-3" action="{% url 'accounting:export-journal-csv' %}">
+      <label class="rhp-label">From <input class="rhp-field" type="date" name="start" value="{{ today|date:'Y-m-d' }}"></label>
+      <label class="rhp-label">To <input class="rhp-field" type="date" name="end" value="{{ today|date:'Y-m-d' }}"></label>
+      <button class="rhp-btn rhp-btn-primary" formaction="{% url 'accounting:export-journal-csv' %}">Download CSV</button>
+      <button class="rhp-btn rhp-btn-secondary" formaction="{% url 'accounting:export-journal-text' %}">Download plain text</button>
+    </form>
+    <section class="rhp-card overflow-x-auto">
+      <h2 class="text-sm font-semibold">Export history</h2>
+      <table class="rhp-table mt-3">
+        <thead><tr><th>Created</th><th>Kind</th><th>Period</th><th>Rows</th><th>Checksum</th></tr></thead>
+        <tbody>
+          {% for batch in batches %}
+            <tr><td>{{ batch.created_at|date:"M j, Y H:i" }}</td><td>{{ batch.get_kind_display }}</td><td>{{ batch.period_start }}–{{ batch.period_end }}</td><td>{{ batch.row_count }}</td><td class="text-ink-muted">{{ batch.checksum|slice:":12" }}…</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-ink-muted">No exports yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

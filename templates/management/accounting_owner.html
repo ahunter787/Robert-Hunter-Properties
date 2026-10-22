@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Owner transactions — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Owner contributions and draws</h1>
+      <p class="mt-2 text-sm text-ink-muted">Money between the owner and the business, through a recorded bank account. Contributions credit Owner's equity; draws debit it.</p>
+    </div>
+    <form method="post" class="rhp-card">
+      {% csrf_token %}
+      {% include "components/form.html" with form=form %}
+      <button type="submit" class="rhp-btn rhp-btn-primary mt-4">Record transaction</button>
+    </form>
+    <section class="rhp-card overflow-x-auto">
+      <h2 class="text-sm font-semibold">Recorded</h2>
+      <table class="rhp-table mt-3">
+        <thead><tr><th>Date</th><th>Kind</th><th>Bank</th><th>Note</th><th class="text-right">Amount</th></tr></thead>
+        <tbody>
+          {% for item in transactions %}
+            <tr><td>{{ item.date|date:"M j, Y" }}</td><td>{{ item.get_kind_display }}</td><td>{{ item.bank_account.name }}</td><td>{{ item.note|default:"—" }}</td><td class="text-right">{{ item.amount|money }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-ink-muted">No owner transactions yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

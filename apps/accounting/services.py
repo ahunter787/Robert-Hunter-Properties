@@ -914,3 +914,128 @@ def bank_control_tie(bank_account):
         "statement": closing,
         "difference": (gl - closing).quantize(MONEY),
     }
+
+
+@transaction.atomic
+def record_owner_transaction(
+    bank_account,
+    *,
+    kind,
+    amount,
+    date,
+    note="",
+    actor=None,
+):
+    """Owner contribution into the bank or a draw out of it, against owner equity."""
+    from apps.accounting.models import OwnerTransaction
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    amount = _money(amount)
+    bank_gl = account(bank_account.chart_account.code)
+    if kind == "CONTRIBUTION":
+        lines = [
+            {"account": bank_gl, "debit": amount, "memo": "Owner contribution"},
+            {"account": "3100", "credit": amount, "memo": "Owner contribution"},
+        ]
+    elif kind == "DRAW":
+        lines = [
+            {"account": "3100", "debit": amount, "memo": "Owner draw"},
+            {"account": bank_gl, "credit": amount, "memo": "Owner draw"},
+        ]
+    else:
+        raise ValidationError("Choose an owner contribution or a draw.")
+    item = OwnerTransaction.objects.create(
+        bank_account=bank_account,
+        kind=kind,
+        amount=amount,
+        date=date,
+        note=note.strip(),
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    journal = post_journal(
+        source_key=f"ownertransaction:{item.pk}:recorded",
+        event_type=f"owner.{kind.lower()}",
+        posted_on=date,
+        lines=lines,
+        memo=f"Owner {kind.lower()} · {bank_account.name}",
+        actor=actor,
+    )
+    item.journal = journal
+    item.save(update_fields=["journal"])
+    record(
+        actor,
+        AuditAction.OWNER_TRANSACTION_RECORDED,
+        obj=item,
+        summary=f"Owner {kind.lower()} of {amount}",
+        amount=str(amount),
+        bank=str(bank_account.pk),
+    )
+    return item
+
+
+@transaction.atomic
+def close_income_and_expense(*, as_of, actor=None):
+    """Close every income/expense balance as of a date into Owner's equity (B5)."""
+    from django.db.models import Sum
+
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    source_key = f"closing:{as_of}:posted"
+    existing = JournalEntry.objects.filter(source_key=source_key).first()
+    if existing is not None:
+        return existing
+    totals = (
+        JournalLine.objects.filter(
+            entry__posted_on__lte=as_of,
+            account__kind__in=(AccountKind.INCOME, AccountKind.EXPENSE),
+        )
+        .values("account__code", "account__kind", "account__name")
+        .annotate(debit=Sum("debit"), credit=Sum("credit"))
+        .order_by("account__code")
+    )
+    lines = []
+    total_income = ZERO
+    total_expense = ZERO
+    for row in totals:
+        debit = row["debit"] or ZERO
+        credit = row["credit"] or ZERO
+        if row["account__kind"] == AccountKind.INCOME:
+            balance = credit - debit
+            if balance > ZERO:
+                lines.append(
+                    {"account": row["account__code"], "debit": balance, "memo": "Close income"}
+                )
+                total_income += balance
+        else:
+            balance = debit - credit
+            if balance > ZERO:
+                lines.append(
+                    {"account": row["account__code"], "credit": balance, "memo": "Close expense"}
+                )
+                total_expense += balance
+    if not lines:
+        raise ValidationError("There is no income or expense balance to close.")
+    net = total_income - total_expense
+    if net > ZERO:
+        lines.append({"account": "3000", "credit": net, "memo": "Current earnings to equity"})
+    elif net < ZERO:
+        lines.append({"account": "3000", "debit": -net, "memo": "Current loss to equity"})
+    journal = post_journal(
+        source_key=source_key,
+        event_type="closing",
+        posted_on=as_of,
+        lines=lines,
+        memo=f"Close income and expense as of {as_of}",
+        actor=actor,
+    )
+    record(
+        actor,
+        AuditAction.ACCOUNTING_CLOSING_POSTED,
+        obj=journal,
+        summary=f"Income and expense closed as of {as_of}",
+        net=str(net),
+        lines=len(lines),
+    )
+    return journal

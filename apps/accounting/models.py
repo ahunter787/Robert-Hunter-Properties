@@ -500,3 +500,82 @@ class BankReconciliation(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("A reconciliation is never deleted; reopen with a new statement.")
+
+
+class ExportKind(models.TextChoices):
+    JOURNAL_CSV = "JOURNAL_CSV", "Journal CSV"
+    JOURNAL_TEXT = "JOURNAL_TEXT", "Plain-text journal"
+
+
+class ExportBatch(models.Model):
+    """A one-way, period-scoped, checksummed accountant export."""
+
+    key = models.UUIDField(unique=True)
+    kind = models.CharField(max_length=20, choices=ExportKind.choices)
+    period_start = models.DateField()
+    period_end = models.DateField()
+    row_count = models.PositiveIntegerField(default=0)
+    checksum = models.CharField(max_length=64)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at", "-pk")
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.period_start}–{self.period_end}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise ValidationError("Export batches are immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Export batches are retained for audit.")
+
+
+class OwnerTransactionKind(models.TextChoices):
+    CONTRIBUTION = "CONTRIBUTION", "Owner contribution"
+    DRAW = "DRAW", "Owner draw"
+
+
+class OwnerTransaction(models.Model):
+    """Owner money in or out of the business, through a bank account."""
+
+    bank_account = models.ForeignKey(
+        BankAccount, on_delete=models.PROTECT, related_name="owner_transactions"
+    )
+    kind = models.CharField(max_length=20, choices=OwnerTransactionKind.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    note = models.CharField(max_length=300, blank=True)
+    journal = models.OneToOneField(
+        JournalEntry,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="owner_transaction",
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("date", "pk")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(amount__gt=0), name="owner_transaction_positive"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.amount} on {self.date}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            stored = type(self).objects.filter(pk=self.pk).values("journal_id").first()
+            if stored is not None and stored["journal_id"] is not None:
+                raise ValidationError("Owner transactions are immutable; add a correction.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Owner transactions are never deleted.")

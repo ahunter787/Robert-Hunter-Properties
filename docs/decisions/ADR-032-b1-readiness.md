@@ -131,6 +131,10 @@ The B1–B3 engine is now implemented in development on `rhp-e10-kernel`:
   and the deposit register, all read from journal lines/subledgers with CSV exports. B5 closing/owner
   draws/accountant exports, manual matching, OFX/provider feeds, a first-class write-off action and a
   production data load remain follow-ups.
+- B5 is implemented: closing entries to equity, owner contributions/draws through a bank account, and
+  checksummed CSV/plain-text journal exports recorded in immutable `ExportBatch` rows and audited. The
+  accounting kernel is feature-complete in development; go-live operational work (onboarding data,
+  manual match/feed follow-ups) remains.
 
 ## Consequences
 

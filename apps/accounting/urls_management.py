@@ -45,4 +45,19 @@ urlpatterns = [
         report_views.DepositRegisterView.as_view(),
         name="report-deposits",
     ),
+    path("closing/", views.ClosingView.as_view(), name="closing"),
+    path("owner/", views.OwnerTransactionListView.as_view(), name="owner-list"),
+    path("exports/", views.ExportIndexView.as_view(), name="export-index"),
+    path(
+        "exports/journal.csv",
+        views.JournalExportView.as_view(),
+        {"kind": "csv"},
+        name="export-journal-csv",
+    ),
+    path(
+        "exports/journal.txt",
+        views.JournalExportView.as_view(),
+        {"kind": "text"},
+        name="export-journal-text",
+    ),
 ]

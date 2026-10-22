@@ -413,3 +413,136 @@ class BankStatementDetailView(ManagerRequiredMixin, View):
             else:
                 messages.success(request, "Statement reconciled.")
         return redirect("accounting:statement-detail", pk=statement.pk)
+
+
+def _parse_date(value, fallback):
+    from datetime import date
+
+    try:
+        return date.fromisoformat(value)
+    except TypeError, ValueError:
+        return fallback
+
+
+class ClosingView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_closing.html"
+
+    def get(self, request):
+        from django.utils import timezone
+
+        from apps.accounting.forms import ClosingForm
+
+        return render(
+            request,
+            self.template_name,
+            {"form": ClosingForm(initial={"as_of": timezone.localdate()})},
+        )
+
+    def post(self, request):
+        from django.contrib import messages
+
+        from apps.accounting.forms import ClosingForm
+
+        form = ClosingForm(request.POST)
+        if form.is_valid():
+            try:
+                journal = services.close_income_and_expense(
+                    as_of=form.cleaned_data["as_of"], actor=request.user
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+            else:
+                messages.success(request, "Income and expense closed to equity.")
+                return redirect("accounting:journal-detail", pk=journal.pk)
+        return render(request, self.template_name, {"form": form})
+
+
+class OwnerTransactionListView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_owner.html"
+
+    def _context(self, form=None):
+        from django.utils import timezone
+
+        from apps.accounting.forms import OwnerTransactionForm
+        from apps.accounting.models import OwnerTransaction
+
+        return {
+            "form": form or OwnerTransactionForm(initial={"date": timezone.localdate()}),
+            "transactions": OwnerTransaction.objects.select_related(
+                "bank_account", "journal"
+            ).order_by("-date", "-pk"),
+        }
+
+    def get(self, request):
+        return render(request, self.template_name, self._context())
+
+    def post(self, request):
+        from django.contrib import messages
+
+        from apps.accounting.forms import OwnerTransactionForm
+
+        form = OwnerTransactionForm(request.POST)
+        if form.is_valid():
+            try:
+                services.record_owner_transaction(
+                    form.cleaned_data["bank_account"],
+                    kind=form.cleaned_data["kind"],
+                    amount=form.cleaned_data["amount"],
+                    date=form.cleaned_data["date"],
+                    note=form.cleaned_data.get("note", ""),
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+            else:
+                messages.success(request, "Owner transaction recorded.")
+                return redirect("accounting:owner-list")
+        return render(request, self.template_name, self._context(form))
+
+
+class ExportIndexView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_exports.html"
+
+    def get(self, request):
+        from django.utils import timezone
+
+        from apps.accounting.models import ExportBatch
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "today": timezone.localdate(),
+                "batches": ExportBatch.objects.select_related("created_by")[:50],
+            },
+        )
+
+
+class JournalExportView(ManagerRequiredMixin, View):
+    def get(self, request, kind):
+        from django.http import HttpResponse
+        from django.utils import timezone
+
+        from apps.accounting import exports
+        from apps.accounting.models import ExportKind
+
+        today = timezone.localdate()
+        start = _parse_date(request.GET.get("start"), today.replace(month=1, day=1))
+        end = _parse_date(request.GET.get("end"), today)
+        if kind == "csv":
+            export_kind, content_type, suffix = ExportKind.JOURNAL_CSV, "text/csv", "csv"
+        else:
+            export_kind, content_type, suffix = ExportKind.JOURNAL_TEXT, "text/plain", "txt"
+        try:
+            batch, content = exports.create_journal_export(
+                kind=export_kind, start=start, end=end, actor=request.user
+            )
+        except ValidationError as exc:
+            from django.contrib import messages
+
+            messages.error(request, " ".join(exc.messages))
+            return redirect("accounting:export-index")
+        response = HttpResponse(content, content_type=content_type)
+        response["Content-Disposition"] = f'attachment; filename="journal-{start}-{end}.{suffix}"'
+        response["X-Export-Checksum"] = batch.checksum
+        return response

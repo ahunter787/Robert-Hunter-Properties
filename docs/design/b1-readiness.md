@@ -387,8 +387,12 @@ Implemented in development on `rhp-e10-kernel`:
 - B4 reports are implemented: income statement, balance sheet (with current earnings), cash flow,
   Schedule E summary, AR aging, AP aging and the security-deposit register, each read from journal lines
   or the subledger already used by the controls, with CSV on every report.
-- Still follow-ups: B5 closing/owner draws/accountant exports, manual bank matching, OFX/provider feeds,
-  a first-class write-off action and production data load.
+- B5 is implemented: closing entries move income/expense balances to Owner's equity, owner
+  contributions/draws post through a recorded bank account, and the accountant journal exports (CSV and
+  plain text) are period-scoped, checksummed, recorded as immutable `ExportBatch` rows and audited.
+- The accounting kernel is feature-complete in development. Remaining non-kernel follow-ups: manual bank
+  matching, OFX/provider feeds, a first-class write-off action, owner onboarding/operational data load and
+  the go-live screen walk.
 - The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
   tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
   equation the tests assert and is recorded in the implementation note of ADR-032.

@@ -136,6 +136,8 @@ and `lease_document_name` (ADR-022).
 | `accounting_bankstatement` | imported statement period | bank/period unique, opening/closing balances, source name |
 | `accounting_statementline` | a statement transaction | signed amount, optional matched journal line (matched once) |
 | `accounting_bankreconciliation` | reconciliation of one statement | cleared/adjusted/difference, reconciled-by/at; immutable |
+| `accounting_exportbatch` | one accountant export | kind, period, row count, SHA-256 checksum, creator; immutable |
+| `accounting_ownertransaction` | owner contribution/draw | bank account, amount/date/note, one journal; immutable |
 | `ledger_depositentry` | the held-deposit register: received, returned, retained, or explicitly not collected | append-only (`save()` refuses edits, `delete()` raises); `CheckConstraint` makes zero legal only for `NOT_COLLECTED`; a retention and a "not collected" require a reason; optional private `documents_document` evidence; the derived `received − returned − withheld` is what RHP holds (ADR-028 D5). No row is ever inferred from `Lease.deposit` |
 | `audit_audit_event` | who changed what, and when | `actor` (`SET_NULL`), `lease` (`SET_NULL`), `action`, `object_type`/`object_id`, `summary`, a small JSON `metadata`, `created_at`; indexed on `(object_type, object_id)`, `(lease, created_at)`, `(action, created_at)` and `created_at` |
 
