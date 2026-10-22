@@ -461,8 +461,9 @@ posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately revi
 engine is building in development: `apps/accounting` adds the seeded chart, immutable sourced journals,
 kernel posting hooks for charges/adjustments/payments/opening credits, AR-control and trial-balance
 services, `accounting_sync`/`accounting_status` commands, manager-only accounting screens (overview,
-chart, journals, controls, reviewed opening balances), and the first B2 deposit movements (received and
-returned; retention waits for E6). B2 vendor bills/AP and B3 banks remain later slices. The earlier readiness record follows.
+chart, journals, controls, reviewed opening balances), B2 deposit movements (received/returned; retention
+waits for E6) and B2 vendor bills/payments with AP control. B3 banks and reconciliation remain the next
+slice. The earlier readiness record follows.
 
 **October 22 B1 readiness complete — [ADR-032](decisions/ADR-032-b1-readiness.md):** the B1 contract is
 written down in [B1 readiness](design/b1-readiness.md): a numbered owner chart of accounts with system
@@ -504,7 +505,7 @@ in `design/accounting-cutover-plan.md`. Manual stated balances do not require ve
 The development database is archived/restored before a fresh synthetic database is selected. B1–B5
 accounting remains separately reviewed; no GL, bank matching or tax-readiness is delivered by cutover.
 
-**Status: Building — B1 complete in development, B2 deposit movements started; vendor bills/AP and B3 banks next.** The decision for the stack is
+**Status: Building — B1 complete in development and B2 implemented; B3 banks and reconciliation next.** The decision for the stack is
 [ADR-026](decisions/ADR-026-property-accounting.md), the kernel direction is
 [ADR-028](decisions/ADR-028-one-kernel.md), the working blueprint is
 [the property-accounting study](design/property-accounting.md), and the B1 contract is

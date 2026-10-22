@@ -119,10 +119,10 @@ The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, 
   journal list/detail, the control page, and the reviewed opening-balance sheet. They are manager-only and
   derived entirely from lines. The opening screen posts one balanced immutable opening journal and audits
   it (`ACCOUNTING_OPENING_POSTED`).
-- B2 deposit posting has started: received/returned deposits post through the kernel, a retention waits
-  for E6, an applied retained deposit moves 2300 to AR, and `deposit_control_tie` surfaces the pending
-  retention difference. Vendor bills/AP, B3 bank accounts and reconciliation, write-off as a first-class
-  action and a production data load remain next slices.
+- B2 is implemented: received/returned deposits post through the kernel (retention waits for E6; an
+  applied retained deposit moves 2300 to AR) and vendor bills/payments post expense/AP/cash-clearing,
+  with `deposit_control_tie` and `ap_control_tie` exposing differences. B3 bank accounts and
+  reconciliation, write-off as a first-class action and a production data load remain next slices.
 
 ## Consequences
 

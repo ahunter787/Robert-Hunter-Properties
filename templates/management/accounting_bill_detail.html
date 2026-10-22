@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}{{ bill.description }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:bill-list' %}" class="underline-offset-2 hover:underline">Vendor bills</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ bill.description }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">{{ bill.property.name }} · {{ bill.vendor.name|default:"No vendor" }} · received {{ bill.received_on|date:"M j, Y" }} · due {{ bill.due_date|date:"M j, Y" }}</p>
+    </div>
+    <section class="rhp-card">
+      <dl class="workspace-facts">
+        <div><dt>Expense account</dt><dd>{{ bill.expense_account.code }} {{ bill.expense_account.name }}</dd></div>
+        <div><dt>Amount</dt><dd>{{ bill.amount|money }}</dd></div>
+        <div><dt>Paid</dt><dd>{{ bill.paid|money }}</dd></div>
+        <div><dt>Balance</dt><dd class="{% if bill.balance %}money-owed{% endif %}">{{ bill.balance|money }}</dd></div>
+      </dl>
+      {% if bill.journal %}<p class="mt-3 text-sm"><a class="rhp-link" href="{% url 'accounting:journal-detail' bill.journal.pk %}">Open the bill journal</a></p>{% endif %}
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Payments</h2>
+      {% if bill.payments.all %}
+        <table class="rhp-table mt-3">
+          <thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="text-right">Amount</th></tr></thead>
+          <tbody>
+            {% for payment in bill.payments.all %}
+              <tr><td>{{ payment.paid_on|date:"M j, Y" }}</td><td>{{ payment.get_method_display }}</td><td>{{ payment.reference|default:"—" }}</td><td class="text-right">{{ payment.amount|money }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="mt-2 text-sm text-ink-muted">No payments yet.</p>
+      {% endif %}
+      {% if bill.balance %}
+        <form method="post" class="mt-4">
+          {% csrf_token %}
+          {% include "components/form.html" with form=payment_form %}
+          <button type="submit" class="rhp-btn rhp-btn-primary mt-4">Record payment</button>
+        </form>
+      {% else %}
+        <p class="mt-3 text-sm text-ink-muted">This bill is paid in full.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

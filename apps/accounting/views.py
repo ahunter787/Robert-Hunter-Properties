@@ -147,3 +147,111 @@ class OpeningBalanceCreateView(ManagerRequiredMixin, View):
             self.template_name,
             {"form": form, "formset": formset},
         )
+
+
+class VendorBillListView(ManagerRequiredMixin, ListView):
+    template_name = "management/accounting_bill_list.html"
+    context_object_name = "bills"
+    paginate_by = 50
+
+    def get_queryset(self):
+        from apps.accounting.models import VendorBill
+
+        return (
+            VendorBill.objects.select_related("property", "vendor", "expense_account")
+            .prefetch_related("payments")
+            .order_by("due_date", "pk")
+        )
+
+
+class VendorBillCreateView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_bill_form.html"
+
+    def get(self, request):
+        from apps.accounting.forms import VendorBillForm
+
+        return render(request, self.template_name, {"form": VendorBillForm()})
+
+    def post(self, request):
+        from django.contrib import messages
+
+        from apps.accounting.forms import VendorBillForm
+
+        form = VendorBillForm(request.POST)
+        if form.is_valid():
+            try:
+                bill = services.record_vendor_bill(
+                    property=form.cleaned_data["property"],
+                    vendor=form.cleaned_data.get("vendor"),
+                    expense_account=form.cleaned_data["expense_account"],
+                    description=form.cleaned_data["description"],
+                    amount=form.cleaned_data["amount"],
+                    received_on=form.cleaned_data["received_on"],
+                    due_date=form.cleaned_data["due_date"],
+                    note=form.cleaned_data.get("note", ""),
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+            else:
+                messages.success(request, "Vendor bill recorded.")
+                return redirect("accounting:bill-detail", pk=bill.pk)
+        return render(request, self.template_name, {"form": form})
+
+
+class VendorBillDetailView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_bill_detail.html"
+
+    def _bill(self, pk):
+        from django.shortcuts import get_object_or_404
+
+        from apps.accounting.models import VendorBill
+
+        return get_object_or_404(
+            VendorBill.objects.select_related("property", "vendor").prefetch_related("payments"),
+            pk=pk,
+        )
+
+    def get(self, request, pk):
+        from django.utils import timezone
+
+        from apps.accounting.forms import VendorPaymentForm
+
+        bill = self._bill(pk)
+        return render(
+            request,
+            self.template_name,
+            {
+                "bill": bill,
+                "payment_form": VendorPaymentForm(initial={"paid_on": timezone.localdate()}),
+            },
+        )
+
+    def post(self, request, pk):
+        from django.contrib import messages
+
+        from apps.accounting.forms import VendorPaymentForm
+
+        bill = self._bill(pk)
+        form = VendorPaymentForm(request.POST)
+        if form.is_valid():
+            try:
+                services.pay_vendor_bill(
+                    bill,
+                    amount=form.cleaned_data["amount"],
+                    paid_on=form.cleaned_data["paid_on"],
+                    method=form.cleaned_data["method"],
+                    reference=form.cleaned_data.get("reference", ""),
+                    note=form.cleaned_data.get("note", ""),
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                form.add_error(None, exc.messages[0])
+            else:
+                messages.success(request, "Vendor payment recorded.")
+                return redirect("accounting:bill-detail", pk=bill.pk)
+        return render(
+            request,
+            self.template_name,
+            {"bill": bill, "payment_form": form},
+        )

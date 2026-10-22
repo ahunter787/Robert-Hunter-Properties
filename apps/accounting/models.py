@@ -5,6 +5,7 @@ The sub-ledger stays authoritative for "what does this tenancy owe"; the GL is t
 double-entry reading of the same kernel events. Nothing here stores a balance.
 """
 
+import builtins
 from decimal import Decimal
 
 from django.conf import settings
@@ -253,3 +254,98 @@ class OpeningBalanceLine(models.Model):
     def __str__(self):
         side = f"Dr {self.debit}" if self.debit else f"Cr {self.credit}"
         return f"{self.account.code} {side}"
+
+
+class VendorBill(models.Model):
+    """A vendor's bill: expense recorded now, payable until paid (B2)."""
+
+    property = models.ForeignKey("properties.Property", on_delete=models.PROTECT)
+    vendor = models.ForeignKey(
+        "maintenance.Vendor", null=True, blank=True, on_delete=models.PROTECT
+    )
+    expense_account = models.ForeignKey(
+        ChartAccount, on_delete=models.PROTECT, related_name="vendor_bills"
+    )
+    description = models.CharField(max_length=300)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    received_on = models.DateField()
+    due_date = models.DateField()
+    note = models.CharField(max_length=500, blank=True)
+    journal = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="vendor_bill"
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("due_date", "pk")
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="vendor_bill_positive")
+        ]
+
+    def __str__(self):
+        return f"{self.description} ({self.amount})"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            stored = type(self).objects.filter(pk=self.pk).values("journal_id", "amount").first()
+            if stored is not None and stored["journal_id"] is not None:
+                if stored["amount"] != self.amount:
+                    raise ValidationError("A posted vendor bill is immutable.")
+        return super().save(*args, **kwargs)
+
+    @builtins.property
+    def paid(self):
+        return sum((payment.amount for payment in self.payments.all()), ZERO)
+
+    @builtins.property
+    def balance(self):
+        return (self.amount - self.paid).quantize(ZERO) if self.amount else ZERO
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Vendor bills are never deleted; correct them with an entry.")
+
+
+class BillPaymentMethod(models.TextChoices):
+    CHECK = "CHECK", "Check"
+    ACH = "ACH", "ACH transfer"
+    CARD = "CARD", "Card"
+    CASH = "CASH", "Cash"
+    OTHER = "OTHER", "Other"
+
+
+class VendorPayment(models.Model):
+    """A payment against a vendor bill; cash leaves through undeposited funds until B3."""
+
+    bill = models.ForeignKey(VendorBill, on_delete=models.PROTECT, related_name="payments")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    paid_on = models.DateField()
+    method = models.CharField(
+        max_length=8, choices=BillPaymentMethod.choices, default=BillPaymentMethod.ACH
+    )
+    reference = models.CharField(max_length=200, blank=True)
+    note = models.CharField(max_length=500, blank=True)
+    journal = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="bill_payment"
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("paid_on", "pk")
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="vendor_payment_positive")
+        ]
+
+    def __str__(self):
+        return f"Payment {self.amount} on {self.paid_on}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            stored = type(self).objects.filter(pk=self.pk).values("journal_id").first()
+            if stored is not None and stored["journal_id"] is not None:
+                raise ValidationError("Vendor payments are immutable; add a correcting entry.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Vendor payments are never deleted.")

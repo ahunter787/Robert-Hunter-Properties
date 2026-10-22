@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Vendor bills — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-5xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">Vendor bills</h1>
+        <p class="mt-2 text-sm text-ink-muted">Bills accrue the expense and accounts payable; payments reduce the payable through undeposited funds until B3 adds bank accounts.</p>
+      </div>
+      <a href="{% url 'accounting:bill-create' %}" class="rhp-btn rhp-btn-primary">Record a bill</a>
+    </div>
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Property</th><th>Description</th><th>Vendor</th><th>Received</th><th>Due</th><th class="text-right">Amount</th><th class="text-right">Balance</th></tr></thead>
+        <tbody>
+          {% for bill in bills %}
+            <tr>
+              <td>{{ bill.property.name }}</td>
+              <td><a class="rhp-link" href="{% url 'accounting:bill-detail' bill.pk %}">{{ bill.description }}</a></td>
+              <td>{{ bill.vendor.name|default:"—" }}</td>
+              <td>{{ bill.received_on|date:"M j, Y" }}</td>
+              <td>{{ bill.due_date|date:"M j, Y" }}</td>
+              <td class="text-right">{{ bill.amount|money }}</td>
+              <td class="text-right {% if bill.balance %}money-owed{% endif %}">{{ bill.balance|money }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-ink-muted">No vendor bills yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

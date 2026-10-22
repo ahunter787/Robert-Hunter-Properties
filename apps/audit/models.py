@@ -20,6 +20,8 @@ class AuditAction(models.TextChoices):
     LEASE_ONBOARDED = "LEASE_ONBOARDED", "Prior lease activity set up"
     LEASE_ENDED = "LEASE_ENDED", "Lease ended"
     ACCOUNTING_OPENING_POSTED = "ACCOUNTING_OPENING_POSTED", "Opening balances posted"
+    VENDOR_BILL_RECORDED = "VENDOR_BILL_RECORDED", "Vendor bill recorded"
+    VENDOR_BILL_PAID = "VENDOR_BILL_PAID", "Vendor bill paid"
     MOVE_OUT_DETAILS_UPDATED = "MOVE_OUT_DETAILS_UPDATED", "Move-out details updated"
     MOVE_OUT_STATEMENT_ISSUED = "MOVE_OUT_STATEMENT_ISSUED", "Move-out statement issued"
     LEASE_SETTLED = "LEASE_SETTLED", "Financial account settled"

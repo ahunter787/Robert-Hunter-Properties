@@ -14,4 +14,7 @@ urlpatterns = [
     path("control/", views.ControlTieView.as_view(), name="control"),
     path("opening/", views.OpeningBalanceListView.as_view(), name="opening-list"),
     path("opening/new/", views.OpeningBalanceCreateView.as_view(), name="opening-create"),
+    path("bills/", views.VendorBillListView.as_view(), name="bill-list"),
+    path("bills/new/", views.VendorBillCreateView.as_view(), name="bill-create"),
+    path("bills/<int:pk>/", views.VendorBillDetailView.as_view(), name="bill-detail"),
 ]

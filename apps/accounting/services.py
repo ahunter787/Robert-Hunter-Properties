@@ -559,3 +559,132 @@ def deposit_control_tie():
         "register": register.quantize(MONEY),
         "difference": (gl - register).quantize(MONEY),
     }
+
+
+@transaction.atomic
+def record_vendor_bill(
+    *,
+    property,
+    vendor,
+    expense_account,
+    description,
+    amount,
+    received_on,
+    due_date,
+    note="",
+    actor=None,
+):
+    """Record a vendor bill: Dr expense / Cr accounts payable."""
+    from apps.accounting.models import VendorBill
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    account_obj = account(expense_account) if isinstance(expense_account, str) else expense_account
+    if account_obj.kind != AccountKind.EXPENSE:
+        raise ValidationError("A vendor bill must use an expense account.")
+    amount = _money(amount)
+    bill = VendorBill.objects.create(
+        property=property,
+        vendor=vendor,
+        expense_account=account_obj,
+        description=description.strip(),
+        amount=amount,
+        received_on=received_on,
+        due_date=due_date,
+        note=note.strip(),
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    journal = post_journal(
+        source_key=f"bill:{bill.pk}:recorded",
+        event_type="vendor_bill.recorded",
+        posted_on=received_on,
+        lines=[
+            {"account": account_obj, "debit": amount, "memo": description},
+            {"account": "2100", "credit": amount, "memo": "Accounts payable"},
+        ],
+        property=property,
+        memo=f"Vendor bill {bill.pk}: {description}",
+        actor=actor,
+    )
+    bill.journal = journal
+    bill.save(update_fields=["journal"])
+    record(
+        actor,
+        AuditAction.VENDOR_BILL_RECORDED,
+        obj=bill,
+        summary=f"Vendor bill {description} recorded ({amount})",
+        amount=str(amount),
+        property=str(property.pk),
+    )
+    return bill
+
+
+@transaction.atomic
+def pay_vendor_bill(
+    bill,
+    *,
+    amount,
+    paid_on,
+    method="ACH",
+    reference="",
+    note="",
+    actor=None,
+):
+    """Pay a vendor bill: Dr accounts payable / Cr undeposited funds until B3."""
+    from apps.accounting.models import VendorPayment
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+    from apps.ledger.models import MINIMUM_AMOUNT
+
+    amount = _money(amount)
+    if amount < MINIMUM_AMOUNT:
+        raise ValidationError("A payment must be at least one cent.")
+    if amount > bill.balance:
+        raise ValidationError("A bill cannot be paid more than its remaining balance.")
+    payment = VendorPayment.objects.create(
+        bill=bill,
+        amount=amount,
+        paid_on=paid_on,
+        method=method,
+        reference=reference.strip(),
+        note=note.strip(),
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    journal = post_journal(
+        source_key=f"billpayment:{payment.pk}:recorded",
+        event_type="vendor_payment.recorded",
+        posted_on=paid_on,
+        lines=[
+            {"account": "2100", "debit": amount, "memo": f"Pay bill {bill.pk}"},
+            {"account": "1450", "credit": amount, "memo": "Vendor payment pending bank"},
+        ],
+        property=bill.property,
+        memo=f"Vendor payment {payment.pk} for bill {bill.pk}",
+        actor=actor,
+    )
+    payment.journal = journal
+    payment.save(update_fields=["journal"])
+    record(
+        actor,
+        AuditAction.VENDOR_BILL_PAID,
+        obj=payment,
+        summary=f"Vendor bill {bill.pk} paid ({amount})",
+        amount=str(amount),
+        bill=str(bill.pk),
+    )
+    return payment
+
+
+def ap_control_tie():
+    """GL accounts payable against the sum of unpaid vendor bills."""
+    from apps.accounting.models import VendorBill
+
+    subledger = ZERO
+    for bill in VendorBill.objects.prefetch_related("payments"):
+        subledger += bill.balance
+    control = account_balance("2100")
+    return {
+        "control": control.quantize(MONEY),
+        "subledger": subledger.quantize(MONEY),
+        "difference": (control - subledger).quantize(MONEY),
+    }

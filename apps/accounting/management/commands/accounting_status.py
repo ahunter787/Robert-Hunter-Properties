@@ -32,6 +32,14 @@ class Command(BaseCommand):
         if tie["difference"] != ZERO:
             self.stderr.write(self.style.ERROR("AR control does not tie to the tenant ledger."))
 
+        ap = services.ap_control_tie()
+        self.stdout.write(
+            f"Accounts payable {ap['control']}  bills {ap['subledger']}  "
+            f"difference {ap['difference']}"
+        )
+        if ap["difference"] != ZERO:
+            self.stderr.write(self.style.ERROR("AP control does not tie to vendor bills."))
+
         deposit = services.deposit_control_tie()
         self.stdout.write(
             f"Deposit liability {deposit['control']}  register {deposit['register']}  "
