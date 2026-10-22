@@ -51,7 +51,6 @@ marked ★ are **system accounts**: they may be renamed but not deleted once the
 | 2100 | Accounts payable | Liability | Credit | ★ | **Control account** for vendor bills (B2) | NARPM #1 |
 | 2300 | Security deposits held | Liability | Credit | ★ | **Control account** for money held for tenants; never income | REA #2, APM #5, Blue Cloud #7 |
 | 2400 | Tenant credits held | Liability | Credit | ★ | Opening credits and overpayments available to apply; not AR | Kernel credit classification |
-| 2500 | Deposit disposition clearing | Liability | Credit | ★ | **Only if the retained-deposit mapping in §9 uses it**; zero at period end | Open review item |
 | 3000 | Owner's equity | Equity | Credit | ★ | Capital/retained position | NARPM #1 |
 | 3070 | Opening balance equity | Equity | Credit | ★ | Counterpart for reviewed opening balances; must be cleared by the opening journal, never a plug | NARPM #1 |
 | 3100 | Owner draws/contributions | Equity | Debit | ★ | Owner money in/out, no property dimension | NARPM #1 |
@@ -108,9 +107,10 @@ them (#11); Buildium links existing bank accounts through a provider and imports
 2. **No future rent is recognised.** A lease's future schedule is a projection, not a journal
    ([kernel events](../kernel/events.md)). "Coming due" posts nothing.
 3. **Cash-basis reports are a view** over the same journals (receipts/disbursements), not a second set of
-   entries. The owner/accountant confirms the tax basis; RHP does not mix methods (#3).
-4. **Fiscal year** is an owner business fact. B1 posts dated journals; the closing slice (B5) uses the
-   confirmed year end. Until then, reports are dated-range reports, not closed-year statements.
+   entries. The tax basis is an onboarding fact, recorded in the owner's account at go-live; RHP never
+   mixes methods (#3).
+4. **Fiscal year** is an onboarding fact. B1 posts dated journals; the closing slice (B5) uses the
+   configured year end. Until it is entered, reports are dated-range reports, not closed-year statements.
 
 ## 4. Posting contract
 
@@ -190,7 +190,7 @@ bills, deposits and bank deposits; rows are shown so the contract is complete, w
 | Move-out close-out adjustment | reverse income line | 1200 AR | ✓ | B1 | Cancels unused months exactly |
 | Deposit received | 1450 Undeposited funds | 2300 Deposits held | ✓ | B2 | Liability; not AR |
 | Deposit returned | 2300 Deposits held | 1450/Bank as evidenced | ✓ | B2/B3 | Cash movement is B3 |
-| Deposit retained/applied | see §9 | see §9 | ✓ | B2 | **Open mapping — blocked for B1** |
+| Deposit retained/applied | 2300 Deposits held | 1200 AR (and income via the E6 charge) | ✓ | B2/E6 | **Documented charge-then-apply method (see §9): raise the charge first, then apply the deposit. B1 does not post it until E6 exists.** |
 
 ## 6. AR control and reconciliation
 
@@ -270,47 +270,91 @@ bills (B2), no financial statements or tax schedules (B4/B5), no depreciation/ca
 distribution automation, no second user model, no external ledger integration. B1 is the journal engine,
 chart, opening journal and AR control only.
 
-## 9. Blocking residual unknown — retained-deposit GL mapping
+## 9. Retained-deposit GL mapping — follow the documented method
 
-The E5 register records a `WITHHELD` deposit **before** a manager may apply part of it to an existing AR
-bill (ADR-031). The accounting evidence (#5, #6, #7) assumes a different order: the move-out charges
-(damage, cleaning, unpaid balance) are raised first, then the deposit is applied against those charges;
-the retained portion becomes income when kept. RHP does not yet raise post-tenancy damage/cleaning charges
-(E6), so at the moment of withholding there may be no AR bill for the retained amount to settle.
+The owner's direction is: **use the method the industry documents.** The evidence is consistent (#5, #6,
+#7): raise the move-out charges first — unpaid rent, damage, cleaning — as receivables with their reasons
+and evidence, then apply the security deposit against those charges. The retained portion is income
+through those charges; the returned portion reduces the liability and cash. A clearing account is **not**
+used; the 2500 account has been removed from the chart.
 
-Consequences for B1:
+The resulting entries (B2, with E6 as the prerequisite for damage/cleaning charges):
 
-- A withheld deposit cannot be mapped unambiguously to `Cr AR` (if it will be applied later) versus
-  `Cr income` (if it is retained) at the moment of withholding.
-- A clearing account (2500) could hold the retention until the statement is issued and the split is final,
-  then clear to AR/income; that is a defensible control, but it is **RHP's adaptation**, not something the
-  cited industry sources describe. It needs the external reviewer's agreement.
-- Until that agreement, the B1 posting engine must **not** post withheld-deposit journals. The register
-  remains a subledger fact; AR control and deposit liability reconciliation must show the pending
-  disposition as an explicit exception.
+```
+Deposit received:        Dr 1450 Undeposited funds      Cr 2300 Deposits held
+Move-out charge raised:  Dr 1200 Tenant AR              Cr income/recovery account
+Deposit applied:         Dr 2300 Deposits held          Cr 1200 Tenant AR
+Deposit returned:        Dr 2300 Deposits held          Cr 1450/Bank (as evidenced)
+```
 
-This is the one evidence-conflict that stops a complete B1 posting matrix. It is recorded, not hidden.
+RHP's current E5 register can record a `WITHHELD` deposit before those charges exist, because E6
+(post-tenancy charges with evidence) is not built. That is a **sub-ledger timing shape, not a GL
+instruction**: B1 must not post withheld-deposit journals, and B2's deposit disposition posting waits
+until E6 can raise the charge first. The open gate is therefore an implementation dependency, not an
+unresolved accounting method:
 
-## 10. Go-live boundary — facts only the owner/accountant can supply
+- **Decided:** charge-then-apply, deposit liability to AR, retention recognised through the charge,
+  no clearing account.
+- **Prerequisite for a retained damage/cleaning deduction:** E6 (post-tenancy charges with reason code,
+  lease clause and evidence). A deposit applied against an **existing** AR charge (unpaid rent) can post as
+  Dr deposit liability / Cr AR; a portion retained without a charge cannot, and waits for E6.
+- **Until then:** the deposit register stays a sub-ledger fact; any retained portion without a charge is an
+  explicit reconciliation exception; no journal is invented. B1 does not include deposit rows (they are B2).
 
-B1 implementation does not need the owner's actual bank accounts (see §2.1). It waits on the following
-**business facts and review**, not on industry-method opinions:
+This removes the previous "reviewer chooses clearing vs waiting" question. The method is fixed; only the
+E6 build order remains.
 
-1. **Fiscal year and entity.** Fiscal year end; entity type (sole proprietor/LLC/S-corp); tax basis the
-   accountant requires (cash or accrual) and confirmation of the Schedule E mapping for the chart.
-2. **Opening balances (non-bank first).** The date RHP's GL begins; the source of each opening AR, AP,
-   deposit, credit and equity balance (closing statement, prior accounting system, accountant-prepared
-   trial balance, or prepared schedule); who prepares and who reviews it. Bank opening balances can arrive
-   with B3's bank registry; they do not block B1.
-3. **External reviewer.** Name and role of the accountant/CPA who will review the chart, opening journal,
-   reconciliation procedure and go-live sign-off; the reports/format they require.
-4. **Deposit rules.** The operating state's deposit return/itemisation deadline and whether a separate
-   trust/escrow account is required (carried from ADR-031).
-5. **Retained-deposit mapping.** Reviewer's agreement to the clearing-account adaptation in §9, or an
-   instruction to wait for E6 charges first.
-6. **B3 bank setup (when B3 starts, not B1).** Which operating and deposit accounts to register; whether
-   the office wants automatic bank feeds or CSV/OFX first; which provider (if any); and who authorises the
-   connection. These are data and scope decisions, not code constants.
+## 10. Owner facts are onboarding data, not design inputs
 
-Until then, the B1 status is **ready for review, not ready to build**. No GL table, no migration, no owner
-data import and no production change is included in this readiness pass.
+The fiscal year, entity/tax basis, opening balances, deposit-law rules and bank accounts are **operating
+facts about Robert's business (RHP)**, not facts about how the software should be designed. The person
+building the portal is not the owner; these questions must not be answered by the builder or treated as
+design blockers.
+
+RHP therefore treats them as **configuration collected at go-live**:
+
+| Fact | Where it is captured | Design impact before go-live |
+| --- | --- | --- |
+| Fiscal year, entity, tax basis | Owner account onboarding questionnaire | None: journals are dated; closing/tax reports use configuration later |
+| Opening AR/AP/deposit/credit/equity balances and GL start date | Onboarding questionnaire + reviewed opening batch | None: B1 builds the opening-journal mechanism and tests with fixtures |
+| External accountant/CPA and review scope | Owner's choice at onboarding; may be named as reviewer | None: the CPA's authority is the owner's call; RHP does not require one to build |
+| State deposit deadline/documentation and escrow requirement | Onboarding questionnaire | None for B1; E5 shows the statement date; deadline reminders read configuration later |
+| Bank accounts, connection method and authorisation | B3 setup screen (data) | None for B1; B3 builds the registry/adapter and uses synthetic data until go-live |
+
+**Consequence for sequencing:** B1/B3 implementation may proceed with test fixtures and configuration
+placeholders. **Go-live** requires the questionnaire to be completed and reviewed. This is not a licence
+to hard-code an owner's facts, and it is not a reason to ask the builder to decide them.
+
+## 11. Go-live onboarding questionnaire (new requirement)
+
+At owner account creation (or the first time the accounting workspace is opened), RHP should present a
+guided, reviewed questionnaire rather than asking for values in code/config files. It must collect at
+least:
+
+1. **Business identity:** legal entity name/type, fiscal year end, tax basis, operating state(s).
+2. **Opening position:** GL start date, opening AR/AP/deposits/credits/equity (or an explicit zero), source
+   document reference for each, who prepared it.
+3. **Deposit rules:** state deadline/documentation rule, whether a separate trust/escrow account is
+   required, whether deposits are held separately today.
+4. **Reviewer:** optional owner-designated accountant/CPA and the review scope; not required for the
+   software to function.
+5. **Bank setup (B3):** operating/deposit accounts, property/payout assignments, CSV/OFX vs provider feed,
+   who authorises connections.
+
+Requirements for the questionnaire: values are stored as data (never code constants), each section is
+auditable and editable with a reason, incomplete answers are visibly incomplete rather than defaulted, and
+the go-live checklist refuses to mark accounting ready while a required section is unanswered. The answers
+are Robert's to give when his owner account is created; the builder does not supply them.
+
+## 12. What B1 may start with, and what waits for go-live
+
+- **May start with:** chart, journal engine, source keys, idempotency/reversal, AR control ties, opening
+  journal mechanism, tests with fixtures and synthetic properties.
+- **Waits for the onboarding questionnaire:** fiscal year, tax basis, opening balance values, deposit-law
+  configuration, bank accounts and connection method.
+- **Waits for E6:** the withheld-deposit GL disposition row (the method is decided; the charge-first
+  prerequisite is not built).
+- **Waits for the owner's designation (optional):** external CPA review of the chart/opening journal; the
+  builder does not decide the CPA's authority.
+
+No GL table, migration, owner data import or production change is included in this readiness pass.

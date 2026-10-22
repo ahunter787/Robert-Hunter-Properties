@@ -74,41 +74,37 @@ exceptions explained (#4, #8). Differences are never erased by an adjusting entr
 balances post through a reviewed batch to opening equity, which must clear to zero; no unexplained equity
 plug is approved.
 
-### D6 — The retained-deposit GL mapping is a recorded unknown, not a guess
+### D6 — The retained-deposit GL follows the documented charge-then-apply method
 
-B1 may post everything in the readiness posting matrix except the withheld-deposit disposition. The E5
-register releases a retained deposit before a manager applies it to AR (ADR-031), and RHP does not yet
-raise post-tenancy damage/cleaning charges (E6); the industry evidence assumes charges exist first and the
-deposit is applied against them (#5–#7). A clearing-account adaptation (2500) is plausible but is RHP's
-adaptation, not an evidenced industry method. Until the external reviewer agrees to it — or instructs RHP
-to wait for E6 — B1 must not post withheld-deposit journals; the register stays a subledger fact and the
-pending disposition is a visible reconciliation exception. This is the one evidence conflict that stops a
-complete posting matrix and is exactly the kind of unknown the kernel process retains rather than hides.
+The method is decided by the industry evidence, not guessed and not left to an owner opinion: raise the
+move-out charges first (unpaid rent, damage, cleaning) as receivables with reasons and evidence, then apply
+the security deposit against those charges; the retained portion is income through the charges, the
+returned portion reduces the liability and cash. A clearing account is rejected and removed from the
+chart. Because RHP does not yet raise post-tenancy damage/cleaning charges (E6), B1 must not post
+withheld-deposit journals; B2's deposit disposition waits for E6. The register remains a sub-ledger fact and
+the pending disposition is a visible reconciliation exception until then. This is an implementation
+dependency (E6), not an unresolved accounting question.
 
-### D7 — Go-live is gated on owner facts and external review, not on code completion
+### D7 — Owner facts are onboarding data, not design blockers
 
-B1 implementation does not start until the owner supplies only business facts — fiscal year and
-entity/tax basis, opening-balance source (non-bank first), external reviewer, and the operating state's
-deposit rules — and that reviewer confirms the chart, Schedule E mapping, opening journal and
-retained-deposit mapping. These are recorded in §10 of the readiness document. No owner opinion on
-accounting method is requested; the reviewer confirms the method against the evidence and RHP's facts.
-
-**The owner's actual bank accounts are not one of those B1 facts.** They are data entered in B3: a bank
-account is a record with a chart account, property/payout assignment and connection status, not a code
-constant. TenantCloud adds accounts and assigns properties (#11 in the readiness evidence); Buildium links
-existing accounts through a provider and imports transactions (#12). B1 posts receipts to undeposited funds
-and needs no bank account at all; B3 builds the registry and a provider-agnostic statement/feed adapter
-(CSV/OFX first, connection service later). This avoids hard-coding any owner institution and lets the
-office add or reconnect accounts without a code change.
+Fiscal year, entity/tax basis, opening balances, state deposit rules and bank accounts are operating facts
+about Robert's business. The builder is not the owner and must not answer them or treat them as inputs to
+the software design. RHP collects them through a guided, audited **go-live onboarding questionnaire** at the
+owner account's creation (readiness §11): values are data, incomplete answers are visibly incomplete, and
+the go-live checklist refuses accounting readiness while required sections are blank. B1/B3 implementation
+may proceed with fixtures and configuration placeholders; go-live waits for the owner to complete the
+questionnaire. The owner has a CPA, but whether that CPA is the authority over the system is the owner's
+call; RHP neither requires nor appoints a reviewer. Bank accounts are B3 data entered through the registry
+and provider-agnostic connection adapter, not code constants (readiness §2.1).
 
 ## Consequences
 
 - B1's scope is now a closed contract: chart, journal shape, source keys, control restrictions, matrix,
   ties, and the tests to write. An implementation can be estimated and reviewed without redesign.
-- The one unresolved accounting conflict (retained deposits) is visible and blocks only that row, not the
-  whole slice; B1 can proceed after review with that row explicitly deferred to E6 if the reviewer agrees.
-- Owner facts are reduced to a short, factual list; no answer asks the owner how property accounting
-  should work.
+- The retained-deposit method is decided (charge-then-apply); only the E6 prerequisite remains, so B1 can
+  implement every other posting row without waiting on an accounting opinion.
+- Owner facts are onboarding data collected at go-live; they do not block design or implementation, and no
+  question asks the owner or the builder how accounting should work.
 - No code or schema changed: status, backlog and extension records now say "B1 ready for review, not
   started", and the blueprint's ambiguities are superseded by the readiness document where they conflict.
 
@@ -123,17 +119,19 @@ office add or reconnect accounts without a code change.
   not.
 - **Let a manager post a journal to AR to fix a difference.** That is the documented top cause of
   subledger/GL divergence (#4).
-- **Invent a withheld-deposit journal.** The evidence conflict is real; a clearing account or waiting for
-  E6 both need reviewer agreement, and guessing would create a permanent classification error.
+- **Invent a withheld-deposit journal.** The evidence is clear on the method: charges first, then the
+  deposit. A clearing account was considered as an adaptation but rejected because it is not the
+  documented method; waiting for E6 is the implementation order, not an alternative accounting method.
 - **Treat cash basis as a second set of books.** It is a report view; mixing methods is a known defect
   (#3).
 
 ## Open items carried to B1 review
 
 - B1 implementation plan and estimate (separate review).
-- Owner business facts in §10 of the readiness document (not bank accounts — those are B3 data).
-- External reviewer's confirmation of the chart, Schedule E mapping, opening journal, reconciliation
-  procedure and retained-deposit mapping.
-- E6 (post-tenancy damage/cleaning charges with evidence) if the reviewer prefers charge-then-apply over
-  the clearing-account adaptation.
+- Go-live onboarding questionnaire (readiness §11) for owner facts; answers intentionally unknown until
+  the owner's account is created.
+- Optional owner-designated CPA review of the chart/opening journal; the builder does not appoint or
+  decide the CPA's authority.
+- E6 (post-tenancy damage/cleaning charges with evidence), which is the prerequisite for the retained-
+  deposit GL posting; B1 does not post that row until then.
 - B2/B3/B4/B5 remain later, separately reviewed slices; nothing here authorizes production initialization.

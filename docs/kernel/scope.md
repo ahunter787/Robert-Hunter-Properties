@@ -141,9 +141,11 @@ no-op, a correction is a linked reversal plus a new source event, and no manual 
 AR, AP, deposits held, tenant credits, undeposited funds or a bank account. The AR, AP, deposit and credit
 control accounts must equal their sub-ledgers exactly; differences are investigated, never adjusted away.
 B1 readiness also fixes the chart, the property dimension and the receipt-versus-bank-settlement split.
-The retained-deposit GL disposition remains an explicit unknown pending external review; see
-[readiness §9](../design/b1-readiness.md). B1 implementation is not started and waits on the owner's
-business facts and that review.
+The retained-deposit GL uses the documented charge-then-apply method: raise the E6 charge first, apply the
+deposit against it, recognise retention through the charge, and use no clearing account. Because E6 is not
+built, B1 does not post withheld deposits yet; see [readiness §9](../design/b1-readiness.md). Owner facts
+are collected by a go-live onboarding questionnaire, not treated as design inputs; B1 implementation may
+proceed with fixtures and configuration placeholders.
 
 ## Upcoming tenancies and people (ADR-029)
 

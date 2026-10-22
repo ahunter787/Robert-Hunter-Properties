@@ -29,9 +29,12 @@ readiness document governs:
   transaction), not a mutable row identity.
 - **AR control:** readiness §6 — the GL control must tie exactly to the subledger; no direct journal to AR,
   AP or any control account.
-- **Retained deposit:** readiness §9 — the GL disposition mapping is an open unknown (E5 register order vs
-  industry charge-then-apply, with E6 missing). B1 must not post it until the external reviewer agrees.
-- **Boundary:** readiness §10 — no B1 code until the owner's business facts and external sign-off exist.
+- **Retained deposit:** readiness §9 — the documented charge-then-apply method is adopted (raise the E6
+  charge first, apply the deposit, recognise retention through the charge, no clearing account). B1 does
+  not post withheld deposits until E6 exists.
+- **Owner facts:** readiness §10–§11 — fiscal year, tax basis, opening balances, deposit-law rules and bank
+  accounts are go-live onboarding data, not design blockers. RHP ships a questionnaire for them; B1/B3 can
+  be built with fixtures and configuration placeholders.
 
 **Status:** in design. The decision is [ADR-026](../decisions/ADR-026-property-accounting.md); this is the
 working blueprint for the slices `E10-B1` … `E10-B5`. Each slice gets its own owner review before the next.
@@ -335,8 +338,10 @@ the tenant portal.
 4. **Disbursement discipline** — who records vendor payments, and with what evidence, so reconciliation is
    not a monthly archaeology exercise.
 5. **Closing cadence** — annual closing entries are assumed; a monthly soft close can follow if useful.
-6. **Accountant** — is there an accountant today, and will they want the CSV/plain-text export? If yes, the
-   export format becomes the acceptance test for B5.
+6. **Accountant and onboarding** — the owner may designate an accountant/CPA for review and will provide
+   the onboarding facts at account creation (fiscal year, tax basis, opening balances, deposit rules, bank
+   setup). The builder does not supply or decide these; the export format becomes the acceptance test for
+   B5 if a reviewer is designated.
 
 ## 15. Risks
 

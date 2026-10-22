@@ -69,9 +69,10 @@ settlement; deposit requirements are not proof of held funds. Opening credit/pre
 future-charge recognition and event-specific idempotency must be resolved before its implementation.
 Opening controls cannot be posted twice or forced into equality by an unexplained equity plug.
 **October 22:** these are resolved in [B1 readiness](b1-readiness.md) and
-[ADR-032](../decisions/ADR-032-b1-readiness.md), except the retained-deposit disposition mapping, which
-is a recorded unknown pending external review; B1 implementation remains not started and waits on the
-owner facts and reviewer sign-off in readiness §10.
+[ADR-032](../decisions/ADR-032-b1-readiness.md). The retained-deposit method is decided (documented
+charge-then-apply; E6 is its prerequisite, so B1 does not post it yet). Owner facts are go-live onboarding
+data collected by a questionnaire, not design blockers; B1 implementation remains not started but may
+proceed with fixtures/configuration, with go-live waiting on the questionnaire.
 
 Bank reconciliation means matching actual bank-statement lines to recorded receipts and payments.
 Outstanding checks/deposits explain timing differences. Unexplained differences remain visible and

@@ -462,15 +462,15 @@ written down in [B1 readiness](design/b1-readiness.md): a numbered owner chart o
 control accounts and a property dimension, an accrual journal set with cash-basis reports as a view, a
 unique `<model>:<pk>:<transition>` posting contract (balanced, immutable, same-transaction, replay-safe),
 a rule that no manual journal may touch AR/AP/deposit/credit/bank control accounts, and the AR-control,
-deposit and clearing reconciliations that must tie exactly. One evidence conflict is retained rather than
-guessed: the GL mapping for a retained deposit that is applied to AR after withholding (E5 order vs the
-industry's charge-then-apply order, with E6 missing) is blocked pending external review, and B1 does not
-post it. **B1 implementation is not started**: it waits on the owner's business facts (bank accounts,
-fiscal year/entity/tax basis, opening-balance source, external reviewer, state deposit rules) and that
-reviewer's confirmation of the chart, opening journal and the retained-deposit mapping. The owner's
-actual bank accounts are **not** a B1 prerequisite: B1 posts receipts to undeposited funds, and B3 adds a
-bank-account registry plus a provider-agnostic statement/feed adapter (CSV/OFX first), so no institution
-is hard-coded. No GL table, migration or production change is included.
+deposit and clearing reconciliations that must tie exactly. The retained-deposit GL method is
+decided: use the documented charge-then-apply method — raise the E6 charge first, apply the deposit, recognise
+retention through the charge, no clearing account. Because E6 is not built, a retained damage/cleaning portion cannot post yet; B2 may post a deposit applied
+to an existing AR charge, but B1 does not include deposit rows. **Owner facts are onboarding data, not design blockers:** fiscal year/entity/tax basis,
+opening balances, deposit-law rules and bank accounts are collected by a go-live onboarding questionnaire
+when the owner account is created; B1/B3 can be built with fixtures and configuration placeholders. The
+owner's actual bank accounts are **not** a B1 prerequisite: B1 posts receipts to undeposited funds, and B3
+adds a bank-account registry plus a provider-agnostic statement/feed adapter (CSV/OFX first), so no
+institution is hard-coded. No GL table, migration or production change is included.
 
 **October 22 M2b implemented — [ADR-030](decisions/ADR-030-people-and-portal-logins.md):** a lease
 party is a `contacts.Person` (tenant, adult occupant, guarantor or authorized contact); the portal
