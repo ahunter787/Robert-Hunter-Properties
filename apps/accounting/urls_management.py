@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from apps.accounting import views
+from apps.accounting import report_views, views
 
 app_name = "accounting"
 
@@ -24,5 +24,25 @@ urlpatterns = [
         "statements/<int:pk>/",
         views.BankStatementDetailView.as_view(),
         name="statement-detail",
+    ),
+    path("reports/", report_views.ReportIndexView.as_view(), name="report-index"),
+    path(
+        "reports/income/",
+        report_views.IncomeStatementView.as_view(),
+        name="report-income",
+    ),
+    path(
+        "reports/balance-sheet/",
+        report_views.BalanceSheetView.as_view(),
+        name="report-balance-sheet",
+    ),
+    path("reports/cash-flow/", report_views.CashFlowView.as_view(), name="report-cash-flow"),
+    path("reports/schedule-e/", report_views.ScheduleEView.as_view(), name="report-schedule-e"),
+    path("reports/ar-aging/", report_views.ARAgingView.as_view(), name="report-ar-aging"),
+    path("reports/ap-aging/", report_views.APAgingView.as_view(), name="report-ap-aging"),
+    path(
+        "reports/deposits/",
+        report_views.DepositRegisterView.as_view(),
+        name="report-deposits",
     ),
 ]

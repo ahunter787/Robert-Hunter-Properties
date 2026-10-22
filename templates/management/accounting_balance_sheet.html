@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Balance sheet — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:report-index' %}" class="underline-offset-2 hover:underline">Reports</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Balance sheet</h1>
+      <form method="get" class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="rhp-label">As of <input class="rhp-field" type="date" name="as_of" value="{{ as_of|date:'Y-m-d' }}"></label>
+        <button class="rhp-btn rhp-btn-secondary">Apply</button>
+        <a class="rhp-btn rhp-btn-secondary" href="?format=csv&as_of={{ as_of|date:'Y-m-d' }}">CSV</a>
+      </form>
+    </div>
+    <section class="rhp-card overflow-x-auto"><h2 class="text-sm font-semibold">Assets</h2><table class="rhp-table mt-2"><tbody>
+      {% for row in report.assets %}<tr><td>{{ row.code }} {{ row.name }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% endfor %}
+      <tr class="font-semibold"><td>Total assets</td><td class="text-right">{{ report.total_assets|money }}</td></tr>
+    </tbody></table></section>
+    <section class="rhp-card overflow-x-auto"><h2 class="text-sm font-semibold">Liabilities</h2><table class="rhp-table mt-2"><tbody>
+      {% for row in report.liabilities %}<tr><td>{{ row.code }} {{ row.name }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% empty %}<tr><td class="text-ink-muted">None.</td></tr>{% endfor %}
+      <tr class="font-semibold"><td>Total liabilities</td><td class="text-right">{{ report.total_liabilities|money }}</td></tr>
+    </tbody></table></section>
+    <section class="rhp-card overflow-x-auto"><h2 class="text-sm font-semibold">Equity</h2><table class="rhp-table mt-2"><tbody>
+      {% for row in report.equity %}<tr><td>{{ row.code }} {{ row.name }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% empty %}<tr><td class="text-ink-muted">None.</td></tr>{% endfor %}
+      <tr class="font-semibold"><td>Total equity</td><td class="text-right">{{ report.total_equity|money }}</td></tr>
+    </tbody></table></section>
+    {% if not report.balanced %}<p class="text-sm text-warning">The balance sheet does not balance. Check the trial balance and controls.</p>{% endif %}
+  </div>
+{% endblock %}

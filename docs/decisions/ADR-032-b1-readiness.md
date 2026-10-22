@@ -126,8 +126,11 @@ The B1–B3 engine is now implemented in development on `rhp-e10-kernel`:
   clear undeposited funds into/out of the bank; CSV statements (date/description/amount, optional
   reference) are imported idempotently per bank/period, exact lines auto-match to bank GL by amount and
   nearby date, and reconciliation requires every line matched, the statement balanced, and the GL bank
-  balance at period end equal to the closing balance. Manual matching, OFX/provider feeds, a first-class
-  write-off action and a production data load remain follow-ups.
+  balance at period end equal to the closing balance.
+- B4 reports are implemented: income statement, balance sheet, cash flow, Schedule E summary, AR/AP aging
+  and the deposit register, all read from journal lines/subledgers with CSV exports. B5 closing/owner
+  draws/accountant exports, manual matching, OFX/provider feeds, a first-class write-off action and a
+  production data load remain follow-ups.
 
 ## Consequences
 

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Schedule E summary — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:report-index' %}" class="underline-offset-2 hover:underline">Reports</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Schedule E summary</h1>
+      <p class="mt-2 text-sm text-ink-muted">Proposed grouping; the owner’s accountant reviews the mapping before filing.</p>
+      <form method="get" class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="rhp-label">From <input class="rhp-field" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></label>
+        <label class="rhp-label">To <input class="rhp-field" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></label>
+        <button class="rhp-btn rhp-btn-secondary">Apply</button>
+        <a class="rhp-btn rhp-btn-secondary" href="?format=csv&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">CSV</a>
+      </form>
+    </div>
+    <section class="rhp-card overflow-x-auto"><table class="rhp-table"><thead><tr><th>Line</th><th>Description</th><th class="text-right">Amount</th></tr></thead><tbody>
+      {% for row in report.lines %}<tr><td>{{ row.line }}</td><td>{{ row.label }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% empty %}<tr><td colspan="3" class="text-ink-muted">No income or expenses in this period.</td></tr>{% endfor %}
+    </tbody></table></section>
+    <p class="rhp-card text-lg font-semibold">Net <span class="float-right">{{ report.net|money }}</span></p>
+  </div>
+{% endblock %}

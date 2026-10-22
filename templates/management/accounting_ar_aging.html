@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}AR aging — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:report-index' %}" class="underline-offset-2 hover:underline">Reports</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">AR aging</h1>
+      <form method="get" class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="rhp-label">As of <input class="rhp-field" type="date" name="as_of" value="{{ as_of|date:'Y-m-d' }}"></label>
+        <button class="rhp-btn rhp-btn-secondary">Apply</button>
+        <a class="rhp-btn rhp-btn-secondary" href="?format=csv&as_of={{ as_of|date:'Y-m-d' }}">CSV</a>
+      </form>
+    </div>
+    <div class="grid gap-3 sm:grid-cols-5">
+      {% for label, amount in report.buckets.items %}<div class="rhp-card"><p class="rhp-eyebrow">{{ label }}</p><p class="mt-1 text-xl font-semibold">{{ amount|money }}</p></div>{% endfor %}
+    </div>
+    <section class="rhp-card overflow-x-auto"><table class="rhp-table"><thead><tr><th>Property</th><th>Unit</th><th>Due</th><th>Description</th><th>Bucket</th><th class="text-right">Open</th></tr></thead><tbody>
+      {% for row in report.rows %}<tr><td>{{ row.lease.unit.property.name }}</td><td>{{ row.lease.unit.label }}</td><td>{{ row.date|date:"M j, Y" }}</td><td>{{ row.description }}</td><td>{{ row.bucket }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% empty %}<tr><td colspan="6" class="text-ink-muted">Nothing open.</td></tr>{% endfor %}
+      <tr class="font-semibold"><td colspan="5">Total</td><td class="text-right">{{ report.total|money }}</td></tr>
+    </tbody></table></section>
+  </div>
+{% endblock %}

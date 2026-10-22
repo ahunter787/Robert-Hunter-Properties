@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Cash flow — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:report-index' %}" class="underline-offset-2 hover:underline">Reports</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Cash flow</h1>
+      <form method="get" class="mt-3 flex flex-wrap items-end gap-3">
+        <label class="rhp-label">From <input class="rhp-field" type="date" name="start" value="{{ start|date:'Y-m-d' }}"></label>
+        <label class="rhp-label">To <input class="rhp-field" type="date" name="end" value="{{ end|date:'Y-m-d' }}"></label>
+        <button class="rhp-btn rhp-btn-secondary">Apply</button>
+        <a class="rhp-btn rhp-btn-secondary" href="?format=csv&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}">CSV</a>
+      </form>
+    </div>
+    <section class="rhp-card overflow-x-auto"><table class="rhp-table"><thead><tr><th>Category</th><th>Item</th><th class="text-right">Amount</th></tr></thead><tbody>
+      {% for row in report.rows %}<tr><td>{{ row.category|title }}</td><td>{{ row.label }}</td><td class="text-right">{{ row.amount|money }}</td></tr>{% empty %}<tr><td colspan="3" class="text-ink-muted">No cash movement in this period.</td></tr>{% endfor %}
+      <tr class="font-semibold"><td colspan="2">Net movement</td><td class="text-right">{{ report.net|money }}</td></tr>
+    </tbody></table></section>
+    <dl class="workspace-facts">
+      <div><dt>Opening cash</dt><dd>{{ report.opening|money }}</dd></div>
+      <div><dt>Closing cash</dt><dd>{{ report.closing|money }}</dd></div>
+      <div><dt>Inflows</dt><dd>{{ report.inflow|money }}</dd></div>
+      <div><dt>Outflows</dt><dd>{{ report.outflow|money }}</dd></div>
+    </dl>
+  </div>
+{% endblock %}

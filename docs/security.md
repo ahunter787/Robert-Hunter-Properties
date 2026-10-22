@@ -6,7 +6,7 @@ Only the accounting posting service writes journals. It refuses manual entries a
 accounts payable, deposits held, tenant credits, undeposited funds or bank accounts; those move only from
 kernel source events. Journals and lines are immutable, source-keyed and posted in the same transaction as
 their source. The accounting screens (`/manage/accounting/`: overview, chart, journals, controls, opening balances,
-vendor bills, bank accounts/statements) are manager-only on the server; journals carry a lease/property dimension and are never exposed through a
+vendor bills, bank accounts/statements, reports) are manager-only on the server; journals carry a lease/property dimension and are never exposed through a
 tenant-scoped query. Opening balances are a reviewed manager action, audited and immutable once posted. Security-deposit
 received/returned movements post through the same kernel contract; a retention posts nothing until its E6
 charge, and the deposit control difference is reported rather than adjusted. Bank statements carry only

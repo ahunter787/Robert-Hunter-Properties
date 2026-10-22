@@ -383,8 +383,12 @@ Implemented in development on `rhp-e10-kernel`:
 - B3 bank foundation is implemented: bank accounts linked to asset chart accounts, bank
   deposit/withdrawal movements clearing 1450, CSV statement import (date/description/amount, optional
   reference), exact auto-matching by amount and nearby date, and reconciliation that requires every line
-  matched, the statement balanced, and the GL bank balance at period end equal to closing. Manual
-  matching, OFX/provider feeds, a first-class write-off action and production data load remain follow-ups.
+  matched, the statement balanced, and the GL bank balance at period end equal to closing.
+- B4 reports are implemented: income statement, balance sheet (with current earnings), cash flow,
+  Schedule E summary, AR aging, AP aging and the security-deposit register, each read from journal lines
+  or the subledger already used by the controls, with CSV on every report.
+- Still follow-ups: B5 closing/owner draws/accountant exports, manual bank matching, OFX/provider feeds,
+  a first-class write-off action and production data load.
 - The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
   tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
   equation the tests assert and is recorded in the implementation note of ADR-032.

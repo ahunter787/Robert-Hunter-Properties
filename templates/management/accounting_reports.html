@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Accounting reports — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:overview' %}" class="underline-offset-2 hover:underline">Accounting</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Reports</h1>
+      <p class="mt-2 text-sm text-ink-muted">Every report reads the journal; no report stores a total. CSV is available from each page.</p>
+    </div>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <a class="rhp-card block" href="{% url 'accounting:report-income' %}"><span class="font-medium">Income statement</span><span class="mt-1 block text-sm text-ink-muted">Revenue, expenses and net for a period.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-balance-sheet' %}"><span class="font-medium">Balance sheet</span><span class="mt-1 block text-sm text-ink-muted">Assets, liabilities, equity and current earnings at a date.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-cash-flow' %}"><span class="font-medium">Cash flow</span><span class="mt-1 block text-sm text-ink-muted">Bank and undeposited-funds movement by category.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-schedule-e' %}"><span class="font-medium">Schedule E summary</span><span class="mt-1 block text-sm text-ink-muted">Income/expense lines grouped into proposed Schedule E lines.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-ar-aging' %}"><span class="font-medium">AR aging</span><span class="mt-1 block text-sm text-ink-muted">Open tenant charges by age, from the tenant ledger.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-ap-aging' %}"><span class="font-medium">AP aging</span><span class="mt-1 block text-sm text-ink-muted">Unpaid vendor bills by due date.</span></a>
+      <a class="rhp-card block" href="{% url 'accounting:report-deposits' %}"><span class="font-medium">Security deposit register</span><span class="mt-1 block text-sm text-ink-muted">What is held per tenancy and the entries behind it.</span></a>
+    </div>
+  </div>
+{% endblock %}
