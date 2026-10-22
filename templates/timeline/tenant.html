@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Timeline — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-3xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow">Your tenancy</p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Timeline</h1>
+      {% if lease %}<p class="mt-2 text-sm text-ink-muted">{{ lease.unit.property.name }} · {{ lease.unit.label }}</p>{% endif %}
+    </div>
+    <section class="rhp-card">
+      {% if lease %}{% include "timeline/events.html" %}{% else %}<p class="text-sm text-ink-muted">No tenancy history is available.</p>{% endif %}
+    </section>
+  </div>
+{% endblock %}

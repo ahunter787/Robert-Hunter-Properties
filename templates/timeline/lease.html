@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}{{ lease.tenant_names }} timeline — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'timeline:list' %}" class="underline-offset-2 hover:underline">Timelines</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ lease.tenant_names }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">{{ lease.unit.property.name }} · {{ lease.unit.label }} · {{ lease.start_date|date:"M j, Y" }}–{{ lease.end_date|date:"M j, Y" }}</p>
+    </div>
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Add staff activity</h2>
+      <form method="post" class="mt-3 space-y-3">{% csrf_token %}{% include "components/form.html" with form=form %}<button class="rhp-btn rhp-btn-primary">Add entry</button></form>
+    </section>
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">History</h2>
+      {% include "timeline/events.html" %}
+    </section>
+  </div>
+{% endblock %}

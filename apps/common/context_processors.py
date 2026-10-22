@@ -23,6 +23,8 @@ def portal_navigation(request):
         "tenant_maintenance": "maintenance",
         "communications": "communications",
         "accounting": "accounting",
+        "timeline": "timeline",
+        "tenant_timeline": "timeline",
         "tenant_communications": "communications",
     }.get(namespace, "dashboard")
     if namespace == "ledger" and name == "lease-ledger":
@@ -40,6 +42,7 @@ def portal_navigation(request):
             ("tenants", "Tenants", "manage:account-list"),
             ("people", "People", "contacts:person-list"),
             ("leases", "Leases", "leases:lease-list"),
+            ("timeline", "Timeline", "timeline:list"),
             ("ledger", "Rent & Payments", "ledger:overview"),
             ("accounting", "Accounting", "accounting:overview"),
             ("recoveries", "Expense recoveries", "responsibilities:overview"),
@@ -51,6 +54,7 @@ def portal_navigation(request):
         items = [
             ("dashboard", "Dashboard", "accounts:home"),
             ("lease", "Lease", "tenancy:lease"),
+            ("timeline", "Timeline", "tenant_timeline:timeline"),
             ("payments", "Payments", "payments:home"),
             ("maintenance", "Maintenance", "tenant_maintenance:list"),
             ("communications", "Communications", "tenant_communications:index"),

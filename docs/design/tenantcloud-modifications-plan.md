@@ -177,7 +177,14 @@ Money events render the ledger's own figures and links; the timeline never compu
 - Manual entry UI is staff-only. Tenant sees only `visible_to_tenant=True` manual entries plus
   tenant-visible system events; internal notes never cross the boundary.
 
-### 4.4 Rules
+### 4.4 Implementation status
+
+Implemented in development on `rhp-e16-timeline`: `apps.timeline` with an append-only manual-activity
+model, a read service merging lease/ledger/maintenance/document/message events, staff and tenant routes,
+tenant-visibility filtering and tests for tenant isolation, manual sharing and staff access. Source links,
+filters and a materialized read model remain later refinements; the read model is not materialized.
+
+### 4.5 Rules
 
 - Authorization is a query scope, not a template check: tenant timeline uses the same lease membership
   scope as documents and communications.

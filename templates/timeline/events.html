@@ -1,0 +1,13 @@
+{% load rhp_format %}
+<ul class="mt-3 space-y-4">
+  {% for event in page %}
+    <li class="border-l-2 border-surface-muted pl-4">
+      <p class="text-xs uppercase tracking-wide text-ink-muted">{{ event.occurred_at|date:"M j, Y, g:i A" }} · {{ event.category }}{% if event.actor %} · {{ event.actor }}{% endif %}</p>
+      <p class="font-medium">{{ event.title }}{% if event.amount is not None %} <span class="{% if event.amount < 0 %}money-received{% else %}money-owed{% endif %}">{{ event.amount|money }}</span>{% endif %}</p>
+      {% if event.detail %}<p class="text-sm text-ink-muted">{{ event.detail }}</p>{% endif %}
+    </li>
+  {% empty %}
+    <li class="text-sm text-ink-muted">No activity yet.</li>
+  {% endfor %}
+</ul>
+{% if page.has_other_pages %}<p class="mt-4 text-sm">{% if page.has_previous %}<a class="rhp-link" href="?page={{ page.previous_page_number }}">Previous</a>{% endif %} Page {{ page.number }} of {{ page.paginator.num_pages }} {% if page.has_next %}<a class="rhp-link" href="?page={{ page.next_page_number }}">Next</a>{% endif %}</p>{% endif %}
