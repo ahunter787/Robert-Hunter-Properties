@@ -15,7 +15,9 @@ SECTIONS = ("overview", "details", "maintenance", "recoveries", "documents")
 
 
 def navigation_properties():
-    leases = Lease.objects.current().prefetch_related("lease_tenants__tenant")
+    leases = Lease.objects.current().prefetch_related(
+        "lease_tenants__person", "lease_tenants__tenant"
+    )
     units = Unit.objects.prefetch_related(
         Prefetch("leases", queryset=leases, to_attr="workspace_leases"), "amenities"
     ).order_by("identifier")

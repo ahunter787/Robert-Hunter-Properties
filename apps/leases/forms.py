@@ -8,8 +8,8 @@ from django.db.models import Q
 from django.forms import inlineformset_factory
 from django.utils import timezone
 
-from apps.accounts.models import Role, User
 from apps.common.forms import StyledForm, StyledModelForm
+from apps.contacts.models import Person
 from apps.leases.models import (
     STEPPING_TEMPLATES,
     EndReason,
@@ -138,23 +138,23 @@ class LeaseForm(StyledModelForm):
 
 
 class LeaseTenantForm(StyledModelForm):
-    """One tenant on a lease, and whether they are the primary contact."""
+    """One person on a lease: their role, and whether they are the primary contact."""
 
     class Meta:
         model = LeaseTenant
-        fields = ["tenant", "is_primary"]
-        labels = {"is_primary": "Primary contact"}
+        fields = ["person", "role", "is_primary"]
+        labels = {"is_primary": "Primary contact", "person": "Person"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["tenant"].queryset = User.objects.filter(
-            role=Role.TENANT, is_active=True
-        ).order_by("first_name", "last_name", "username")
-        self.fields["tenant"].empty_label = "Select a tenant"
+        self.fields["person"].queryset = Person.objects.all().order_by(
+            "last_name", "first_name", "pk"
+        )
+        self.fields["person"].empty_label = "Select a person"
 
 
 class BaseLeaseTenantFormSet(forms.BaseInlineFormSet):
-    """A lease needs at least one tenant, and at most one primary contact."""
+    """A lease needs at least one person, and at most one primary contact."""
 
     def clean(self):
         # These checks run before Django's own duplicate detection, which would
@@ -163,24 +163,24 @@ class BaseLeaseTenantFormSet(forms.BaseInlineFormSet):
         if any(self.errors):
             return
 
-        tenants = []
+        people = []
         primaries = 0
         for form in self.forms:
             if not form.cleaned_data or form.cleaned_data.get("DELETE"):
                 continue
-            tenant = form.cleaned_data.get("tenant")
-            if tenant is None:
+            person = form.cleaned_data.get("person")
+            if person is None:
                 continue
-            tenants.append(tenant)
+            people.append(person)
             if form.cleaned_data.get("is_primary"):
                 primaries += 1
 
-        if not tenants:
-            raise ValidationError("A lease needs at least one tenant.")
-        if len(set(tenants)) != len(tenants):
-            raise ValidationError("The same tenant is listed more than once.")
+        if not people:
+            raise ValidationError("A lease needs at least one person.")
+        if len(set(people)) != len(people):
+            raise ValidationError("The same person is listed more than once.")
         if primaries > 1:
-            raise ValidationError("Only one tenant can be the primary contact.")
+            raise ValidationError("Only one person can be the primary contact.")
 
         # Only now let Django check the database's own uniqueness rules, whose
         # per-row wording is for developers.
@@ -192,7 +192,7 @@ LeaseTenantFormSet = inlineformset_factory(
     LeaseTenant,
     form=LeaseTenantForm,
     formset=BaseLeaseTenantFormSet,
-    fields=["tenant", "is_primary"],
+    fields=["person", "role", "is_primary"],
     extra=1,
     can_delete=True,
 )

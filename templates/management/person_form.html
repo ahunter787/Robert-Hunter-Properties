@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}{% if person %}Edit {{ person.display_name }}{% else %}Add a person{% endif %} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-2xl">
+    <p class="rhp-eyebrow">Leasing</p>
+    <h1 class="mt-1 text-2xl font-semibold tracking-tight">{% if person %}Edit person{% else %}Add a person{% endif %}</h1>
+    <p class="mt-2 text-sm text-ink-muted">
+      A person can be a tenant, adult occupant, guarantor or authorized contact. The portal login is
+      optional; only a linked account can sign in.
+    </p>
+    <div class="rhp-card mt-6">
+      <form method="post" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=form %}
+        {% if not person %}
+          <p class="mt-4 text-sm text-ink-muted">
+            Giving a login creates an inactive tenant account and emails the invitation; the person
+            can be put on a lease immediately either way.
+          </p>
+        {% endif %}
+        <div class="mt-6 flex flex-wrap gap-3">
+          <button type="submit" class="rhp-btn rhp-btn-primary">{% if person %}Save changes{% else %}Add the person{% endif %}</button>
+          <a href="{% if person %}{% url 'contacts:person-detail' person.pk %}{% else %}{% url 'contacts:person-list' %}{% endif %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

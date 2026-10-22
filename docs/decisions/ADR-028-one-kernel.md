@@ -140,7 +140,7 @@ ADR and branch.
 | Rent rule | Raised on its due date, never ahead (P4-Q7) | Recurring charges post on schedule | **Keep** the rule; **record** the operational gap: system-scheduled posting in Phase 12 |
 | Deposit | Lease field, no disposition, settlement dead end | Escrow/held liability + disposition | **Change** (D5) |
 | Lease lifecycle | DRAFT/ACTIVE/ENDED | DRAFT/FUTURE/ACTIVE/PAST/ENDED | **Change** (D6) — M2a implemented as DRAFT/FUTURE/ACTIVE/ENDED ([ADR-029](ADR-029-lease-future-and-people.md)); `PAST` stays derived/ENDED |
-| Party | Person = login | Person record + optional portal login | **Change** (D7) — M2b, next slice; design in [ADR-029](ADR-029-lease-future-and-people.md) D2 |
+| Party | Person = login | Person record + optional portal login | **Change** (D7) — implemented in M2b: `contacts.Person` + role membership + optional login ([ADR-029](ADR-029-lease-future-and-people.md) D2, [ADR-030](ADR-030-people-and-portal-logins.md)) |
 | Property dimension | Lease → unit → property chain; E2 unit shares | Every posting names a property | **Keep**; make property mandatory on GL postings in B1 |
 | GL, AP, banks, reconciliation | Absent | Built in | **Build** (ADR-026 B1–B5) |
 | Trust/escrow | Out of scope (RHP owns its properties) | Trust modules exist for third-party managers | **Keep** ADR-026 boundary; deposit liability still applies |
@@ -177,10 +177,10 @@ scoping methods are real duplication, but they are not this change. They consoli
 
 - The E4 workflow is deleted; any E4 placement decisions become audit events rather than live rows.
   The active database has none; the archived original is preserved untouched.
-- The allocation migration is irreversible by design (like ledger 0008): restore a backup instead of
-  reversing it.
-- `FUTURE` and the party split are staged, so for one release a future tenancy still reads `ACTIVE` and
-  an ex-tenant is still a deactivated login. That is recorded, not hidden.
+- The allocation migration's reverse discards only the migration-derived rows; manager-confirmed
+  applications make ledger 0008's reverse refuse the rollback.
+- At the time of this ADR, `FUTURE` and the party split were staged; both are now implemented
+  (ADR-029 M2a, ADR-030 M2b) without changing the ledger's shape.
 - Deposit money is tracked independently of AR for now; applying withheld funds to arrears waits for
   E5/B2, and the screens say so.
 

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}People — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-5xl space-y-6">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p class="rhp-eyebrow">Leasing</p>
+        <h1 class="mt-1 text-2xl font-semibold tracking-tight">People</h1>
+        <p class="mt-2 text-sm text-ink-muted">
+          The people on leases. A person does not need a portal login; a login is optional and
+          belongs to one person.
+        </p>
+      </div>
+      <a href="{% url 'contacts:person-create' %}" class="rhp-btn rhp-btn-primary">Add a person</a>
+    </div>
+
+    <form method="get" class="flex flex-wrap items-end gap-3">
+      <div class="min-w-64 flex-1"><label class="rhp-label" for="q">Search</label>
+        <input class="rhp-field" type="search" id="q" name="q" value="{{ search }}" placeholder="Name, email or phone"></div>
+      <button class="rhp-btn rhp-btn-secondary" type="submit">Search</button>
+    </form>
+
+    <div class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Name</th><th>Contact</th><th>Portal login</th><th>Leases</th><th></th></tr></thead>
+        <tbody>
+          {% for person in people %}
+            <tr>
+              <td><a href="{% url 'contacts:person-detail' person.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">{{ person.display_name }}</a></td>
+              <td class="text-ink-muted">{{ person.email|default:"—" }}{% if person.phone %} · {{ person.phone }}{% endif %}</td>
+              <td>{% if person.portal_user %}{{ person.portal_user.username }}{% if not person.portal_user.is_active %} <span class="rhp-badge-warning">inactive</span>{% endif %}{% else %}<span class="text-ink-muted">None</span>{% endif %}</td>
+              <td class="text-ink-muted">{{ person.lease_memberships.all|length }}</td>
+              <td class="text-right"><a class="rhp-link" href="{% url 'contacts:person-detail' person.pk %}">Open</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-ink-muted">No people yet. Add the first person, or create a tenant account and it will create one.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

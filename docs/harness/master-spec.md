@@ -608,8 +608,19 @@ has a scheduled state, so a signed renewal can be represented before its term st
   unchanged and still applies only to `ACTIVE`.
 - A security deposit may be received and held before the term starts; it remains held-deposit money,
   never rent.
-- A tenant on a future lease sees the upcoming terms read-only and no money; the person/login split
-  (a person may exist without a portal login) is M2b and is not part of this amendment.
+- A tenant on a future lease sees the upcoming terms read-only and no money.
+
+AMENDMENT, 2026-10-22 (party model, recorded in ADR-030). A lease party is a person, and a portal
+login is optional:
+
+- `contacts.Person` is master data (name, email, phone) and has at most one optional portal account.
+  `LeaseTenant` is that person's membership of a lease with a role — tenant, adult occupant, guarantor
+  or authorized contact — and one primary contact per lease.
+- A person without a login can be recorded on a lease and simply has no portal access; tenant-scoped
+  reads follow the membership's linked account, so the absence of a login is the access boundary.
+- Creating a tenant account creates its person; the People screen can create a person without access,
+  optionally invite them, and link an existing unlinked tenant account. No second authentication model
+  is introduced.
 
 PHASE 4 — RENT LEDGER
 ---------------------

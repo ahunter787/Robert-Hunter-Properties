@@ -11,6 +11,7 @@ from decimal import Decimal
 from django.utils import timezone
 
 from apps.accounts.models import Role, TenantProfile, User
+from apps.contacts.models import Person
 from apps.leases import services
 from apps.leases.models import (
     Lease,
@@ -181,6 +182,24 @@ def make_amenity(name: str = "Parking", *, is_active: bool = True) -> Amenity:
 _AUTO_CUTOVER = object()
 
 
+def make_person(
+    *,
+    first_name: str = "Test",
+    last_name: str = "Person",
+    email: str = "",
+    phone: str = "",
+    portal_user=None,
+) -> Person:
+    """A lease party, with or without a portal login."""
+    return Person.objects.create(
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        portal_user=portal_user,
+    )
+
+
 def make_lease(
     unit: Unit | None = None,
     *,
@@ -220,7 +239,11 @@ def make_lease(
         **fields,
     )
     for index, tenant in enumerate(tenants):
-        LeaseTenant.objects.create(lease=lease, tenant=tenant, is_primary=index == 0)
+        if isinstance(tenant, Person):
+            LeaseTenant.objects.create(lease=lease, person=tenant, is_primary=index == 0)
+        else:
+            # An account is converted to its person by the membership itself.
+            LeaseTenant.objects.create(lease=lease, tenant=tenant, is_primary=index == 0)
     return lease
 
 

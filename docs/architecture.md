@@ -31,7 +31,8 @@ GL boundary — lives in [`docs/kernel/events.md`](kernel/events.md) and
 [`docs/kernel/scope.md`](kernel/scope.md). One opening position, one allocation engine and one charge
 write path: `LeaseOpeningRecord` for starting accounts, persisted `FundsApplication` rows for allocation,
 and `ledger.services.create_charge` as the only charge writer. A security deposit is a held liability
-register with a move-out outcome, not a lease-only number that blocks settlement.
+register with a move-out outcome, not a lease-only number that blocks settlement. A lease party is a
+`contacts.Person`; the portal login is an optional link on their membership (ADR-030).
 
 **Status: Phase 7, E11 and Phase 8 owner-accepted for the local baseline.** Identity, portfolio,
 leases, the rent ledger, tenant pages and documents are established; maintenance adds private

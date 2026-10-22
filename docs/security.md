@@ -1,5 +1,14 @@
 # Security
 
+## People and portal logins — ADR-030 M2b
+
+A lease party is a `contacts.Person`; a portal login is an optional link on that person's lease
+membership and is the only path to tenant-scoped data. Linking an account is manager-only, validated
+server-side (tenant role, active account, not linked elsewhere), and atomically updates the person and
+every membership that mirrors the link. A person without a login has no portal identity and therefore
+no scoped rows — that is the access model, not a display rule. The People screen is manager-and-above;
+creating a tenant account creates its person, and account/role changes keep their existing gates.
+
 ## Upcoming tenancies — ADR-029 M2a
 
 A `FUTURE` tenancy is visible to its own tenant (the same `visible_for` scoping as any lease) but posts no

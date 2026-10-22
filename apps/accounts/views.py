@@ -320,14 +320,22 @@ class TenantAccountCreateView(ManagerRequiredMixin, FormView):
     form_class = TenantCreateForm
 
     def form_valid(self, form):
-        user = User.objects.create_user(
-            username=form.cleaned_data["username"],
-            email=form.cleaned_data["email"],
-            first_name=form.cleaned_data["first_name"],
-            last_name=form.cleaned_data["last_name"],
-            role=Role.TENANT,
-        )
-        TenantProfile.objects.create(user=user, phone=form.cleaned_data["phone"])
+        from django.db import transaction
+
+        from apps.contacts.services import person_for_user
+
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=form.cleaned_data["username"],
+                email=form.cleaned_data["email"],
+                first_name=form.cleaned_data["first_name"],
+                last_name=form.cleaned_data["last_name"],
+                role=Role.TENANT,
+            )
+            TenantProfile.objects.create(user=user, phone=form.cleaned_data["phone"])
+            # The party record is created with its optional login, so the person can be
+            # put on a lease immediately (ADR-029 D2).
+            person_for_user(user, phone=form.cleaned_data["phone"])
         delivered = emails.send_invitation(user, self.request.build_absolute_uri("/"))
         logger.info(
             "tenant account created user=%s by=%s emailed=%s",
@@ -372,7 +380,7 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         leases = list(
             Lease.objects.filter(lease_tenants__tenant=self.object)
             .select_related("unit__property")
-            .prefetch_related("lease_tenants__tenant")
+            .prefetch_related("lease_tenants__person", "lease_tenants__tenant")
             .distinct()
             .order_by("-start_date", "-pk")
         )

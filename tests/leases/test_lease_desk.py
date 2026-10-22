@@ -44,8 +44,8 @@ def test_a_lease_is_created_as_a_draft_with_its_tenants(signed_in):
     assert response.status_code == 302
     assert lease.status == LeaseStatus.DRAFT
     assert lease.unit == unit
-    assert lease.tenants == [ada, ben]
-    assert lease.primary_tenant == ada
+    assert [person.portal_user for person in lease.tenants] == [ada, ben]
+    assert lease.primary_tenant.portal_user == ada
 
 
 def test_a_lease_needs_at_least_one_tenant(signed_in):
@@ -66,7 +66,7 @@ def test_the_same_tenant_cannot_be_listed_twice(signed_in):
 
     assert response.status_code == 200
     assert not Lease.objects.exists()
-    assert b"The same tenant is listed more than once" in response.content
+    assert b"The same person is listed more than once" in response.content
 
 
 def test_only_one_primary_contact_is_allowed(signed_in):
@@ -78,7 +78,7 @@ def test_only_one_primary_contact_is_allowed(signed_in):
     response = signed_in.post(reverse("leases:lease-create"), payload)
 
     assert response.status_code == 200
-    assert b"Only one tenant can be the primary contact" in response.content
+    assert b"Only one person can be the primary contact" in response.content
 
 
 def test_a_lease_cannot_end_before_it_starts(signed_in):

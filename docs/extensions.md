@@ -447,10 +447,18 @@ choices differ from established property-management practice, industry practice 
 is kept, not rebuilt). One opening position (`LeaseOpeningRecord`; E4 onboarding retired), one allocation
 engine (persisted applications), one charge write path, deposits as a held-liability register with a
 move-out outcome, and the kernel vocabulary in [`docs/kernel/`](kernel/events.md). A `FUTURE` lease state
-and a person/login split are accepted direction, staged before E5/E6. The conformance table in ADR-028
+and a person/login split is now implemented (M2a `FUTURE` state, M2b people). The conformance table in ADR-028
 records what RHP keeps (append-only derived sub-ledger, corrections as entries, persisted applications,
 due-date charging), what it changes (deposits, lifecycle, party) and what is operational work (scheduled
 posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately reviewed.
+
+**October 22 M2b implemented — [ADR-030](decisions/ADR-030-people-and-portal-logins.md):** a lease
+party is a `contacts.Person` (tenant, adult occupant, guarantor or authorized contact); the portal
+login is an optional link on that person's lease membership, mirrored on the membership for scoped
+reads. Existing tenant accounts became people and kept their logins; a person without a login can be
+on a lease and simply has no portal access. People screen: list, create (with optional invitation),
+edit, and link an existing tenant account. The party row of ADR-028's conformance table is now
+**Change — done**.
 
 **October 21 M2a accepted — [ADR-029](decisions/ADR-029-lease-future-and-people.md):** a signed tenancy
 whose term has not begun is `FUTURE` (scheduled, not active, posting nothing), starts automatically by

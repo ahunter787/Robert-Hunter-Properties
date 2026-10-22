@@ -106,7 +106,7 @@
         <ul class="mt-3 space-y-2 text-sm">
           {% for link in lease.lease_tenants.all %}
             <li class="flex flex-wrap items-center gap-2">
-              <span class="font-medium">{{ link.tenant.display_name }}</span>
+              <span class="font-medium">{{ link.person.display_name }}</span>
               {% if link.is_primary %}
                 <span class="rounded bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Primary contact</span>
               {% endif %}

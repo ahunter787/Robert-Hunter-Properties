@@ -293,11 +293,11 @@
         <ul class="mt-3 space-y-2 text-sm">
           {% for link in lease.lease_tenants.all %}
             <li class="flex flex-wrap items-center gap-2">
-              {% include "components/tenant_identity.html" with person=link.tenant only %}
+              {% include "components/tenant_identity.html" with person=link.person only %}
               {% if link.is_primary %}
                 <span class="rounded bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Primary contact</span>
               {% endif %}
-              <span class="text-ink-muted">{{ link.tenant.email|default:"No email on file" }}</span>
+              <span class="text-ink-muted">{{ link.person.email|default:"No email on file" }}</span>
             </li>
           {% endfor %}
         </ul>

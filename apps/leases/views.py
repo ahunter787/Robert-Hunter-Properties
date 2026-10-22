@@ -82,15 +82,16 @@ class LeaseListView(ManagerRequiredMixin, ListView):
 
     def get_queryset(self):
         queryset = Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant__tenant_profile"
+            "lease_tenants__person__portal_user__tenant_profile"
         )
         search = self.request.GET.get("q", "").strip()
         if search:
             queryset = queryset.filter(
                 Q(unit__identifier__icontains=search)
                 | Q(unit__property__name__icontains=search)
-                | Q(lease_tenants__tenant__first_name__icontains=search)
-                | Q(lease_tenants__tenant__last_name__icontains=search)
+                | Q(lease_tenants__person__first_name__icontains=search)
+                | Q(lease_tenants__person__last_name__icontains=search)
+                | Q(lease_tenants__person__email__icontains=search)
                 | Q(lease_tenants__tenant__username__icontains=search)
             ).distinct()
         status = self.request.GET.get("status", "")
@@ -160,7 +161,11 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
 
     def get_queryset(self):
         return Lease.objects.select_related("unit__property").prefetch_related(
-            "lease_tenants__tenant__tenant_profile", "rent_periods", "nnn_rates", "documents"
+            "lease_tenants__person",
+            "lease_tenants__tenant__tenant_profile",
+            "rent_periods",
+            "nnn_rates",
+            "documents",
         )
 
     def get_context_data(self, **kwargs):

@@ -18,7 +18,8 @@ is easy to distinguish.
 
 - **Models** (`apps/leases/models.py`): `Lease` (unit, term, monthly rent, template, step-up rule, billing
   cutover, deposit, rent due day, status, **`ended_on`**, **`end_reason`** and **`end_reason_note`**, lease
-  file, notes), `LeaseTenant` (with exactly one primary contact per lease), `RentPeriod` and `NnnRate`
+  file, notes), `LeaseTenant` (a person's membership with a role and exactly one primary contact per
+  lease — ADR-030), `RentPeriod` and `NnnRate`
   (from P3-E1), and `LeaseOpeningRecord` (E10/ADR-027; the E4 `LeaseOnboarding` record is retired by ADR-028).
 - **Two lifecycles** (P4-E5, [ADR-020](../decisions/ADR-020-tenancy-lifecycle.md); future state M2a,
   [ADR-029](../decisions/ADR-029-lease-future-and-people.md)): occupancy is `DRAFT`, `FUTURE`, `ACTIVE`, or
@@ -94,7 +95,9 @@ lease that has already been charged.
 - **A signed tenancy that has not started now reads `FUTURE`** (M2a, [ADR-029](../decisions/ADR-029-lease-future-and-people.md)).
   Activating a future-dated lease schedules it; it posts nothing and is not occupancy, and a due
   scheduled tenancy starts automatically (the management command and the screens self-heal). A renewal may
-  therefore be signed while the current tenancy runs. The person/login split (M2b) is still pending.
+  therefore be signed while the current tenancy runs. The person/login split (M2b) is implemented:
+  lease parties are `contacts.Person` rows with roles, and a portal login is an optional membership
+  link (ADR-030); people without logins can be on a lease.
 - **The E4 onboarding mechanism is retired by ADR-028.** Starting accounts are the E10/ADR-027 workflow;
   any old E4 placement decision is preserved as an audit event, not as a live record.
 

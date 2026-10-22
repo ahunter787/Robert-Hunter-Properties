@@ -84,7 +84,7 @@ term, or how to migrate its existing rows. Those are implementation choices reco
    in a `Past` state with unsettled money. This is a deliberate, bounded divergence recorded here, to be
    revisited with the E5 move-out workflow.
 
-### D2 — The person is not the login (M2b, next slice)
+### D2 — The person is not the login (M2b, implemented — see [ADR-030](ADR-030-people-and-portal-logins.md))
 
 1. Introduce a person/contact record as the lease party, separate from `accounts.User`: a person has a
    name and contact details, can be on more than one lease over time, and **may or may not have a portal

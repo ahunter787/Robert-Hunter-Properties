@@ -1608,8 +1608,8 @@ def lease_search(term: str) -> Q:
     return (
         Q(unit__identifier__icontains=term)
         | Q(unit__property__name__icontains=term)
-        | Q(lease_tenants__tenant__first_name__icontains=term)
-        | Q(lease_tenants__tenant__last_name__icontains=term)
+        | Q(lease_tenants__person__first_name__icontains=term)
+        | Q(lease_tenants__person__last_name__icontains=term)
         | Q(lease_tenants__tenant__username__icontains=term)
     )
 
@@ -1619,7 +1619,7 @@ def ledger_rows(*, search: str = "", property_id=None) -> list[LeaseLedger]:
     leases = (
         Lease.objects.exclude(status=LeaseStatus.DRAFT)
         .select_related("unit__property")
-        .prefetch_related("lease_tenants__tenant")
+        .prefetch_related("lease_tenants__person")
     )
     if property_id:
         leases = leases.filter(unit__property_id=property_id)

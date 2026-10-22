@@ -8,7 +8,7 @@
   <a class="navigator-toggle" href="{{ p.toggle_url }}" aria-expanded="{{ p.workspace_open|yesno:'true,false' }}" aria-controls="property-units-{{ p.pk }}">{% if p.workspace_open %}▾ Collapse{% else %}▸ Expand{% endif %} {{ p.name }} units</a>
   {% if p.workspace_open %}<div class="navigator-units" id="property-units-{{ p.pk }}"><h2>Units &amp; tenants</h2>{% for u in p.workspace_units %}<a class="navigator-unit {% if unit.pk == u.pk %}selected{% endif %}" href="{{ u.workspace_url }}" {% if unit.pk == u.pk %}aria-current="page"{% endif %}>
     {% if u.photo %}{% url 'portfolio:unit-photo' u.pk as unit_photo %}{% else %}{% firstof '' as unit_photo %}{% endif %}{% include "components/location_image.html" with image_url=unit_photo image_label=u.identifier %}
-    <span><strong>{{ u.identifier }}</strong><small>{% if u.current_lease %}{% for person in u.current_lease.lease_tenants.all %}{{ person.tenant.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}No current tenant{% endif %}</small><small>{% if not u.is_active %}Out of service{% elif u.current_lease %}Occupied{% else %}Vacant{% endif %}</small></span>
+    <span><strong>{{ u.identifier }}</strong><small>{% if u.current_lease %}{% for link in u.current_lease.lease_tenants.all %}{{ link.person.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}No current tenant{% endif %}</small><small>{% if not u.is_active %}Out of service{% elif u.current_lease %}Occupied{% else %}Vacant{% endif %}</small></span>
   </a>{% empty %}<p class="text-sm text-ink-muted">No units recorded.</p>{% endfor %}</div>{% endif %}
 </article>{% empty %}<p>No properties match that filter.</p>{% endfor %}
 </details></aside>

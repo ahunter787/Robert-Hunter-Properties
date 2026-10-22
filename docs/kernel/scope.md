@@ -127,8 +127,9 @@ A signed tenancy whose start date is ahead is `FUTURE`: scheduled, not occupancy
 obligation**. It posts no rent, NNN or recovery, shows no arrears, and cannot be ended or settled; its
 rent schedule is known up front, and the first charges are raised when it starts automatically. A
 security deposit may be received and held before move-in — it stays deposit money, never rent. The party
-model is still `LeaseTenant → accounts.User`; M2b will separate a person from a login, with portal access
-as an optional per-person permission (PropertyBoss/DoorLoop pattern).
+model is now a `contacts.Person` on a lease membership (role: tenant, adult occupant, guarantor or
+authorized contact), with the portal login an optional link on that membership (ADR-030; PropertyBoss /
+DoorLoop pattern). A person with no login has no portal access.
 
 ## Known limitations (recorded, not hidden)
 
@@ -136,6 +137,6 @@ as an optional per-person permission (PropertyBoss/DoorLoop pattern).
   (raise on the due date, never ahead) already matches industry practice.
 - `Payment.CLEARED` means office-confirmed receipt, not bank settlement; the two-stage posting is B1/B3.
 - Deposit withheld-to-AR application is E5/B2 (above).
-- The party model still ties a tenant to a login until M2 ([ADR-028](../decisions/ADR-028-one-kernel.md) D7); a former
-  tenant is a deactivated user in the meantime.
+- The party model is settled (ADR-030); merging duplicate people and enforcing guarantor liability are
+  open items, not hidden behaviour.
 - Trust/escrow modules, management fees and third-party owners are out of scope (ADR-026).

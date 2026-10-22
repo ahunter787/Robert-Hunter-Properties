@@ -10,6 +10,8 @@ import datetime as dt
 
 from django.utils import timezone
 
+from apps.contacts.models import Person
+from apps.contacts.services import person_for_user
 from apps.leases.models import LeaseTemplate
 
 TODAY = timezone.localdate()
@@ -18,9 +20,10 @@ TODAY = timezone.localdate()
 def lease_post_data(unit, tenants=(), *, lease=None, **overrides):
     """POST data that recreates ``lease``, plus ``tenants`` as new rows.
 
-    ``unit`` is the unit to post and ``tenants`` are rows to add. Pass ``lease``
-    when editing: its existing tenant rows are then posted back as initial forms,
-    which is what the edit form in a browser sends.
+    ``unit`` is the unit to post and ``tenants`` are rows to add, as a person or a
+    tenant account (the account's person is created or reused). Pass ``lease`` when
+    editing: its existing rows are then posted back as initial forms, which is what
+    the edit form in a browser sends.
     """
     initial = list(lease.lease_tenants.all().order_by("pk")) if lease is not None else []
     template = lease.template if lease is not None else LeaseTemplate.FIXED
@@ -51,13 +54,16 @@ def lease_post_data(unit, tenants=(), *, lease=None, **overrides):
     for membership in initial:
         data[f"lease_tenants-{index}-id"] = membership.pk
         data[f"lease_tenants-{index}-lease"] = lease.pk
-        data[f"lease_tenants-{index}-tenant"] = membership.tenant_id
+        data[f"lease_tenants-{index}-person"] = membership.person_id
+        data[f"lease_tenants-{index}-role"] = membership.role
         if membership.is_primary:
             data[f"lease_tenants-{index}-is_primary"] = "on"
         index += 1
 
     for tenant in tenants:
-        data[f"lease_tenants-{index}-tenant"] = tenant.pk
+        person = tenant if isinstance(tenant, Person) else person_for_user(tenant)
+        data[f"lease_tenants-{index}-person"] = person.pk
+        data[f"lease_tenants-{index}-role"] = "TENANT"
         if index == 0:
             # The only row: it has to be the primary contact.
             data[f"lease_tenants-{index}-is_primary"] = "on"

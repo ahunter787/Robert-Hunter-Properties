@@ -28,6 +28,8 @@ def portal_navigation(request):
         active = "leases"
     if namespace == "manage" and name.startswith("account-"):
         active = "tenants"
+    if namespace == "contacts":
+        active = "people"
     if namespace == "accounts" and name not in ("home", "login"):
         active = "profile"
     if user.is_manager_or_above:
@@ -35,6 +37,7 @@ def portal_navigation(request):
             ("dashboard", "Dashboard", "manage:home"),
             ("properties", "Properties", "portfolio:property-list"),
             ("tenants", "Tenants", "manage:account-list"),
+            ("people", "People", "contacts:person-list"),
             ("leases", "Leases", "leases:lease-list"),
             ("ledger", "Rent & Payments", "ledger:overview"),
             ("recoveries", "Expense recoveries", "responsibilities:overview"),

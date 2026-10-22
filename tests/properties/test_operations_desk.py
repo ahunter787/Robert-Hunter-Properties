@@ -41,6 +41,7 @@ def test_sidebar_order_and_no_redundant_middle_navigation(client, manager):
         "Dashboard",
         "Properties",
         "Tenants",
+        "People",
         "Leases",
         "Rent & Payments",
         "Expense recoveries",

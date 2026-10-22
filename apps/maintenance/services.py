@@ -84,9 +84,9 @@ def tenant_audience(request, actor, lease_id):
         raise ValidationError("Choose a tenancy already shared on this request.")
     if actor.is_tenant:
         audience.lease = Lease.objects.select_for_update().get(pk=audience.lease_id)
-        if not audience.lease.lease_tenants.filter(tenant=actor).exists() or not current(
-            audience.lease
-        ):
+        if not audience.lease.lease_tenants.filter(
+            person__portal_user=actor
+        ).exists() or not current(audience.lease):
             raise PermissionDenied("Former tenancies have read-only maintenance history.")
     return audience
 
@@ -603,7 +603,11 @@ def snapshot(cost):
                 row.end_date.isoformat(),
                 row.unit_id,
                 row.updated_at.isoformat(),
-                list(row.lease_tenants.order_by("tenant_id").values_list("tenant_id", flat=True)),
+                list(
+                    row.lease_tenants.order_by("person__portal_user_id").values_list(
+                        "person__portal_user_id", flat=True
+                    )
+                ),
             ]
             for row in eligible_leases(request).order_by("pk")
         ],

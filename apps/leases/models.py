@@ -215,7 +215,7 @@ class LeaseQuerySet(models.QuerySet):
             self.for_tenant(user)
             .exclude(status=LeaseStatus.DRAFT)
             .select_related("unit__property")
-            .prefetch_related("lease_tenants__tenant")
+            .prefetch_related("lease_tenants__person")
         )
         current = leases.current().first()
         if current is not None:
@@ -612,19 +612,19 @@ class Lease(models.Model):
 
     @property
     def tenants(self):
-        """Everyone on the lease. Prefetch ``lease_tenants__tenant`` in lists."""
-        return [link.tenant for link in self.lease_tenants.all()]
+        """The people on the lease. Prefetch ``lease_tenants__person`` in lists."""
+        return [link.person for link in self.lease_tenants.all()]
 
     @property
     def primary_tenant(self):
         for link in self.lease_tenants.all():
             if link.is_primary:
-                return link.tenant
+                return link.person
         return None
 
     @property
     def tenant_names(self) -> str:
-        names = [tenant.display_name for tenant in self.tenants]
+        names = [person.display_name for person in self.tenants]
         return ", ".join(names) if names else "No tenants yet"
 
 
@@ -751,24 +751,53 @@ class NnnRate(models.Model):
             raise ValidationError({"lease": "Only a lease that carries NNN takes an NNN amount."})
 
 
+class LeaseRole(models.TextChoices):
+    """What a person's relationship to the tenancy is (ADR-029 D2)."""
+
+    TENANT = "TENANT", "Tenant"
+    ADULT_OCCUPANT = "ADULT_OCCUPANT", "Adult occupant"
+    GUARANTOR = "GUARANTOR", "Guarantor"
+    AUTHORIZED_CONTACT = "AUTHORIZED_CONTACT", "Authorized contact"
+
+
 class LeaseTenant(models.Model):
-    """The specification's LEASE TENANT: who is on the lease, and who is primary."""
+    """A person's membership of one lease: their role, and who is the primary contact.
+
+    The person is master data; the portal login is an optional link on that person and
+    never the identity of the tenancy party. A co-occupant or guarantor can therefore be
+    recorded without an account, and a person can move between tenancies.
+    """
 
     lease = models.ForeignKey(Lease, on_delete=models.CASCADE, related_name="lease_tenants")
-    tenant = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+    person = models.ForeignKey(
+        "contacts.Person",
         # PROTECT: a person with tenancy history is never deleted.
         on_delete=models.PROTECT,
         related_name="lease_memberships",
-        limit_choices_to={"role": "TENANT"},
+    )
+    tenant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        # PROTECT: a login with tenancy history is never deleted; the person row keeps
+        # the party when the login is deactivated.
+        on_delete=models.PROTECT,
+        related_name="lease_memberships",
+        help_text="Optional portal login for this membership.",
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=LeaseRole.choices,
+        default=LeaseRole.TENANT,
+        help_text="Tenant, adult occupant, guarantor or authorized contact.",
     )
     is_primary = models.BooleanField(default=False, help_text="The primary contact for this lease.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ("-is_primary", "tenant__first_name", "tenant__last_name", "tenant__username")
+        ordering = ("-is_primary", "person__last_name", "person__first_name", "person__pk")
         constraints = [
-            models.UniqueConstraint(fields=["lease", "tenant"], name="tenant_once_per_lease"),
+            models.UniqueConstraint(fields=["lease", "person"], name="person_once_per_lease"),
             models.UniqueConstraint(
                 fields=["lease"],
                 condition=models.Q(is_primary=True),
@@ -777,5 +806,20 @@ class LeaseTenant(models.Model):
         ]
 
     def __str__(self) -> str:
-        role = "primary tenant" if self.is_primary else "tenant"
-        return f"{self.tenant.display_name} ({role} on {self.lease})"
+        role = "primary contact" if self.is_primary else self.get_role_display().lower()
+        return f"{self.person.display_name} ({role} on {self.lease})"
+
+    def save(self, *args, **kwargs):
+        # The person is the party; a membership created from an account alone gets that
+        # account's person (the legacy shape every factory and import still uses).
+        if self.person_id is None:
+            if self.tenant_id is None:
+                raise ValidationError("Choose the person who is on this lease.")
+            from apps.contacts.services import person_for_user
+
+            phone = getattr(getattr(self.tenant, "tenant_profile", None), "phone", "") or ""
+            self.person = person_for_user(self.tenant, phone=phone)
+        # The person owns the optional login; the membership mirrors it so portal
+        # scoping stays one indexed join and cannot drift.
+        self.tenant = self.person.portal_user
+        return super().save(*args, **kwargs)

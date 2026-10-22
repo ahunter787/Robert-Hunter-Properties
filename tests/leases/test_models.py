@@ -98,8 +98,8 @@ def test_tenants_are_listed_with_the_primary_first():
     ben = make_tenant(username="ben", first_name="Ben", last_name="Two")
     lease = make_lease(unit, tenants=[ada, ben])
 
-    assert [tenant.username for tenant in lease.tenants] == ["ada", "ben"]
-    assert lease.primary_tenant == ada
+    assert [person.display_name for person in lease.tenants] == ["Ada One", "Ben Two"]
+    assert lease.primary_tenant.portal_user == ada
     assert lease.tenant_names == "Ada One, Ben Two"
 
 
@@ -165,7 +165,7 @@ def test_for_tenant_scopes_to_that_person():
     mine = make_lease(make_unit(), tenants=[make_tenant(username="mine")])
     make_lease(make_unit(), tenants=[make_tenant(username="theirs")])
 
-    leases = Lease.objects.for_tenant(mine.tenants[0])
+    leases = Lease.objects.for_tenant(mine.tenants[0].portal_user)
 
     assert list(leases) == [mine]
 
