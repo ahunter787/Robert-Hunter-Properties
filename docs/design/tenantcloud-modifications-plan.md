@@ -1,6 +1,8 @@
 # RHP modifications from the TenantCloud / TurboTenant study
 
-**Status:** planning proposal, not approved; no product code is implemented by this document.
+**Status:** E15 and E16 approved; E17 approved with the owner's narrowed scope (proof intake and manager
+decision only, no automated screening). Implementation has not yet shipped when this line is read on a
+feature branch; the kernel itself is complete in development.
 
 This is the second half of the task the accounting kernel was built for: the kernel is
 feature-complete in development (B1–B5, 1,315 passing tests at the time of writing), so the
@@ -178,45 +180,64 @@ Money events render the ledger's own figures and links; the timeline never compu
 - Tests: tenant sees own tenancy only, other tenant's timeline 403/404, staff sees portfolio, hidden
   notes excluded, filters/pagination, money event figures equal the ledger, no N+1 on the timeline page.
 
-## 5. E17 — renters-insurance proof (conditional; owner decision required)
+## 5. E17 — renters-insurance proof (approved, narrowed)
 
-### 5.1 Scope conflict that must be resolved first
+### 5.1 Approved scope
 
-The RHP master specification and `AGENTS.md` list **insurance** among explicitly excluded product
-features. The study's recommendation is deliberately narrow: a lease requirement, tenant upload of
-proof, staff review, status and reminders — **no selling, quoting, underwriting or partner funnel**.
-The user asked for this feature, but the written non-goal says it cannot be reopened without an
-explicit owner decision (the study's own capability table marks it **Never** except for this proposed
-compliance subset).
+The owner approved a deliberately small feature and drew the distinction clearly:
 
-**Therefore E17 is planned, not approved.** Before any product code, the owner must either:
+- RHP **requires** renters insurance as a lease obligation and warns while proof is missing.
+- The tenant uploads proof; a manager reviews it. RHP does **not** screen the policy automatically and
+  is **not responsible for insurance advice, sales, quotes or underwriting**.
+- The tenant-visible state is three-state:
+  1. **Missing** — no proof has been supplied; a warning and onboarding to-do are shown.
+  2. **Submitted — pending manager review** — proof exists and waits for a human decision.
+  3. **Reviewed — accepted or rejected** — the manager's decision is visible, with the rejection reason
+     when rejected.
+- The feature contributes to the tenant timeline and the onboarding checklist.
+- A future automatic screening step is explicitly out of scope for the first go-live.
 
-1. approve a narrow **proof-of-insurance compliance** capability that is explicitly not an insurance
-   product, and amend the non-goal wording; or
-2. decline it, leaving the plan as a rejected option.
+This resolves the earlier non-goal conflict without requiring an insurance product: RHP stores and shows
+the evidence and the manager's decision. No partner funnel, AI audit, scoring or policy advice is built.
 
-The rest of E15/E16 does not depend on E17.
+### 5.2 Data and state
 
-### 5.2 If approved — minimal design
+- `Lease.renters_insurance_required` (default `False`), set during lease setup/onboarding.
+- `InsuranceProof` in `apps/documents` (or a small `apps/insurance` app): lease FK, `document` FK to the
+  existing private `Document` store with a new `INSURANCE` category, submitted_by/at, optional policy
+  start/end dates, `status` (`SUBMITTED`, `ACCEPTED`, `REJECTED`), `reviewed_by`, `reviewed_at`,
+  `review_note` (required when rejected), and an append-only replacement link.
+- The **lease-level tenant state** is derived: accepted current proof → reviewed/accepted; a submitted
+  proof → pending; no proof → missing; rejected latest proof → reviewed/rejected with reason. There is no
+  separate fourth "expired" state in this first slice.
+- One current proof per lease; a new upload supersedes the previous one by append-only history, and the
+  manager decision applies to that submission.
+- Tenant cannot edit a submitted proof; a replacement is a new submission. Staff decisions are immutable
+  once recorded; a correction is a new review event, not an edit.
 
-- `Lease.renters_insurance_required` (default `False`) and optional `insurance_due_date` derived from
-  the lease start; set on lease setup, visible on lease/tenant pages.
-- `InsuranceProof` in `apps/documents` or a small `apps/insurance` app: lease FK, `document` FK to the
-  existing private `Document` store (category `INSURANCE`), policy start/end, submitted_by/at,
-  status (`SUBMITTED`, `VERIFIED`, `ISSUES`, `EXPIRED`, `WAIVED`), reviewer, review notes,
-  reviewed_at, `replaces` link; append-only history.
-- Tenant route `/account/insurance/`: requirement, current status, upload PDF/JPG/PNG with policy dates,
-  persistent issue list after review, replace/withdraw own pending proof.
-- Staff route `/manage/tenants/<id>/insurance/` or a lease tab: review, mark verified/issues/waived,
-  view/download the private document, record notes; no delete of history.
-- Warnings: tenant dashboard to-do and staff attention badge while an active/upcoming lease with the
-  requirement has no valid proof or the proof expires soon; reminders use existing communication/delivery
-  mechanisms, with a recorded attempt.
-- Timeline events: required, uploaded, review result, removed/replaced, expiring.
-- **Never:** insurance sales, partner quotes, underwriting, automatic purchase, AI document audit. Staff
-  review is the authority; no new dependency.
-- Tests: requirement off means no warning/route; tenant own-lease scoping; staff review; file type/size
-  and private serve; status persistence; expiry warning; audit/timeline events; no cross-tenant access.
+### 5.3 Screens and behavior
+
+- Tenant `/account/insurance/` (and dashboard to-do): requirement copy, three-state chip, upload/replace
+  form (PDF/JPG/PNG + optional policy dates), rejection reason when rejected. No quote/sales link.
+- Manager lease/tenant tab: proof list, private download, Accept/Reject action with note; no automated
+  screening result to "override".
+- Staff dashboard/lease warning while a required proof is missing or rejected. Reminder sending reuses
+  the existing communications/delivery path, recorded as an attempt.
+- Onboarding checklist: "Renters insurance proof" item shown when the lease requires it, clearing only on
+  an accepted proof (or an explicit manager waiver outside this slice? No — this slice has no waiver;
+  decide later if needed).
+- Timeline (E16) events: requirement set, proof submitted, accepted, rejected, replaced.
+- File access uses the existing private document serve view and tenancy authorization; no public URL.
+
+### 5.4 Tests and exclusions
+
+- Requirement off means no warning and no tenant to-do; requirement on and no proof shows missing.
+- Tenant sees only own lease; staff sees portfolio; download requires authorization.
+- Upload creates SUBMITTED; manager Accept/Reject writes immutable review; rejection needs a note; tenant
+  sees persistent decision and reason.
+- Replacement history is append-only; onboarding item and timeline events follow the decision.
+- **Never in this slice:** automatic screening, policy OCR/AI, insurance sales, partner quotes,
+  underwriting, premium collection, a fourth expiry/waiver state.
 
 ## 6. Sequencing and ownership
 
@@ -226,7 +247,7 @@ The rest of E15/E16 does not depend on E17.
 | 2 | **E15.2 Archive/mute + E15.4 shared media** | Same app; low schema risk; improves daily inbox | same branch |
 | 3 | **E15.3 Export + E15.5 internal notes** | Export depends on the message query; notes are the bridge to E16 | same branch |
 | 4 | **E16 timeline** | Consumes E15 message events plus existing ledger/maintenance/document facts | `rhp-e16-timeline` |
-| 5 | **E17 insurance proof** | Only after owner decision; timeline should already exist for events | `rhp-e17-insurance` |
+| 5 | **E17 insurance proof** | Approved narrow scope; timeline should already exist for its events | `rhp-e17-insurance` |
 
 Each extension follows the repository rule: one extension = one entry = one branch, tests before UI,
 full gate (`make test`, `make lint`, `make check`, `make check-deploy`), docs and Plane published, no
@@ -243,8 +264,8 @@ library, marketplace/lead generation, insurance **sales**, realtime chat, GraphQ
 ## 8. Definition of done for this planning pass
 
 - This document is published and linked from the extension register.
-- E15, E16 and E17 are registered as **Proposed** with their scope boundaries.
-- E17 records the owner-decision gate and does not imply approval.
-- Plane mirrors the proposed items; no product code is written for a proposal.
+- E15, E16 and E17 are registered as **Approved** with their scope boundaries.
+- E17 records the approved narrow three-state scope and the no-screening boundary.
+- Plane mirrors the approved items; implementation branches are named in the register.
 - The implementation order, acceptance criteria, tests and exclusions are specific enough for an
   engineer to start E15 without re-reading the whole study.

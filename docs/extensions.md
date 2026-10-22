@@ -37,16 +37,18 @@ parser accepts the longer form.
 | **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **Building** — tenant cutover, held credit and dated repayments owner-accepted for local merge October 21; the core-kernel consolidation is [ADR-028](decisions/ADR-028-one-kernel.md) with [kernel vocabulary](kernel/events.md); [record](design/held-credit-repayments.md), [ADR-027](decisions/ADR-027-simple-cutover.md); accounting [ADR-026](decisions/ADR-026-property-accounting.md) remains separately reviewed |
 | **E11** | **Operations desk application migration** — persistent sidebar, unified Properties and existing portal workflows; RHP domain rules preserved | Presentation | In main — [owner accepted October 19, 2026](design/implementation.md); local merge authorized, no push |
 | **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | In main — owner accepted for local merge; [Phase 8](phases/phase-08-communications.md), ADR-024 |
-| **E15** | **Messenger operational enhancements** — staff quick replies, per-user archive/mute, transcript export, shared-media index, staff-only internal notes, optional maintenance-request context; no realtime/typing/receipts/SMS | Additive | **Proposed** — evidence and scope in [the TenantCloud plan](design/tenantcloud-modifications-plan.md); owner approval required |
-| **E16** | **Tenant timeline** — one authorized, date-grouped read model of lease, ledger, maintenance, document, messages and manual staff activity per tenancy, with explicit tenant visibility | Additive | **Proposed** — evidence and scope in [the TenantCloud plan](design/tenantcloud-modifications-plan.md); owner approval required |
-| **E17** | **Renters-insurance proof** — lease requirement, tenant upload/replace proof, persistent status, staff review, warnings/reminders and timeline events; **no insurance sales, quotes, underwriting or partner funnel** | Additive | **Proposed, conditional** — the written non-goal currently excludes insurance; owner must approve the narrow compliance capability first. See [the plan](design/tenantcloud-modifications-plan.md) §5 |
+| **E15** | **Messenger operational enhancements** — staff quick replies, per-user archive/mute, transcript export, shared-media index, staff-only internal notes, optional maintenance-request context; no realtime/typing/receipts/SMS | Additive | **Approved** — implementation starting; evidence/scope in [the TenantCloud plan](design/tenantcloud-modifications-plan.md) |
+| **E16** | **Tenant timeline** — one authorized, date-grouped read model of lease, ledger, maintenance, document, messages and manual staff activity per tenancy, with explicit tenant visibility | Additive | **Approved** — implementation starting; evidence/scope in [the TenantCloud plan](design/tenantcloud-modifications-plan.md) |
+| **E17** | **Renters-insurance proof** — lease requirement, tenant upload, **three-state tenant view (missing / submitted-pending review / accepted or rejected)**, manager decision, warnings and onboarding/timeline entries; **no automated screening, insurance sales, quotes, underwriting or partner funnel** | Additive | **Approved for implementation** (owner clarified the insurance non-goal covers automated screening/sales, not proof intake); see [the plan](design/tenantcloud-modifications-plan.md) §5 |
 
-## Proposed study-derived extensions (E15–E17)
+## Study-derived extensions (E15–E17)
 
-The TenantCloud/TurboTenant findings in the workspace produced a concrete, sequenced proposal:
-[messenger enhancements, tenant timeline, and a conditional proof-of-insurance compliance workflow](design/tenantcloud-modifications-plan.md).
-E15–E17 are **Proposed, not approved**; E17 additionally needs the owner to amend the written insurance
-non-goal before any code. None of this changes the accounting kernel or the E12 decisions.
+The TenantCloud/TurboTenant findings in the workspace produced a concrete, sequenced plan:
+[messenger enhancements, tenant timeline, and the approved proof-of-insurance workflow](design/tenantcloud-modifications-plan.md).
+E15 and E16 are **approved**. E17 is approved as a narrow **proof-of-insurance intake and manager
+decision** feature: the app records whether proof is missing, submitted and waiting for a manager, or
+accepted/rejected; it does not screen, sell or underwrite insurance. None of this changes the accounting
+kernel or the E12 decisions.
 
 ## 1. How a change to the specification is handled
 
