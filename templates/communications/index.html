@@ -1,6 +1,6 @@
 {% extends "communications/base.html" %}
 {% block workspace %}<div class="section-heading"><h2 class="text-lg font-semibold">Messages</h2><a class="rhp-btn rhp-btn-primary" href="{{ new_url }}">New conversation</a></div>
-{% if user.is_manager_or_above %}<a class="rhp-link" href="{% url 'communications:deliveries' %}">Review email delivery</a>{% endif %}
+{% if user.is_manager_or_above %}<p class="space-x-4"><a class="rhp-link" href="{% url 'communications:deliveries' %}">Review email delivery</a><a class="rhp-link" href="{% url 'communications:quick-replies' %}">Quick replies</a>{% if archived %}<a class="rhp-link" href="{% url 'communications:index' %}">Active inbox</a>{% else %}<a class="rhp-link" href="?archived=1">Archived for me</a>{% endif %}</p>{% endif %}
 <form method="get" class="workspace-section space-y-4">
   <div class="workspace-filters">
     <label class="rhp-label">Search conversations<input class="rhp-field" name="q" value="{{ search }}" placeholder="Subject, person, property, or unit"></label>

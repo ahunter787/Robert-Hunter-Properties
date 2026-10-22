@@ -11,7 +11,13 @@ from django.utils import timezone
 
 from apps.accounts.models import MANAGER_ROLES, User
 
-from .models import Announcement, Conversation, Notification, NotificationAttempt
+from .models import (
+    Announcement,
+    Conversation,
+    ConversationPreference,
+    Notification,
+    NotificationAttempt,
+)
 
 
 def _queue(*, recipient, portal_url, message=None, version=None):
@@ -29,7 +35,12 @@ def queue_message(message, portal_base):
         users = User.objects.filter(pk__in=users.values("pk")) | User.objects.filter(
             role__in=MANAGER_ROLES
         )
-    for user in users.filter(is_active=True).exclude(pk=message.author_id).distinct():
+    muted = ConversationPreference.objects.filter(
+        conversation=conversation, mute_email=True
+    ).values("user_id")
+    for user in (
+        users.filter(is_active=True).exclude(pk=message.author_id).exclude(pk__in=muted).distinct()
+    ):
         namespace = "tenant_communications" if user.is_tenant else "communications"
         url = portal_base.rstrip("/") + reverse(
             f"{namespace}:conversation", args=[conversation.public_id]

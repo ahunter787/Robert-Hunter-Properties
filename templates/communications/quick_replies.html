@@ -1,0 +1,7 @@
+{% extends "communications/base.html" %}
+{% block workspace %}<div class="section-heading"><h2 class="text-lg font-semibold">Quick replies</h2><a class="rhp-btn rhp-btn-primary" href="{% url 'communications:quick-reply-new' %}">New quick reply</a></div>
+<p class="rhp-help">Staff-only templates for the composer. The tenant never sees this list, and every sent message is the immutable record.</p>
+<table class="rhp-table mt-4"><thead><tr><th>Label</th><th>Property</th><th>Status</th><th></th></tr></thead><tbody>
+{% for reply in quick_replies %}<tr><td>{{ reply.label }}</td><td>{{ reply.property.name|default:"Portfolio" }}</td><td>{% if reply.is_active %}Active{% else %}Disabled{% endif %}</td><td class="text-right"><a class="rhp-link" href="{% url 'communications:quick-reply-edit' reply.pk %}">Edit</a><form method="post" action="{% url 'communications:quick-reply-toggle' reply.pk %}" class="inline">{% csrf_token %}<button class="rhp-link ml-3">{% if reply.is_active %}Disable{% else %}Enable{% endif %}</button></form></td></tr>
+{% empty %}<tr><td colspan="4">No quick replies yet.</td></tr>{% endfor %}</tbody></table>
+<p class="mt-3"><a class="rhp-link" href="?archived=1">Show disabled</a></p>{% endblock %}

@@ -70,7 +70,14 @@ per-conversation archive/block, chat export, shared media, an optional maintenan
 a staff-only internal note. It also shows the tenant side must **not** expose owner-only tooling:
 TurboTenant hides Quick Reply, Archive, Block and Export from the renter.
 
-### 3.2 E15 increments
+### 3.2 E15 implementation status
+
+Implemented in development on `rhp-e15-messenger`: staff quick replies, per-user archive/mute,
+conversation transcript exports (text/CSV), shared-media index and staff-only internal notes, with tests
+for manager/tenant/other-lease isolation. The optional maintenance-request context remains deferred; it
+is not required for the approved daily-inbox value.
+
+### 3.3 E15 increments
 
 #### E15.1 Quick replies (staff only)
 
@@ -126,7 +133,7 @@ TurboTenant hides Quick Reply, Archive, Block and Export from the renter.
   a merge of maintenance updates into chat.
 - Tests: link preserves tenancy authorization; no permission change on the maintenance record.
 
-### 3.3 E15 acceptance and exclusions
+### 3.4 E15 acceptance and exclusions
 
 - One extension branch; no change to immutable message semantics; no new dependency.
 - Tests cover authorization first (tenant/other staff/other lease), then UI, then email behavior.

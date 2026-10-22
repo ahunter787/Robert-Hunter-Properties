@@ -15,7 +15,16 @@ from apps.common.files import document_response
 from apps.leases.models import Lease
 
 from . import delivery, forms, services
-from .models import Announcement, Attachment, Conversation, Message, Notification, ReadPosition
+from .models import (
+    Announcement,
+    Attachment,
+    Conversation,
+    ConversationPreference,
+    Message,
+    Notification,
+    QuickReply,
+    ReadPosition,
+)
 
 
 def namespace(request):
@@ -115,6 +124,12 @@ def index(request):
         raise Http404
     if state:
         rows = rows.filter(state=state)
+    archived = request.GET.get("archived") == "1"
+    preferences = ConversationPreference.objects.filter(
+        conversation=OuterRef("pk"), user=request.user
+    )
+    rows = rows.annotate(my_archived=Exists(preferences.filter(archived_at__isnull=False)))
+    rows = rows.filter(my_archived=archived)
     rows = with_unread(rows, request.user)
     if request.GET.get("unread") == "1":
         rows = rows.filter(unread=True)
@@ -163,6 +178,11 @@ def thread_context(request, row, form=None):
         read_receipt=receipt,
         poll=not page.has_next(),
         work_form=forms.WorkForm(),
+        quick_replies=QuickReply.objects.filter(is_active=True)
+        .filter(Q(property__isnull=True) | Q(property=row.lease.unit.property))
+        .order_by("label", "pk")
+        if request.user.is_manager_or_above
+        else [],
         events=row.events.select_related("actor").order_by("pk")
         if request.user.is_manager_or_above
         else [],
@@ -587,3 +607,138 @@ def retry(request, pk):
             button="Retry email",
         ),
     )
+
+
+@login_required
+def quick_reply_list(request):
+    services.authorize(request.user, manager=True)
+    rows = QuickReply.objects.select_related("property").order_by("label", "pk")
+    if request.GET.get("archived") != "1":
+        rows = rows.filter(is_active=True)
+    return render(
+        request,
+        "communications/quick_replies.html",
+        context(request, section="messages", quick_replies=rows),
+    )
+
+
+@login_required
+def quick_reply_edit(request, pk=None):
+    services.authorize(request.user, manager=True)
+    instance = get_object_or_404(QuickReply, pk=pk) if pk else None
+    form = forms.QuickReplyForm(request.POST or None, instance=instance)
+    if request.method == "POST" and form.is_valid():
+        row = form.save(commit=False)
+        if instance is None:
+            row.created_by = request.user
+        row.save()
+        messages.success(request, "Quick reply saved.")
+        return redirect("communications:quick-replies")
+    return render(
+        request,
+        "communications/quick_reply_form.html",
+        context(request, section="messages", form=form, reply=instance),
+    )
+
+
+@login_required
+def quick_reply_toggle(request, pk):
+    services.authorize(request.user, manager=True)
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    row = get_object_or_404(QuickReply, pk=pk)
+    row.is_active = not row.is_active
+    row.save(update_fields=["is_active", "updated_at"])
+    messages.success(request, "Quick reply updated.")
+    return redirect("communications:quick-replies")
+
+
+@login_required
+def conversation_archive(request, public_id):
+    row = scoped_conversation(request, public_id)
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    services.set_preference(
+        row,
+        actor=request.user,
+        archived=request.POST.get("archived") == "1",
+    )
+    messages.success(request, "Conversation inbox updated.")
+    return redirect("communications:conversation", public_id=row.public_id)
+
+
+@login_required
+def conversation_mute(request, public_id):
+    row = scoped_conversation(request, public_id)
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    services.set_preference(row, actor=request.user, mute=request.POST.get("mute") == "1")
+    messages.success(request, "Email preference updated.")
+    return redirect("communications:conversation", public_id=row.public_id)
+
+
+@login_required
+def conversation_note(request, public_id):
+    row = scoped_conversation(request, public_id)
+    services.authorize(request.user, manager=True)
+    if request.method != "POST":
+        return HttpResponse(status=405)
+    form = forms.InternalNoteForm(request.POST)
+    if form.is_valid():
+        services.add_internal_note(row, actor=request.user, body=form.cleaned_data["body"])
+        messages.success(request, "Internal note added.")
+    else:
+        messages.error(request, "Write a note before saving.")
+    return redirect("communications:conversation", public_id=row.public_id)
+
+
+@login_required
+def conversation_export(request, public_id, fmt):
+    row = scoped_conversation(request, public_id)
+    services.authorize(request.user, manager=True)
+    if fmt not in ("txt", "csv"):
+        raise Http404
+    if fmt == "csv":
+        import csv
+        import io
+
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["date", "author", "body", "attachments"])
+        for message in row.messages.select_related("author").prefetch_related("attachments"):
+            writer.writerow(
+                [
+                    message.created_at.isoformat(),
+                    message.author.display_name,
+                    message.body,
+                    "; ".join(item.display_name for item in message.attachments.all()),
+                ]
+            )
+        content, content_type, filename = (
+            output.getvalue(),
+            "text/csv",
+            f"conversation-{row.public_id}.csv",
+        )
+    else:
+        lines = [f"{row.subject}\n{row.lease.unit.label}\n"]
+        for message in row.messages.select_related("author"):
+            lines.append(
+                f"{message.created_at.isoformat()} · {message.author.display_name}\n"
+                f"{message.body}\n"
+            )
+        content, content_type, filename = (
+            "\n".join(lines),
+            "text/plain",
+            f"conversation-{row.public_id}.txt",
+        )
+    from apps.audit.services import record
+
+    record(
+        request.user,
+        "COMMUNICATION_CHANGED",
+        obj=row,
+        summary=f"Conversation transcript exported ({fmt}).",
+    )
+    response = HttpResponse(content, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response

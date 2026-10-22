@@ -46,6 +46,16 @@
       status.textContent = 'Updates are temporarily unavailable. Your unsent message is unchanged.';
     } finally { busy = false; }
   };
+  const quickReply = document.querySelector('[data-quick-reply-select]');
+  if (quickReply) {
+    quickReply.addEventListener('change', () => {
+      const option = quickReply.selectedOptions[0];
+      if (!option || !option.dataset.body) return;
+      const body = document.querySelector('textarea[name="body"]');
+      if (body) { body.value = option.dataset.body; body.focus(); }
+      quickReply.value = '';
+    });
+  }
   setInterval(poll, 15000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
 })();

@@ -5,11 +5,11 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
-from apps.common.forms import StyledForm
+from apps.common.forms import StyledForm, StyledModelForm
 from apps.leases.models import Lease
 from apps.properties.models import Property, Unit
 
-from .models import Conversation
+from .models import Conversation, QuickReply
 
 
 def leases_for(actor):
@@ -178,3 +178,25 @@ class WorkForm(ActionForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields.pop("acknowledge_duplicate")
+
+
+class QuickReplyForm(StyledModelForm):
+    class Meta:
+        model = QuickReply
+        fields = ("label", "body", "property")
+        widgets = {"body": forms.Textarea(attrs={"rows": 5})}
+        labels = {"body": "Message body", "property": "Property scope"}
+        help_texts = {"property": "Leave blank to make the reply available across the portfolio."}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["property"].queryset = Property.objects.order_by("name")
+
+
+class InternalNoteForm(StyledForm):
+    body = forms.CharField(
+        max_length=10000,
+        widget=forms.Textarea(attrs={"rows": 3}),
+        label="Internal note",
+        help_text="Staff-only. Never visible to the tenant, emailed, or exported to them.",
+    )

@@ -24,7 +24,9 @@ from .models import (
     AnnouncementVersion,
     Attachment,
     Conversation,
+    ConversationPreference,
     Event,
+    InternalNote,
     Message,
     Participant,
     ReadPosition,
@@ -543,3 +545,48 @@ def announcement_followup(announcement, *, actor, lease):
     if created:
         Participant.objects.create(conversation=conversation, user=actor)
     return conversation
+
+
+@transaction.atomic
+def set_preference(conversation, *, actor, archived=None, mute=None):
+    """Per-user inbox state; never mutates shared history or authorization."""
+    authorize(actor, manager=True)
+    if not Conversation.objects.visible_to(actor).filter(pk=conversation.pk).exists():
+        raise PermissionDenied
+    preference, _ = ConversationPreference.objects.select_for_update().get_or_create(
+        conversation=conversation, user=actor
+    )
+    if archived is not None:
+        preference.archived_at = timezone.now() if archived else None
+    if mute is not None:
+        preference.mute_email = bool(mute)
+    preference.save()
+    record(
+        actor,
+        "COMMUNICATION_CHANGED",
+        obj=conversation,
+        summary="Conversation inbox preference changed.",
+        archived=preference.archived_at.isoformat() if preference.archived_at else "",
+        mute=preference.mute_email,
+    )
+    return preference
+
+
+@transaction.atomic
+def add_internal_note(conversation, *, actor, body):
+    """Staff-only append-only note; never returned to a tenant."""
+    authorize(actor, manager=True)
+    if not Conversation.objects.visible_to(actor).filter(pk=conversation.pk).exists():
+        raise PermissionDenied
+    body = (body or "").strip()
+    if not body or len(body) > 10000:
+        raise ValidationError("Write a note of up to 10,000 characters.")
+    note = InternalNote.objects.create(conversation=conversation, author=actor, body=body)
+    record(
+        actor,
+        "COMMUNICATION_CHANGED",
+        obj=conversation,
+        summary="Internal note added.",
+        note=note.pk,
+    )
+    return note

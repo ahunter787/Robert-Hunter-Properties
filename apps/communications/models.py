@@ -324,3 +324,76 @@ class NotificationAttempt(Immutable):
 
     def __str__(self):
         return f"Email attempt #{self.pk}"
+
+
+class QuickReply(models.Model):
+    """A staff-only composer template. The sent message remains the record."""
+
+    label = models.CharField(max_length=80)
+    body = models.TextField(max_length=10000)
+    property = models.ForeignKey(
+        "properties.Property", null=True, blank=True, on_delete=models.PROTECT
+    )
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("label", "pk")
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(label=""), name="quick_reply_label_required"
+            ),
+            models.CheckConstraint(condition=~models.Q(body=""), name="quick_reply_body_required"),
+        ]
+
+    def __str__(self):
+        return self.label
+
+
+class ConversationPreference(models.Model):
+    """Per-staff-view inbox state; it never changes the shared conversation."""
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.CASCADE, related_name="preferences"
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    archived_at = models.DateTimeField(null=True, blank=True)
+    mute_email = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["conversation", "user"], name="comm_preference_unique")
+        ]
+
+    def __str__(self):
+        return f"Preference #{self.pk}"
+
+
+class InternalNote(models.Model):
+    """Staff-only conversation note; never tenant-visible or emailed."""
+
+    conversation = models.ForeignKey(
+        Conversation, on_delete=models.PROTECT, related_name="internal_notes"
+    )
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    body = models.TextField(max_length=10000)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("pk",)
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(body=""), name="comm_note_body_required")
+        ]
+
+    def __str__(self):
+        return f"Internal note #{self.pk}"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValidationError("Internal notes are append-only.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Internal notes are never deleted.")

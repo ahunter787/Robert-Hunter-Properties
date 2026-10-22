@@ -1,0 +1,3 @@
+{% extends "communications/base.html" %}
+{% block workspace %}<h2 class="text-lg font-semibold">{% if reply %}Edit quick reply{% else %}New quick reply{% endif %}</h2>
+<form method="post" class="workspace-section space-y-4" novalidate>{% csrf_token %}{% include "components/form.html" %}<div class="flex flex-wrap gap-3"><button class="rhp-btn rhp-btn-primary">Save quick reply</button><a class="rhp-btn rhp-btn-secondary" href="{% url 'communications:quick-replies' %}">Cancel</a></div></form>{% endblock %}
