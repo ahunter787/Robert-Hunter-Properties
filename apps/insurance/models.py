@@ -30,9 +30,7 @@ class InsuranceProof(models.Model):
     )
     policy_start = models.DateField(null=True, blank=True)
     policy_end = models.DateField(null=True, blank=True)
-    submitted_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL
-    )
+    submitted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     submitted_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(
         max_length=12, choices=ProofStatus.choices, default=ProofStatus.SUBMITTED

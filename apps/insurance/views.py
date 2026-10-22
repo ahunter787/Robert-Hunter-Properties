@@ -105,9 +105,10 @@ def staff_detail(request, pk):
 @login_required
 def proof_document(request, pk):
     proof = get_object_or_404(InsuranceProof.objects.select_related("document", "lease"), pk=pk)
-    allowed = request.user.is_manager_or_above or proof.lease.lease_tenants.filter(
-        tenant=request.user
-    ).exists()
+    allowed = (
+        request.user.is_manager_or_above
+        or proof.lease.lease_tenants.filter(tenant=request.user).exists()
+    )
     if not allowed:
         raise Http404
     document = proof.document

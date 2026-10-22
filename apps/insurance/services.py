@@ -13,9 +13,7 @@ from .models import InsuranceProof, ProofStatus, TenantState
 
 def current_proof(lease):
     return (
-        lease.insurance_proofs.select_related("document")
-        .order_by("-submitted_at", "-pk")
-        .first()
+        lease.insurance_proofs.select_related("document").order_by("-submitted_at", "-pk").first()
     )
 
 

@@ -24,9 +24,7 @@ def staff_lease(request, pk):
         from django.core.exceptions import PermissionDenied
 
         raise PermissionDenied
-    lease = get_object_or_404(
-        Lease.objects.select_related("unit__property"), pk=pk
-    )
+    lease = get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
     form = ManualEntryForm(request.POST or None, lease=lease)
     if request.method == "POST" and form.is_valid():
         services.add_manual_entry(
