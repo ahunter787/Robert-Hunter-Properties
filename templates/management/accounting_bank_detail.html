@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}{{ bank.name }} — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:bank-list' %}" class="underline-offset-2 hover:underline">Bank accounts</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">{{ bank.name }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">{{ bank.institution }} · ending {{ bank.last_four }} · {{ bank.get_kind_display }} · {{ bank.chart_account.code }} {{ bank.chart_account.name }}</p>
+    </div>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Reconciliation</h2>
+      <dl class="workspace-facts mt-3">
+        <div><dt>GL bank balance</dt><dd>{{ tie.control|money }}</dd></div>
+        <div><dt>Latest reconciled statement</dt><dd>{% if tie.statement is not None %}{{ tie.statement|money }}{% else %}None yet{% endif %}</dd></div>
+        <div><dt>Difference</dt><dd>{% if tie.difference is not None %}{{ tie.difference|money }}{% else %}—{% endif %}</dd></div>
+      </dl>
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Record a bank movement</h2>
+      <p class="mt-1 text-sm text-ink-muted">A deposit clears undeposited funds into the bank; a withdrawal moves money out. These are the bank side of receipts and payments.</p>
+      <form method="post" class="mt-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="movement">
+        {% include "components/form.html" with form=movement_form %}
+        <button type="submit" class="rhp-btn rhp-btn-primary mt-4">Record movement</button>
+      </form>
+    </section>
+
+    <section class="rhp-card">
+      <h2 class="text-sm font-semibold">Import a statement</h2>
+      <p class="mt-1 text-sm text-ink-muted">CSV with date, description and amount columns; reference optional. Import is idempotent per bank and period, and exact matches are paired automatically.</p>
+      <form method="post" enctype="multipart/form-data" class="mt-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="statement">
+        {% include "components/form.html" with form=statement_form %}
+        <button type="submit" class="rhp-btn rhp-btn-primary mt-4">Import statement</button>
+      </form>
+    </section>
+
+    <section class="rhp-card overflow-x-auto">
+      <h2 class="text-sm font-semibold">Movements</h2>
+      <table class="rhp-table mt-3">
+        <thead><tr><th>Date</th><th>Kind</th><th>Reference</th><th class="text-right">Amount</th></tr></thead>
+        <tbody>
+          {% for movement in bank.movements.all %}
+            <tr><td>{{ movement.date|date:"M j, Y" }}</td><td>{{ movement.get_kind_display }}</td><td>{{ movement.reference|default:"—" }}</td><td class="text-right">{{ movement.amount|money }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-ink-muted">No bank movements yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="rhp-card overflow-x-auto">
+      <h2 class="text-sm font-semibold">Statements</h2>
+      <table class="rhp-table mt-3">
+        <thead><tr><th>Period</th><th>Closing</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for statement in bank.statements.all %}
+            <tr>
+              <td><a class="rhp-link" href="{% url 'accounting:statement-detail' statement.pk %}">{{ statement.period_start|date:"M j, Y" }}–{{ statement.period_end|date:"M j, Y" }}</a></td>
+              <td>{{ statement.closing_balance|money }}</td>
+              <td>{% if statement.reconciliation %}Reconciled{% else %}Open{% endif %}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="text-ink-muted">No statements imported yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

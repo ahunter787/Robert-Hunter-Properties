@@ -131,6 +131,11 @@ and `lease_document_name` (ADR-022).
 | `accounting_openingbalanceline` | one opening debit/credit | exactly one side positive; asset/liability/equity accounts only; optional property |
 | `accounting_vendorbill` | a vendor's bill | expense account, amount, received/due dates, optional vendor, one journal; positive amount; immutable once posted |
 | `accounting_vendorpayment` | a payment against a bill | positive amount, paid date, method/reference, one journal; immutable |
+| `accounting_bankaccount` | a real bank account as data | one-to-one asset chart account, institution/last four/kind, active |
+| `accounting_bankmovement` | clearing movement between undeposited funds and the bank | positive amount, deposit/withdrawal, one journal; immutable |
+| `accounting_bankstatement` | imported statement period | bank/period unique, opening/closing balances, source name |
+| `accounting_statementline` | a statement transaction | signed amount, optional matched journal line (matched once) |
+| `accounting_bankreconciliation` | reconciliation of one statement | cleared/adjusted/difference, reconciled-by/at; immutable |
 | `ledger_depositentry` | the held-deposit register: received, returned, retained, or explicitly not collected | append-only (`save()` refuses edits, `delete()` raises); `CheckConstraint` makes zero legal only for `NOT_COLLECTED`; a retention and a "not collected" require a reason; optional private `documents_document` evidence; the derived `received − returned − withheld` is what RHP holds (ADR-028 D5). No row is ever inferred from `Lease.deposit` |
 | `audit_audit_event` | who changed what, and when | `actor` (`SET_NULL`), `lease` (`SET_NULL`), `action`, `object_type`/`object_id`, `summary`, a small JSON `metadata`, `created_at`; indexed on `(object_type, object_id)`, `(lease, created_at)`, `(action, created_at)` and `created_at` |
 

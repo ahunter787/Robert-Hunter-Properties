@@ -25,6 +25,13 @@ MONEY = Decimal("0.01")
 CONTROL_CODES = {"1110", "1120", "1200", "1450", "2100", "2300", "2400"}
 
 
+def _signed_money(value) -> Decimal:
+    try:
+        return Decimal(value or ZERO).quantize(MONEY)
+    except Exception as exc:  # noqa: BLE001
+        raise ValidationError("A balance must be a decimal number.") from exc
+
+
 def _money(value) -> Decimal:
     try:
         amount = Decimal(value)
@@ -687,4 +694,223 @@ def ap_control_tie():
         "control": control.quantize(MONEY),
         "subledger": subledger.quantize(MONEY),
         "difference": (control - subledger).quantize(MONEY),
+    }
+
+
+@transaction.atomic
+def record_bank_movement(
+    bank_account,
+    *,
+    date,
+    kind,
+    amount,
+    reference="",
+    memo="",
+    actor=None,
+):
+    """Move money between undeposited funds and the bank, posting the clearing entry."""
+    from apps.accounting.models import BankMovement
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    amount = _money(amount)
+    if kind not in ("DEPOSIT", "WITHDRAWAL"):
+        raise ValidationError("Choose whether money was deposited or withdrawn.")
+    bank_gl = account(bank_account.chart_account.code)
+    if kind == "DEPOSIT":
+        lines = [
+            {"account": bank_gl, "debit": amount, "memo": "Bank deposit"},
+            {"account": "1450", "credit": amount, "memo": "Undeposited funds cleared"},
+        ]
+    else:
+        lines = [
+            {"account": "1450", "debit": amount, "memo": "Bank withdrawal"},
+            {"account": bank_gl, "credit": amount, "memo": "Money left the bank"},
+        ]
+    movement = BankMovement.objects.create(
+        bank_account=bank_account,
+        date=date,
+        kind=kind,
+        amount=amount,
+        reference=reference.strip(),
+        memo=memo.strip(),
+        created_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    journal = post_journal(
+        source_key=f"bankmovement:{movement.pk}:recorded",
+        event_type=f"bank_movement.{kind.lower()}",
+        posted_on=date,
+        lines=lines,
+        property=None,
+        memo=f"Bank {kind.lower()} {amount} · {bank_account.name}",
+        actor=actor,
+    )
+    movement.journal = journal
+    movement.save(update_fields=["journal"])
+    record(
+        actor,
+        AuditAction.BANK_MOVEMENT_RECORDED,
+        obj=movement,
+        summary=f"Bank {kind.lower()} of {amount} on {bank_account.name}",
+        amount=str(amount),
+        bank=str(bank_account.pk),
+    )
+    return movement
+
+
+@transaction.atomic
+def import_bank_statement(
+    bank_account,
+    *,
+    period_start,
+    period_end,
+    opening_balance,
+    closing_balance,
+    rows,
+    source_name="",
+    actor=None,
+):
+    """Create a statement and its lines, then auto-match exact bank GL movements."""
+    from apps.accounting.models import BankStatement, StatementLine
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    if period_end < period_start:
+        raise ValidationError("The statement period ends before it starts.")
+    if BankStatement.objects.filter(
+        bank_account=bank_account, period_start=period_start, period_end=period_end
+    ).exists():
+        raise ValidationError("That bank/period has already been imported.")
+    statement = BankStatement.objects.create(
+        bank_account=bank_account,
+        period_start=period_start,
+        period_end=period_end,
+        opening_balance=_signed_money(opening_balance),
+        closing_balance=_signed_money(closing_balance),
+        imported_by=actor if getattr(actor, "is_authenticated", False) else None,
+        source_name=source_name[:200],
+    )
+    StatementLine.objects.bulk_create(
+        [
+            StatementLine(
+                statement=statement,
+                date=row["date"],
+                description=row["description"][:300],
+                amount=row["amount"],
+                reference=row.get("reference", "")[:200],
+            )
+            for row in rows
+        ]
+    )
+    matched = auto_match_statement(statement)
+    record(
+        actor,
+        AuditAction.BANK_STATEMENT_IMPORTED,
+        obj=statement,
+        summary=f"Statement {period_start}–{period_end} imported for {bank_account.name}",
+        lines=len(rows),
+        matched=matched,
+        closing=str(closing_balance),
+    )
+    return statement
+
+
+def auto_match_statement(statement) -> int:
+    """Match statement lines to bank GL movements by exact amount and nearby date."""
+    from apps.accounting.models import StatementLine
+
+    bank_account = statement.bank_account
+    gl_lines = JournalLine.objects.select_related("entry").filter(
+        account=bank_account.chart_account
+    )
+    taken = set(
+        StatementLine.objects.exclude(matched_journal_line__isnull=True).values_list(
+            "matched_journal_line_id", flat=True
+        )
+    )
+    candidates = []
+    for line in gl_lines:
+        if line.pk in taken:
+            continue
+        signed = line.debit - line.credit
+        candidates.append((line, signed))
+    matched = 0
+    for statement_line in statement.lines.filter(matched_journal_line__isnull=True).order_by(
+        "date", "pk"
+    ):
+        best = None
+        best_distance = None
+        for line, signed in candidates:
+            if signed != statement_line.amount:
+                continue
+            distance = abs((line.entry.posted_on - statement_line.date).days)
+            if distance > 5:
+                continue
+            if best is None or distance < best_distance:
+                best, best_distance = line, distance
+        if best is not None:
+            statement_line.matched_journal_line = best
+            statement_line.save(update_fields=["matched_journal_line"])
+            candidates = [row for row in candidates if row[0].pk != best.pk]
+            matched += 1
+    return matched
+
+
+@transaction.atomic
+def reconcile_bank_statement(statement, *, actor=None):
+    """Reconcile only when every statement line is matched and the balances agree."""
+    from apps.accounting.models import BankReconciliation
+    from apps.audit.models import AuditAction
+    from apps.audit.services import record
+
+    if hasattr(statement, "reconciliation"):
+        raise ValidationError("This statement is already reconciled.")
+    if statement.lines.filter(matched_journal_line__isnull=True).exists():
+        raise ValidationError(
+            "Every statement line must be matched before the statement can be reconciled."
+        )
+    cleared = sum((line.amount for line in statement.lines.all()), ZERO)
+    adjusted = (statement.opening_balance + cleared).quantize(MONEY)
+    difference = (statement.closing_balance - adjusted).quantize(MONEY)
+    if difference != ZERO:
+        raise ValidationError(
+            f"The statement does not balance: closing {statement.closing_balance}, "
+            f"adjusted {adjusted}, difference {difference}."
+        )
+    gl = account_balance(statement.bank_account.chart_account.code, as_of=statement.period_end)
+    if gl != statement.closing_balance:
+        raise ValidationError(
+            f"The bank GL balance at {statement.period_end} is {gl}, not the statement's "
+            f"closing {statement.closing_balance}. Post or match the missing movement first."
+        )
+    reconciliation = BankReconciliation.objects.create(
+        statement=statement,
+        cleared_total=cleared.quantize(MONEY),
+        adjusted_balance=adjusted,
+        difference=difference,
+        reconciled_by=actor if getattr(actor, "is_authenticated", False) else None,
+    )
+    record(
+        actor,
+        AuditAction.BANK_RECONCILED,
+        obj=statement,
+        summary=f"Statement {statement.period_start}–{statement.period_end} reconciled",
+        cleared=str(cleared),
+        adjusted=str(adjusted),
+        closing=str(statement.closing_balance),
+    )
+    return reconciliation
+
+
+def bank_control_tie(bank_account):
+    """GL bank balance against the latest reconciled statement, if any."""
+    gl = account_balance(bank_account.chart_account.code)
+    latest = bank_account.statements.exclude(reconciliation__isnull=True).first()
+    if latest is None:
+        return {"control": gl.quantize(MONEY), "statement": None, "difference": None}
+    closing = latest.closing_balance
+    return {
+        "control": gl.quantize(MONEY),
+        "statement": closing,
+        "difference": (gl - closing).quantize(MONEY),
     }

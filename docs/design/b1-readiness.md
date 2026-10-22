@@ -380,7 +380,11 @@ Implemented in development on `rhp-e10-kernel`:
 - B2 vendor bills are now implemented: a bill posts Dr expense / Cr 2100 AP, a payment posts Dr 2100 /
   Cr 1450, the bill/payment are immutable and `ap_control_tie()` compares 2100 to unpaid bills. A manager
   screen records bills and payments.
-- Still absent: B3 banks, a first-class write-off action, production data load.
+- B3 bank foundation is implemented: bank accounts linked to asset chart accounts, bank
+  deposit/withdrawal movements clearing 1450, CSV statement import (date/description/amount, optional
+  reference), exact auto-matching by amount and nearby date, and reconciliation that requires every line
+  matched, the statement balanced, and the GL bank balance at period end equal to closing. Manual
+  matching, OFX/provider feeds, a first-class write-off action and production data load remain follow-ups.
 - The ledger's AR control is defined as `1200 AR − 2400 tenant credits` because an opening credit is a
   tenant liability (2400) rather than a negative receivable; applying it moves 2400 to AR. This is the
   equation the tests assert and is recorded in the implementation note of ADR-032.

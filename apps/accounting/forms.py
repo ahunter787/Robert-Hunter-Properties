@@ -111,3 +111,62 @@ class VendorPaymentForm(StyledForm):
     )
     reference = forms.CharField(max_length=200, required=False, label="Reference")
     note = forms.CharField(max_length=500, required=False, widget=forms.Textarea(attrs={"rows": 2}))
+
+
+class BankAccountForm(StyledForm):
+    name = forms.CharField(max_length=100, label="Account name")
+    institution = forms.CharField(max_length=120)
+    last_four = forms.CharField(max_length=4, label="Last four")
+    kind = forms.ChoiceField(choices=[("OPERATING", "Operating"), ("DEPOSIT", "Deposit/escrow")])
+    chart_account = forms.ModelChoiceField(
+        queryset=ChartAccount.objects.none(), label="Chart account"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["chart_account"].queryset = ChartAccount.objects.filter(
+            is_active=True, kind="ASSET", code__startswith="11"
+        ).order_by("code")
+
+    def clean_last_four(self):
+        value = self.cleaned_data["last_four"].strip()
+        if not (value.isdigit() and len(value) == 4):
+            raise forms.ValidationError("Enter the last four digits.")
+        return value
+
+    def clean_chart_account(self):
+        from apps.accounting.models import BankAccount
+
+        chart_account = self.cleaned_data["chart_account"]
+        if BankAccount.objects.filter(chart_account=chart_account).exists():
+            raise forms.ValidationError("That chart account already has a bank account.")
+        return chart_account
+
+
+class BankMovementForm(StyledForm):
+    date = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
+    kind = forms.ChoiceField(
+        choices=[("DEPOSIT", "Deposit into bank"), ("WITHDRAWAL", "Withdrawal from bank")]
+    )
+    amount = forms.DecimalField(max_digits=12, decimal_places=2, min_value=0.01)
+    reference = forms.CharField(max_length=200, required=False)
+    memo = forms.CharField(max_length=300, required=False)
+
+
+class BankStatementForm(StyledForm):
+    period_start = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
+    period_end = forms.DateField(widget=forms.DateInput(attrs={"type": "date"}))
+    opening_balance = forms.DecimalField(max_digits=12, decimal_places=2)
+    closing_balance = forms.DecimalField(max_digits=12, decimal_places=2)
+    source_name = forms.CharField(max_length=200, required=False, label="File name")
+    file = forms.FileField(
+        label="Statement CSV",
+        help_text="Header row with date/description/amount (reference optional).",
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("period_start") and cleaned.get("period_end"):
+            if cleaned["period_end"] < cleaned["period_start"]:
+                self.add_error("period_end", "The period ends before it starts.")
+        return cleaned

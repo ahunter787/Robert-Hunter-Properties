@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load rhp_format %}
+
+{% block title %}Statement — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:bank-detail' statement.bank_account.pk %}" class="underline-offset-2 hover:underline">{{ statement.bank_account.name }}</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Statement {{ statement.period_start|date:"M j, Y" }}–{{ statement.period_end|date:"M j, Y" }}</h1>
+      <p class="mt-2 text-sm text-ink-muted">Opening {{ statement.opening_balance|money }} · closing {{ statement.closing_balance|money }}{% if statement.reconciliation %} · reconciled{% endif %}</p>
+    </div>
+    <section class="rhp-card overflow-x-auto">
+      <table class="rhp-table">
+        <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th class="text-right">Amount</th><th>Match</th></tr></thead>
+        <tbody>
+          {% for line in statement.lines.all %}
+            <tr>
+              <td>{{ line.date|date:"M j, Y" }}</td>
+              <td>{{ line.description }}</td>
+              <td>{{ line.reference|default:"—" }}</td>
+              <td class="text-right">{{ line.amount|money }}</td>
+              <td>{% if line.matched_journal_line %}{{ line.matched_journal_line.entry.source_key }}{% else %}<span class="text-warning">Unmatched</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <form method="post" class="flex flex-wrap gap-3">
+      {% csrf_token %}
+      <button type="submit" name="action" value="match" class="rhp-btn rhp-btn-secondary">Auto-match again</button>
+      {% if not statement.reconciliation %}
+        <button type="submit" name="action" value="reconcile" class="rhp-btn rhp-btn-primary">Reconcile statement</button>
+      {% endif %}
+    </form>
+    {% if statement.reconciliation %}
+      <p class="text-sm text-ink-muted">Cleared {{ statement.reconciliation.cleared_total|money }} · adjusted {{ statement.reconciliation.adjusted_balance|money }} · difference {{ statement.reconciliation.difference|money }}.</p>
+    {% endif %}
+  </div>
+{% endblock %}

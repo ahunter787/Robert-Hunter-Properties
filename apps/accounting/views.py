@@ -255,3 +255,161 @@ class VendorBillDetailView(ManagerRequiredMixin, View):
             self.template_name,
             {"bill": bill, "payment_form": form},
         )
+
+
+class BankAccountListView(ManagerRequiredMixin, ListView):
+    template_name = "management/accounting_bank_list.html"
+    context_object_name = "accounts"
+
+    def get_queryset(self):
+        from apps.accounting.models import BankAccount
+
+        return BankAccount.objects.select_related("chart_account").filter(is_active=True)
+
+
+class BankAccountCreateView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_bank_form.html"
+
+    def get(self, request):
+        from apps.accounting.forms import BankAccountForm
+
+        return render(request, self.template_name, {"form": BankAccountForm()})
+
+    def post(self, request):
+        from django.contrib import messages
+
+        from apps.accounting.forms import BankAccountForm
+        from apps.accounting.models import BankAccount
+
+        form = BankAccountForm(request.POST)
+        if form.is_valid():
+            BankAccount.objects.create(
+                name=form.cleaned_data["name"],
+                institution=form.cleaned_data["institution"],
+                last_four=form.cleaned_data["last_four"],
+                kind=form.cleaned_data["kind"],
+                chart_account=form.cleaned_data["chart_account"],
+            )
+            messages.success(request, "Bank account added.")
+            return redirect("accounting:bank-list")
+        return render(request, self.template_name, {"form": form})
+
+
+class BankAccountDetailView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_bank_detail.html"
+
+    def _account(self, pk):
+        from django.shortcuts import get_object_or_404
+
+        from apps.accounting.models import BankAccount
+
+        return get_object_or_404(
+            BankAccount.objects.select_related("chart_account").prefetch_related(
+                "movements", "statements"
+            ),
+            pk=pk,
+        )
+
+    def get(self, request, pk):
+        from django.utils import timezone
+
+        from apps.accounting.forms import BankMovementForm, BankStatementForm
+
+        bank = self._account(pk)
+        return render(
+            request,
+            self.template_name,
+            {
+                "bank": bank,
+                "movement_form": BankMovementForm(initial={"date": timezone.localdate()}),
+                "statement_form": BankStatementForm(),
+                "tie": services.bank_control_tie(bank),
+            },
+        )
+
+    def post(self, request, pk):
+        from django.contrib import messages
+
+        from apps.accounting.bank_csv import parse
+        from apps.accounting.forms import BankMovementForm, BankStatementForm
+
+        bank = self._account(pk)
+        if request.POST.get("action") == "movement":
+            form = BankMovementForm(request.POST)
+            if form.is_valid():
+                services.record_bank_movement(
+                    bank,
+                    date=form.cleaned_data["date"],
+                    kind=form.cleaned_data["kind"],
+                    amount=form.cleaned_data["amount"],
+                    reference=form.cleaned_data.get("reference", ""),
+                    memo=form.cleaned_data.get("memo", ""),
+                    actor=request.user,
+                )
+                messages.success(request, "Bank movement recorded.")
+                return redirect("accounting:bank-detail", pk=bank.pk)
+        else:
+            form = BankStatementForm(request.POST, request.FILES)
+            if form.is_valid():
+                try:
+                    rows = parse(form.cleaned_data["file"].read().decode("utf-8-sig"))
+                    statement = services.import_bank_statement(
+                        bank,
+                        period_start=form.cleaned_data["period_start"],
+                        period_end=form.cleaned_data["period_end"],
+                        opening_balance=form.cleaned_data["opening_balance"],
+                        closing_balance=form.cleaned_data["closing_balance"],
+                        rows=rows,
+                        source_name=form.cleaned_data.get("source_name", ""),
+                        actor=request.user,
+                    )
+                except (ValidationError, UnicodeDecodeError) as exc:
+                    messages.error(request, str(exc))
+                else:
+                    messages.success(request, "Statement imported and auto-matched.")
+                    return redirect("accounting:statement-detail", pk=statement.pk)
+        return render(
+            request,
+            self.template_name,
+            {
+                "bank": bank,
+                "movement_form": BankMovementForm(request.POST or None),
+                "statement_form": BankStatementForm(request.POST or None, request.FILES or None),
+                "tie": services.bank_control_tie(bank),
+            },
+        )
+
+
+class BankStatementDetailView(ManagerRequiredMixin, View):
+    template_name = "management/accounting_statement_detail.html"
+
+    def _statement(self, pk):
+        from django.shortcuts import get_object_or_404
+
+        from apps.accounting.models import BankStatement
+
+        return get_object_or_404(
+            BankStatement.objects.select_related("bank_account", "reconciliation").prefetch_related(
+                "lines__matched_journal_line__entry"
+            ),
+            pk=pk,
+        )
+
+    def get(self, request, pk):
+        return render(request, self.template_name, {"statement": self._statement(pk)})
+
+    def post(self, request, pk):
+        from django.contrib import messages
+
+        statement = self._statement(pk)
+        if request.POST.get("action") == "match":
+            matched = services.auto_match_statement(statement)
+            messages.success(request, f"{matched} line(s) matched.")
+        else:
+            try:
+                services.reconcile_bank_statement(statement, actor=request.user)
+            except ValidationError as exc:
+                messages.error(request, " ".join(exc.messages))
+            else:
+                messages.success(request, "Statement reconciled.")
+        return redirect("accounting:statement-detail", pk=statement.pk)

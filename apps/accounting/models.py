@@ -349,3 +349,154 @@ class VendorPayment(models.Model):
 
     def delete(self, *args, **kwargs):
         raise ValidationError("Vendor payments are never deleted.")
+
+
+class BankKind(models.TextChoices):
+    OPERATING = "OPERATING", "Operating"
+    DEPOSIT = "DEPOSIT", "Deposit/escrow"
+
+
+class BankAccount(models.Model):
+    """A real bank account, entered as data and linked to its chart account."""
+
+    name = models.CharField(max_length=100)
+    institution = models.CharField(max_length=120)
+    last_four = models.CharField(max_length=4)
+    kind = models.CharField(max_length=10, choices=BankKind.choices, default=BankKind.OPERATING)
+    chart_account = models.OneToOneField(
+        ChartAccount, on_delete=models.PROTECT, related_name="bank_account"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("name", "pk")
+
+    def __str__(self):
+        return f"{self.name} · {self.institution} ({self.last_four})"
+
+    def clean(self):
+        super().clean()
+        if self.chart_account_id and self.chart_account.kind != AccountKind.ASSET:
+            raise ValidationError("A bank account must link to an asset chart account.")
+
+
+class BankMovementKind(models.TextChoices):
+    DEPOSIT = "DEPOSIT", "Deposit into bank"
+    WITHDRAWAL = "WITHDRAWAL", "Withdrawal from bank"
+
+
+class BankMovement(models.Model):
+    """Money moved between undeposited funds and the bank (the B3 clearing step)."""
+
+    bank_account = models.ForeignKey(
+        BankAccount, on_delete=models.PROTECT, related_name="movements"
+    )
+    date = models.DateField()
+    kind = models.CharField(max_length=10, choices=BankMovementKind.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reference = models.CharField(max_length=200, blank=True)
+    memo = models.CharField(max_length=300, blank=True)
+    journal = models.OneToOneField(
+        JournalEntry, null=True, blank=True, on_delete=models.PROTECT, related_name="bank_movement"
+    )
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("date", "pk")
+        constraints = [
+            models.CheckConstraint(condition=models.Q(amount__gt=0), name="bank_movement_positive")
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} {self.amount} on {self.date}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            stored = type(self).objects.filter(pk=self.pk).values("journal_id").first()
+            if stored is not None and stored["journal_id"] is not None:
+                raise ValidationError("Bank movements are immutable; record a correction.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("Bank movements are never deleted.")
+
+
+class BankStatement(models.Model):
+    """One imported bank statement period."""
+
+    bank_account = models.ForeignKey(
+        BankAccount, on_delete=models.PROTECT, related_name="statements"
+    )
+    period_start = models.DateField()
+    period_end = models.DateField()
+    opening_balance = models.DecimalField(max_digits=12, decimal_places=2)
+    closing_balance = models.DecimalField(max_digits=12, decimal_places=2)
+    imported_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    imported_at = models.DateTimeField(auto_now_add=True)
+    source_name = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        ordering = ("-period_end", "-pk")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(period_end__gte=models.F("period_start")),
+                name="statement_period_ordered",
+            ),
+            models.UniqueConstraint(
+                fields=["bank_account", "period_start", "period_end"],
+                name="one_statement_per_bank_period",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.bank_account.name} {self.period_start}–{self.period_end}"
+
+
+class StatementLine(models.Model):
+    statement = models.ForeignKey(BankStatement, on_delete=models.CASCADE, related_name="lines")
+    date = models.DateField()
+    description = models.CharField(max_length=300)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reference = models.CharField(max_length=200, blank=True)
+    matched_journal_line = models.ForeignKey(
+        JournalLine, null=True, blank=True, on_delete=models.PROTECT, related_name="statement_lines"
+    )
+
+    class Meta:
+        ordering = ("date", "pk")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["matched_journal_line"],
+                condition=models.Q(matched_journal_line__isnull=False),
+                name="journal_line_matched_once",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.date} {self.description} {self.amount}"
+
+
+class BankReconciliation(models.Model):
+    statement = models.OneToOneField(
+        BankStatement, on_delete=models.PROTECT, related_name="reconciliation"
+    )
+    cleared_total = models.DecimalField(max_digits=12, decimal_places=2)
+    adjusted_balance = models.DecimalField(max_digits=12, decimal_places=2)
+    difference = models.DecimalField(max_digits=12, decimal_places=2)
+    reconciled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL
+    )
+    reconciled_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reconciliation of {self.statement}"
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise ValidationError("A reconciliation is immutable.")
+        return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValidationError("A reconciliation is never deleted; reopen with a new statement.")

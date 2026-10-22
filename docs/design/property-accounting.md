@@ -36,8 +36,9 @@ readiness document governs:
   accounts are go-live onboarding data, not design blockers. RHP ships a questionnaire for them; B1/B3 can
   be built with fixtures and configuration placeholders.
 
-**Status:** B1 complete in development and B2 implemented (ADR-032) — journals, screens, opening balances,
-vendor bills/AP and deposit movements; B3–B5 are next. The decision is [ADR-026](../decisions/ADR-026-property-accounting.md); this is the working
+**Status:** B1–B3 implemented in development (ADR-032) — journals, screens, opening balances, vendor
+bills/AP, deposit movements, bank accounts, CSV statement import and reconciliation; B4–B5 and bank-feed
+follow-ups next. The decision is [ADR-026](../decisions/ADR-026-property-accounting.md); this is the working
 blueprint for `E10-B1` … `E10-B5`. Each slice gets its own owner review before the next.
 
 **The one-sentence version:** RHP keeps the tenant sub-ledger it already has, adds a real double-entry

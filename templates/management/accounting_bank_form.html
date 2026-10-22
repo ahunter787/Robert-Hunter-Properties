@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Add a bank account — RHP{% endblock %}
+
+{% block content %}
+  <div class="mx-auto w-full max-w-xl space-y-6">
+    <div>
+      <p class="rhp-eyebrow"><a href="{% url 'accounting:bank-list' %}" class="underline-offset-2 hover:underline">Bank accounts</a></p>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Add a bank account</h1>
+      <p class="mt-2 text-sm text-ink-muted">This is a record, not a code change. Link it to an asset chart account (the seeded 1110/1120 accounts or another 11xx account).</p>
+    </div>
+    <form method="post" class="rhp-card">
+      {% csrf_token %}
+      {% include "components/form.html" with form=form %}
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button type="submit" class="rhp-btn rhp-btn-primary">Add account</button>
+        <a href="{% url 'accounting:bank-list' %}" class="rhp-btn rhp-btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}

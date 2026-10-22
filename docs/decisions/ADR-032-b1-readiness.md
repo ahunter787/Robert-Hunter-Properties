@@ -99,7 +99,7 @@ and provider-agnostic connection adapter, not code constants (readiness §2.1).
 
 ## Implementation note (2026-10-22)
 
-The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, no B2/B3):
+The B1–B3 engine is now implemented in development on `rhp-e10-kernel`:
 
 - `apps/accounting` adds `ChartAccount`, `AccountMapping`, `JournalEntry` and `JournalLine`, with
   the chart and mappings seeded by a data migration.
@@ -121,8 +121,13 @@ The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, 
   it (`ACCOUNTING_OPENING_POSTED`).
 - B2 is implemented: received/returned deposits post through the kernel (retention waits for E6; an
   applied retained deposit moves 2300 to AR) and vendor bills/payments post expense/AP/cash-clearing,
-  with `deposit_control_tie` and `ap_control_tie` exposing differences. B3 bank accounts and
-  reconciliation, write-off as a first-class action and a production data load remain next slices.
+  with `deposit_control_tie` and `ap_control_tie` exposing differences.
+- B3 is implemented: bank accounts are data linked one-to-one to an asset chart account; bank movements
+  clear undeposited funds into/out of the bank; CSV statements (date/description/amount, optional
+  reference) are imported idempotently per bank/period, exact lines auto-match to bank GL by amount and
+  nearby date, and reconciliation requires every line matched, the statement balanced, and the GL bank
+  balance at period end equal to the closing balance. Manual matching, OFX/provider feeds, a first-class
+  write-off action and a production data load remain follow-ups.
 
 ## Consequences
 
@@ -132,7 +137,7 @@ The B1 engine is now implemented in development on `rhp-e10-kernel` (no UI yet, 
   implement every other posting row without waiting on an accounting opinion.
 - Owner facts are onboarding data collected at go-live; they do not block design or implementation, and no
   question asks the owner or the builder how accounting should work.
-- No code or schema changed: status, backlog and extension records now say "B1 ready for review, not
+- The readiness pass itself changed no code or schema: status, backlog and extension records now say "B1 ready for review, not
   started", and the blueprint's ambiguities are superseded by the readiness document where they conflict.
 
 ## Alternatives rejected

@@ -50,6 +50,21 @@ class Command(BaseCommand):
                 "  (a pending retained-deposit disposition is the expected difference until E6)"
             )
 
+        from apps.accounting.models import BankAccount
+
+        for bank_account in BankAccount.objects.filter(is_active=True):
+            bank_tie = services.bank_control_tie(bank_account)
+            if bank_tie["statement"] is None:
+                continue
+            self.stdout.write(
+                f"Bank {bank_account.name}: GL {bank_tie['control']}  "
+                f"statement {bank_tie['statement']}  difference {bank_tie['difference']}"
+            )
+            if bank_tie["difference"] != ZERO:
+                self.stderr.write(
+                    self.style.ERROR(f"Bank {bank_account.name} does not tie to its statement.")
+                )
+
         missing = services.unposted_count()
         self.stdout.write(f"unposted source events: {missing}")
         if missing:
