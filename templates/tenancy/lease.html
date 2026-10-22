@@ -47,7 +47,8 @@
           </div>
           <div>
             <dt class="text-ink-muted">Security deposit</dt>
-            <dd class="font-medium">{{ lease.deposit|money }}</dd>
+            <dd class="font-medium">{{ lease.deposit|money }}{% if deposit_held %} · {{ deposit_held|money }} held{% endif %}</dd>
+            <dd class="text-xs text-ink-muted">Held by RHP; not rent and not credit.</dd>
           </div>
         </dl>
 

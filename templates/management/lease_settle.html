@@ -8,7 +8,7 @@
     <p class="rhp-eyebrow">Financial account</p>
     <h1 class="mt-1 text-xl font-semibold tracking-tight">Settle {{ lease.unit.label }}</h1>
     <p class="mt-1 text-sm text-ink-muted">{{ lease.tenant_names }}</p>
-    <p class="mt-3 text-sm leading-relaxed text-ink-muted">Settling locks all charges, payments, and corrections. The tenancy must be ended, the account balance must be zero, no payment may be pending, and any security deposit must have a complete disposition.</p>
+    <p class="mt-3 text-sm leading-relaxed text-ink-muted">Settling locks all charges, payments, and corrections. The tenancy must be ended, the account balance must be zero, no payment may be pending, and the security deposit must have nothing left held and a recorded outcome (<a class="rhp-link" href="{% url 'ledger:deposit' lease.pk %}">security deposit record</a>).</p>
     <dl class="mt-4 grid gap-2 text-sm sm:grid-cols-2"><div><dt class="text-ink-muted">Occupancy ended</dt><dd class="font-medium">{{ lease.stopped_on|date:"M j, Y" }}</dd></div><div><dt class="text-ink-muted">Account balance</dt><dd class="font-medium">{{ ledger.balance_due|money }}{% if ledger.credit %} · {{ ledger.credit|money }} credit{% endif %}</dd></div><div><dt class="text-ink-muted">Security deposit recorded</dt><dd class="font-medium">{{ lease.deposit|money }}</dd></div></dl>
     <form method="post" class="mt-6">{% csrf_token %}{% include "components/form.html" with form=form %}<div class="mt-6 flex flex-wrap gap-3"><button type="submit" class="rhp-btn rhp-btn-primary">Settle financial account</button><a href="{% url 'leases:lease-detail' lease.pk %}" class="rhp-btn rhp-btn-secondary">Cancel</a></div></form>
   </div></div>

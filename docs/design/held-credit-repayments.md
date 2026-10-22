@@ -1,5 +1,9 @@
 # E10 refinement — held credit and dated repayments
 
+**October 21 consolidation (ADR-028):** the allocation snapshot described below is now the only engine;
+the read-time projection and the `AllocationAccount` marker are deleted. Credits remain held until a
+manager applies them, exactly as specified here.
+
 Owner approved October 21, 2026. Implemented and verified on `codex/e10-cutover`; the owner subsequently
 authorized local preservation and merge on October 21. No push, external deployment or database reset
 authorized. Preserve the accounting blueprint commit and outstanding cutover work. Recorded manual

@@ -23,6 +23,16 @@ Compose. This is a deliberate choice (see [`decisions/ADR-001-monolith.md`](deci
 it is the smallest system that can safely hold tenant, lease, financial, and maintenance data for a
 small property-management business, and it can move from a local VM to a cloud VPS unchanged.
 
+**Accounting kernel (October 21, 2026 — [ADR-028](decisions/ADR-028-one-kernel.md)).** The tenant money
+core is one kernel with two spines: the **occupancy spine** (`apps/leases/`) and the **money spine**
+(`apps/ledger/` tenant AR today; `apps/accounting/` for the GL when slice B1 starts). The cross-cutting
+vocabulary — event names, posting matrix, the deposit-holding model, the property→unit→AR/AP flow and the
+GL boundary — lives in [`docs/kernel/events.md`](kernel/events.md) and
+[`docs/kernel/scope.md`](kernel/scope.md). One opening position, one allocation engine and one charge
+write path: `LeaseOpeningRecord` for starting accounts, persisted `FundsApplication` rows for allocation,
+and `ledger.services.create_charge` as the only charge writer. A security deposit is a held liability
+register with a move-out outcome, not a lease-only number that blocks settlement.
+
 **Status: Phase 7, E11 and Phase 8 owner-accepted for the local baseline.** Identity, portfolio,
 leases, the rent ledger, tenant pages and documents are established; maintenance adds private
 tenancy conversations, assigned work, repair expenses and reviewed recharges. Domain apps arrive one phase at a time

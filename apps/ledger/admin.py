@@ -7,7 +7,7 @@ can look at a ledger and cannot rewrite one.
 
 from django.contrib import admin
 
-from apps.ledger.models import Charge, Payment
+from apps.ledger.models import Charge, DepositEntry, Payment
 
 
 @admin.register(Charge)
@@ -36,6 +36,25 @@ class PaymentAdmin(admin.ModelAdmin):
     search_fields = ("external_reference", "lease__unit__identifier")
     date_hierarchy = "payment_date"
     readonly_fields = tuple(field.name for field in Payment._meta.fields)
+    autocomplete_fields = ("lease",)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(DepositEntry)
+class DepositEntryAdmin(admin.ModelAdmin):
+    list_display = ("date", "lease", "kind", "amount", "reason")
+    list_filter = ("kind", "date")
+    search_fields = ("reference", "reason", "lease__unit__identifier")
+    date_hierarchy = "date"
+    readonly_fields = tuple(field.name for field in DepositEntry._meta.fields)
     autocomplete_fields = ("lease",)
 
     def has_add_permission(self, request):

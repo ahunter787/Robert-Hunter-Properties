@@ -1,5 +1,11 @@
 # Database
 
+ADR-028 finishes the accounting cutover's deletion: `AllocationAccount` is dropped, legacy implied
+coverage is snapshotted once into `FundsApplication` rows (one allocation engine, no read-time
+projection), the E4 `LeaseOnboarding` table is retired after its decisions are preserved as audit
+events, and `DepositEntry` adds the append-only held-deposit register. Opening charges now go through
+the ledger service, so they carry `CHARGE_CREATED`. No stored balance is introduced.
+
 The [held-credit refinement](design/held-credit-repayments.md) adds immutable source-linked allocation
 and reversal records, allocation initialization, and repayment schedule versions/installments. No stored
 balance, additional receipt or installment charge is introduced. Legacy-derived applications are labeled.
@@ -114,13 +120,18 @@ and `lease_document_name` (ADR-022).
 | --- | --- | --- |
 | `ledger_charge` | something a tenancy was charged for | `CheckConstraint(amount >= 0.01)`; `CheckConstraint(kind='ADJUSTMENT' OR direction='INCREASE')` — `only_adjustments_reduce_a_charge`; `UniqueConstraint(lease, due_date, condition=kind='RENT')` — `one_rent_charge_per_month`, which makes rent generation idempotent in the database; `unit`-style `PROTECT` to `leases_lease`; indexed `(lease, due_date)` and `(kind, due_date)`. A reduction requires `adjusts` (the charge it corrects) and a `reason` |
 | `ledger_payment` | money received, or the reversal of it | `CheckConstraint(amount >= 0.01)`; `CheckConstraint(kind='RECEIVED' AND reverses IS NULL OR kind='REVERSAL' AND reverses IS NOT NULL)`; `reverses` is a `OneToOneField` to itself, so a payment is reversed once; `PROTECT` to `leases_lease`; indexed `(lease, payment_date)` and `(status, payment_date)` |
+| `ledger_fundsapplication` | one recorded application of money (a receipt or an opening credit) to a bill, or its exact release | immutable and append-only; exactly one source (`source_payment` or `source_charge`) via `CheckConstraint`; `amount >= 0.01`; `reverses` is `OneToOne`; `legacy_derived` marks the migration snapshot and is read-only provenance (ADR-028 D3) |
+| `ledger_repaymentplan` / `ledger_repaymentinstallment` | dated repayment versions for existing opening debt | immutable version rows with a `previous` link; installments are keyed and positive; reads never rewrite a missed date (held-credit refinement) |
+| `ledger_depositentry` | the held-deposit register: received, returned, retained, or explicitly not collected | append-only (`save()` refuses edits, `delete()` raises); `CheckConstraint` makes zero legal only for `NOT_COLLECTED`; a retention and a "not collected" require a reason; optional private `documents_document` evidence; the derived `received − returned − withheld` is what RHP holds (ADR-028 D5). No row is ever inferred from `Lease.deposit` |
 | `audit_audit_event` | who changed what, and when | `actor` (`SET_NULL`), `lease` (`SET_NULL`), `action`, `object_type`/`object_id`, `summary`, a small JSON `metadata`, `created_at`; indexed on `(object_type, object_id)`, `(lease, created_at)`, `(action, created_at)` and `created_at` |
 
 **The balance is derived, never stored.** There is no `balance` column and no stored charge status:
 `apps.ledger.services.build_ledger` computes both from the entries — `Σ charge.balance_effect − Σ
 cleared unreversed payments` — and the staff ledger, the tenant page, the lease panel and the landing
-counters all read that one definition (ADR-008). Clearing payments settle charges oldest-first; a
-reducing adjustment settles the charge it corrects.
+counters all read that one definition (ADR-008). Money is applied by recorded `FundsApplication`
+rows — oldest due obligation first — and the read never allocates (ADR-028 D3); a reducing
+adjustment settles the charge it corrects. A security deposit never enters this balance: it is a
+held liability register with its own derived total.
 
 **Append-only.** `Charge.save()` and `Payment.save()` refuse to change a financial field once written
 (the only permitted change is `PENDING → CLEARED`/`VOID` on a payment), `delete()` raises on both, and

@@ -190,7 +190,7 @@ def test_the_next_charge_is_the_soonest_charge_still_owing():
 def test_a_settled_charge_is_never_the_next_charge():
     """A charge already covered is not something to look forward to paying."""
     lease = make_lease()
-    covered = make_charge(lease, amount=Decimal("100.00"), due_date=TOMORROW)
+    covered = make_charge(lease, amount=Decimal("100.00"), due_date=TODAY)
     make_payment(lease, amount=Decimal("100.00"), payment_date=TODAY)
     after = make_charge(lease, amount=Decimal("120.00"), due_date=TODAY + dt.timedelta(days=31))
 
@@ -199,14 +199,16 @@ def test_a_settled_charge_is_never_the_next_charge():
     assert ledger.next_charge.date != covered.due_date
 
 
-def test_the_next_charge_carries_what_is_left_not_the_gross():
+def test_a_prepayment_on_a_coming_charge_is_held_credit_not_settled():
+    """Held credit is applied explicitly; a coming charge stays gross until then."""
     lease = make_lease()
     charge = make_charge(lease, amount=Decimal("100.00"), due_date=TOMORROW)
     make_payment(lease, amount=Decimal("40.00"), payment_date=TODAY)
 
     ledger = ledger_for(lease)
     assert ledger.next_charge.date == charge.due_date
-    assert ledger.next_charge.left == Decimal("60.00")
+    assert ledger.next_charge.left == Decimal("100.00")
+    assert ledger.credit == Decimal("40.00")
 
 
 def test_arrears_oldest_names_the_oldest_unpaid_charge_and_its_age():

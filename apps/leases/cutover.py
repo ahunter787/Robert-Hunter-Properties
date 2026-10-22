@@ -23,7 +23,7 @@ from apps.leases.models import (
     LeaseOpeningRecord,
     LeaseStatus,
 )
-from apps.ledger.models import Charge, ChargeKind, Direction
+from apps.ledger.models import ChargeKind, Direction
 
 SALT = "rhp-starting-account-v1"
 STALE = "This account changed or the review expired. Review the starting balance again."
@@ -233,22 +233,21 @@ def confirm(lease_id, *, token, actor):
         if evidence is None:
             raise ValidationError("The supporting document changed. Review again.")
     amount = Decimal(data["amount"])
-    from apps.ledger.applications import initialize
-
-    initialize(lease)
     charge = None
     if data["kind"] != LeaseOpeningRecord.Kind.ZERO:
-        charge = Charge.objects.create(
-            lease=lease,
+        from apps.ledger import services as ledger_services
+
+        charge = ledger_services.create_charge(
+            lease,
             kind=ChargeKind.OPENING,
+            opening=True,
             direction=Direction.DECREASE
             if data["kind"] == LeaseOpeningRecord.Kind.CREDIT
             else Direction.INCREASE,
             amount=amount,
             due_date=cutover.first_native_date,
-            aging_unknown=True,
             description="Balance brought forward — manager-entered; historical aging unknown",
-            created_by=actor,
+            actor=actor,
         )
     opening = LeaseOpeningRecord.objects.create(
         lease=lease,

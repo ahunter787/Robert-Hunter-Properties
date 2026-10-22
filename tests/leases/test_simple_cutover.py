@@ -62,7 +62,7 @@ def test_starting_states_are_not_receipts(setup, kind, amount, balance):
     assert ledger.balance_due == Decimal(balance)
     assert not Payment.objects.exists()
     assert lease.start_date < date
-    assert lease.financial_ready and not lease.needs_onboarding
+    assert lease.financial_ready and not lease.needs_starting_account
     assert ledger.arrears == 0
     assert ledger.due_now == (Decimal(amount) if kind == "DEBT" else 0)
     assert ledger.arrears_oldest is None
@@ -73,6 +73,16 @@ def test_starting_states_are_not_receipts(setup, kind, amount, balance):
     assert Charge.objects.count() == (0 if kind == "ZERO" else 1)
     if kind != "ZERO":
         assert bill_history(ledger)[0].is_opening
+
+
+def test_the_opening_charge_is_audited_as_a_charge(setup):
+    """ADR-028 D4: the starting account is the one legitimate opening-charge write path."""
+    actor, lease, _date = setup
+    cutover.confirm(lease.pk, token=review(actor, lease, "DEBT", "200")["token"], actor=actor)
+
+    events = AuditEvent.objects.filter(lease=lease, action="CHARGE_CREATED")
+    assert events.count() == 1
+    assert events.get().metadata["source"] == "starting account"
 
 
 def test_credit_is_held_against_new_rent_without_becoming_income(setup):

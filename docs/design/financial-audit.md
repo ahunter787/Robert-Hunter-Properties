@@ -74,6 +74,18 @@ in the development portfolio. Desktop screenshots and a 390px phone review were 
 | F27 / P3 | “Why,” “Say…,” “untick,” “for good,” “the property carries…” | Colloquial sentences are inconsistent with direct American-English task labels. | Use Reason, Enter…, clear/select, retained in history, and RHP share. Rewrite service validation/flash messages too, not only page headings. | S: domain forms and templates |
 | F28 / P2 | Mostly text-only financial actions and status cells | Green is used for payment/credit cells; no consistent icon separates cash receipt from a noncash credit. | Use the proposed semantic icon/color matrix with textual type labels; preserve overdue status and unit allocation identity as separate dimensions. | B+S: ledger and allocation views |
 
+## Follow-up, October 21, 2026 — ADR-028 kernel consolidation
+
+- **F05 (starting credit as a cleared payment) — resolved.** An opening credit is a linked `OPENING`
+  decrease held as credit, never a `Payment`; the audit's characterization test now pins the new
+  representation.
+- **F09 / F13 (deposit dead end; two-method prior-lease form) — retired.** The E4 form is deleted
+  (ADR-028 D2) and the deposit is a held-liability register with a move-out outcome, so settlement has
+  the path the old copy promised (D5).
+- **F15 (current vs stated rent) — adopted.** Staff and tenant screens read the rent in force now
+  (`current_base_rent`) instead of the term's opening figure; the owner-facing label is "current monthly
+  rent". The remaining F15 items are copy, not arithmetic.
+
 ## What is and is not a defect
 
 Confirmed presentation/workflow problems: F01–F04, F06–F28 as evidenced above. They do not establish

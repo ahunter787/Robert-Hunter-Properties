@@ -29,6 +29,7 @@ from tests.factories import (
     make_responsibility,
     make_share,
     make_unit,
+    place_lease,
 )
 from tests.responsibilities.helpers import allocation_page, new_bill_page, payload, reviewed_save
 
@@ -279,21 +280,12 @@ def test_setting_up_the_prior_activity_opens_posting(as_admin, water_bill):
         monthly_rent=Decimal("1000.00"),
         billing_start_date=None,
     )
-    assert lease.needs_onboarding is True
+    assert lease.needs_starting_account is True
 
-    onboarding_services = __import__(
-        "apps.leases.services", fromlist=["onboard_lease"]
-    ).onboard_lease(
-        lease,
-        method="POSITION",
-        as_of=TODAY,
-        opening_amount=Decimal("0.00"),
-        billing_start_date=TODAY.replace(day=1),
-    )
+    place_lease(lease, make_admin(username="starting-placer"), kind="ZERO")
 
     lease.refresh_from_db()
-    assert onboarding_services is not None
-    assert lease.needs_onboarding is False
+    assert lease.needs_starting_account is False
 
     body = " ".join(
         as_admin.get(reverse("ledger:lease-ledger", args=[lease.pk])).content.decode().split()

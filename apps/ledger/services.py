@@ -400,7 +400,6 @@ class LeaseLedger:
     charges: list[ChargeLine] = field(default_factory=list)
     payments: list[Payment] = field(default_factory=list)
     reversed_payment_ids: set = field(default_factory=set)
-    recorded_allocations: bool = False
     obligations: list = field(default_factory=list)
     credit_sources: list = field(default_factory=list)
     repayment_plans: list = field(default_factory=list)
@@ -436,11 +435,8 @@ class LeaseLedger:
 
     @property
     def credit(self) -> Decimal:
-        """Unapplied credit, or the legacy net-credit projection before initialization."""
-        if self.recorded_allocations:
-            return sum((source["available"] for source in self.credit_sources), ZERO)
-        balance = self.balance_due
-        return -balance if balance < ZERO else ZERO
+        """Unapplied credit held for this tenant: money available, not yet applied."""
+        return sum((source["available"] for source in self.credit_sources), ZERO)
 
     @property
     def future_repayments(self):
@@ -449,11 +445,7 @@ class LeaseLedger:
 
     @property
     def unpaid_charges(self):
-        return (
-            sum((row.left for row in self.obligations), ZERO)
-            if self.recorded_allocations
-            else sum((row.left for row in self.statement_charges), ZERO)
-        )
+        return sum((row.left for row in self.obligations), ZERO)
 
     @property
     def undated_starting_debt(self):
@@ -559,25 +551,14 @@ class LeaseLedger:
     def due_now(self) -> Decimal:
         """What the tenant should pay now: everything due today or earlier."""
         today = timezone.localdate()
-        if self.recorded_allocations:
-            return sum((row.left for row in self.obligations if row.date <= today), ZERO)
-        return sum((row.left for row in self.statement_charges if row.date <= today), ZERO)
+        return sum((row.left for row in self.obligations if row.date <= today), ZERO)
 
     @property
     def arrears(self) -> Decimal:
         """The part of what is owed whose due date has already passed."""
         today = timezone.localdate()
-        if self.recorded_allocations:
-            return sum(
-                (row.left for row in self.obligations if row.date < today and not row.unknown), ZERO
-            )
         return sum(
-            (
-                row.left
-                for row in self.statement_charges
-                if row.date < today and not row.aging_unknown
-            ),
-            ZERO,
+            (row.left for row in self.obligations if row.date < today and not row.unknown), ZERO
         )
 
     @property
@@ -590,23 +571,15 @@ class LeaseLedger:
 
         The desk works the oldest bucket first, and the age is what says so.
         """
-        if self.recorded_allocations:
-            return min(
-                (
-                    row
-                    for row in self.obligations
-                    if row.date < timezone.localdate() and not row.unknown and row.left > ZERO
-                ),
-                key=lambda row: (row.date, row.charge.pk),
-                default=None,
-            )
-        overdue = [
-            row
-            for row in self.statement_charges
-            if row.date < timezone.localdate() and not row.aging_unknown
-        ]
-        unpaid = [row for row in overdue if row.left > ZERO]
-        return min(unpaid, key=lambda row: (row.date, row.title), default=None)
+        return min(
+            (
+                row
+                for row in self.obligations
+                if row.date < timezone.localdate() and not row.unknown and row.left > ZERO
+            ),
+            key=lambda row: (row.date, row.charge.pk),
+            default=None,
+        )
 
     @property
     def arrears_age_days(self) -> int | None:
@@ -642,11 +615,7 @@ class LeaseLedger:
     def not_yet_due(self) -> Decimal:
         """Billed, but not due yet — stated, never headlined."""
         today = timezone.localdate()
-        if self.recorded_allocations:
-            return sum(
-                (row.left for row in self.obligations if not row.key and row.date > today), ZERO
-            )
-        return sum((row.left for row in self.statement_charges if row.date > today), ZERO)
+        return sum((row.left for row in self.obligations if not row.key and row.date > today), ZERO)
 
     # --- the next date a tenant has to pay, and what that month costs -------
     # A month is rent plus NNN today, and responsibilities once E2 lands. The
@@ -946,36 +915,6 @@ def upcoming_rent_date(lease: Lease, *, today: dt.date | None = None) -> dt.date
         year, month = (year + 1, 1) if month == 12 else (year, month + 1)
 
 
-def _allocate(lines: list[ChargeLine], amounts: list[Decimal], *, pending: bool) -> None:
-    """Apply a pool of money to charges oldest-first.
-
-    First in, first out is what a rent ledger does: an August payment settles
-    August before it settles September, and the partly paid charge is therefore
-    the one at the front of the line.
-    """
-    pool = sum(amounts, ZERO)
-    if pool <= ZERO:
-        return
-
-    for line in sorted(lines, key=lambda item: (item.charge.due_date, item.charge.pk)):
-        if line.charge.kind == ChargeKind.ADJUSTMENT or line.net_amount <= ZERO:
-            # A correction is not something a payment settles: the charge it names carries
-            # the money, and that charge's amount already reads the correction.
-            continue
-        settled = (line.settled + line.pending) if pending else line.settled
-        remaining = line.net_amount - settled
-        if remaining <= ZERO:
-            continue
-        applied = min(remaining, pool)
-        if pending:
-            line.pending += applied
-        else:
-            line.settled += applied
-        pool -= applied
-        if pool <= ZERO:
-            return
-
-
 def _load_charges(lease: Lease) -> list[Charge]:
     """A lease's charges, with the responsibility attached, in one query.
 
@@ -1013,30 +952,12 @@ def build_ledger(lease: Lease) -> LeaseLedger:
         reversed_payment_ids={payment.reverses_id for payment in payments if payment.reverses_id},
     )
 
-    from apps.ledger.models import AllocationAccount
+    # Allocation is recorded, never recomputed: the applications are the coverage,
+    # and a read that found none is a read of nothing (ADR-028 D3). The pending
+    # projection inside `read` is display only.
+    from apps.ledger.applications import read
 
-    recorded = getattr(lease, "_ledger_allocations_ready", None)
-    if recorded is None:
-        recorded = AllocationAccount.objects.filter(lease=lease).exists()
-    if recorded:
-        from apps.ledger.applications import read
-
-        ledger.recorded_allocations = True
-        read(ledger)
-        _allocate(ledger.charges, [p.amount for p in ledger.pending_payments], pending=True)
-        return ledger
-
-    opening_credits = [
-        -line.net_amount
-        for line in ledger.charges
-        if line.charge.kind == ChargeKind.OPENING and line.net_amount < ZERO
-    ]
-    _allocate(
-        ledger.charges,
-        [p.amount for p in ledger.effective_payments] + opening_credits,
-        pending=False,
-    )
-    _allocate(ledger.charges, [p.amount for p in ledger.pending_payments], pending=True)
+    read(ledger)
     return ledger
 
 
@@ -1049,10 +970,8 @@ def build_ledgers(leases) -> dict[int, LeaseLedger]:
             "funds_applications",
             "repayment_plans__installments",
         )
-        leases = leases.select_related("allocation_account")
     result = {}
     for lease in leases:
-        lease._ledger_allocations_ready = getattr(lease, "allocation_account", None) is not None
         result[lease.pk] = build_ledger(lease)
     return result
 
@@ -1125,9 +1044,9 @@ NOT_SETTLED = (
 )
 
 #: Said when a tenancy that began before RHP takes a charge it has not been placed for.
-NEEDS_ONBOARDING = (
-    "This lease began before RHP started tracking it. Set up prior lease activity before "
-    "posting charges, so an already-paid balance is not recreated."
+NEEDS_STARTING_ACCOUNT = (
+    "This tenancy began before RHP's records. Record its starting account balance before "
+    "posting charges, so a paid-up past is not recreated."
 )
 
 NOT_CHARGEABLE = {
@@ -1189,12 +1108,11 @@ def charge_refusal(lease: Lease) -> str | None:
         return NOT_SETTLED
     if not lease.can_be_charged:
         return NOT_CHARGEABLE[lease.status]
-    if lease.needs_onboarding:
-        return NEEDS_ONBOARDING
+    if lease.needs_starting_account:
+        return NEEDS_STARTING_ACCOUNT
     return None
 
 
-@transaction.atomic
 @transaction.atomic
 def generate_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Charge]:
     """Create the missing rent — and NNN — charges for a lease; never duplicates.
@@ -1203,10 +1121,6 @@ def generate_charges(lease: Lease, *, through: dt.date, actor=None) -> list[Char
     a stepped lease answers per period and a triple-net month carries both its
     rent and its NNN (E1, ADR-013).
     """
-    refuse_if_not_chargeable(lease)
-    from apps.ledger.applications import initialize
-
-    lease = initialize(lease)
     refuse_if_not_chargeable(lease)
 
     created: list[Charge] = []
@@ -1374,24 +1288,42 @@ def create_charge(
     due_date: dt.date,
     actor=None,
     kind: str = ChargeKind.MANUAL,
+    opening: bool = False,
+    direction: str = Direction.INCREASE,
 ) -> Charge:
     """A one-off charge — a repair recharge, a key replacement, a partial month.
 
     Refused on a tenancy that is not running (P4-Q3). Until a charge can carry its evidence
     (Phase 6, P4-E6), a debt discovered after a tenancy ends is billed by reopening the
     tenancy, so the record says why.
-    """
-    refuse_if_not_chargeable(lease)
-    from apps.ledger.applications import initialize
 
-    lease = initialize(lease)
-    refuse_if_not_chargeable(lease)
+    ``opening=True`` is the one deliberate exception (ADR-028 D4): the reviewed starting
+    account creates the brought-forward line while the tenancy still *needs its starting
+    account*, which is the act that places it. It is still refused on a draft, an ended
+    tenancy or a settled account — the P4-Q3/E6 hole stays closed — and it records the
+    ``CHARGE_CREATED`` event like every other charge.
+    """
+    if opening:
+        refuse_if_account_settled(lease)
+        if lease.status != LeaseStatus.ACTIVE:
+            raise ValidationError(NOT_CHARGEABLE[lease.status])
+        if kind != ChargeKind.OPENING:
+            raise ValidationError("Only a brought-forward charge can be recorded as an opening.")
+        if amount <= ZERO:
+            raise ValidationError("An opening charge must be greater than zero.")
+        if direction not in (Direction.INCREASE, Direction.DECREASE):
+            raise ValidationError("An opening charge moves the balance up or down.")
+    else:
+        refuse_if_not_chargeable(lease)
+        direction = Direction.INCREASE
     charge = Charge(
         lease=lease,
         kind=kind,
+        direction=direction,
         description=description,
         amount=amount,
         due_date=due_date,
+        aging_unknown=opening,
         created_by=actor if getattr(actor, "is_authenticated", False) else None,
     )
     charge.save()
@@ -1403,6 +1335,7 @@ def create_charge(
         summary=f"{charge.get_kind_display()} added: {description} ({amount})",
         amount=amount,
         due_date=due_date,
+        source="starting account" if opening else "manual charge",
     )
     return charge
 
@@ -1424,9 +1357,8 @@ def create_adjustment(
     original charge again instead — which is what they mean by "put it back".
     """
     refuse_if_account_settled(charge.lease)
-    from apps.ledger.applications import current_plans, initialize, reconcile_correction
+    from apps.ledger.applications import current_plans, reconcile_correction
 
-    charge.lease = initialize(charge.lease)
     refuse_if_account_settled(charge.lease)
     if not reviewed_repayment and any(
         plan.charge_id == charge.pk for plan in current_plans(charge.lease)
@@ -1528,13 +1460,12 @@ def record_payment(
 ) -> Payment:
     """Record money received, or money expected."""
     refuse_if_account_settled(lease)
-    from apps.ledger.applications import allocate_receipt, initialize
+    from apps.ledger.applications import allocate_receipt
 
-    lease = initialize(lease)
     refuse_if_account_settled(lease)
     cutover = FinancialCutover.objects.first()
     if cutover is not None:
-        if lease.needs_onboarding:
+        if lease.needs_starting_account:
             raise ValidationError("Set the starting account balance before recording payments.")
         if payment_date < cutover.first_native_date:
             raise ValidationError(
@@ -1575,12 +1506,10 @@ def record_payment(
 def clear_payment(payment: Payment, *, actor=None) -> Payment:
     """The expected money arrived."""
     refuse_if_account_settled(payment.lease)
-    from apps.ledger.applications import allocate_receipt, initialize
+    from apps.ledger.applications import allocate_receipt
 
-    locked_lease = initialize(payment.lease)
     payment.refresh_from_db()
-    payment.lease = locked_lease
-    refuse_if_account_settled(locked_lease)
+    refuse_if_account_settled(payment.lease)
     if payment.status != PaymentStatus.PENDING:
         raise ValidationError("Only a pending payment can be marked as cleared.")
     payment.status = PaymentStatus.CLEARED
@@ -1625,12 +1554,10 @@ def void_payment(payment: Payment, *, actor=None, reason: str = "") -> Payment:
 def reverse_payment(payment: Payment, *, reason: str, actor=None) -> Payment:
     """Undo money that was recorded, by adding the offsetting entry."""
     refuse_if_account_settled(payment.lease)
-    from apps.ledger.applications import initialize, release_source
+    from apps.ledger.applications import release_source
 
-    locked_lease = initialize(payment.lease)
     payment.refresh_from_db()
-    payment.lease = locked_lease
-    refuse_if_account_settled(locked_lease)
+    refuse_if_account_settled(payment.lease)
     if payment.kind != PaymentKind.RECEIVED:
         raise ValidationError("A reversal is not itself reversed.")
     if payment.status != PaymentStatus.CLEARED:

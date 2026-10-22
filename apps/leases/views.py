@@ -35,14 +35,12 @@ from apps.audit.models import AuditAction
 from apps.audit.services import events_for_lease, record
 from apps.leases import services as lease_services
 from apps.leases.forms import (
-    ExistingHistoryForm,
     LeaseEndForm,
     LeaseForm,
     LeaseReopenForm,
     LeaseSettleForm,
     LeaseTenantFormSet,
     NnnRateForm,
-    OnboardingForm,
     RentPeriodCreateForm,
     RentPeriodForm,
 )
@@ -50,10 +48,10 @@ from apps.leases.models import (
     FinancialCutover,
     Lease,
     LeaseStatus,
-    OnboardingMethod,
     RentPeriod,
 )
 from apps.leases.workspace import workspace_context
+from apps.ledger import deposits as ledger_deposits
 from apps.ledger import services as ledger_services
 from apps.ledger.presentation import transaction_history
 from apps.properties.models import Unit
@@ -160,6 +158,7 @@ class LeaseDetailView(ManagerRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         # Both financial entry routes use this same authorized workspace.
         context["ledger"] = ledger_services.build_ledger(self.object)
+        context["deposit_held"] = ledger_deposits.held(self.object)
         context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
         # E1: the rent schedule and the NNN history the rent card renders.
         context["rent_schedule"] = lease_services.schedule_rows(self.object)
@@ -710,125 +709,6 @@ class RentPeriodRemoveView(ManagerRequiredMixin, View):
         return redirect("leases:lease-detail", pk=period.lease_id)
 
 
-class LeaseOnboardView(ManagerRequiredMixin, View):
-    """Bring a tenancy that began before RHP into it, without inventing a debt (E4)."""
-
-    template_name = "management/lease_onboard.html"
-
-    def _existing_history(self, request, lease):
-        from apps.leases import history_recovery
-
-        action = request.POST.get("action", "edit")
-        form = ExistingHistoryForm(
-            request.POST if request.method == "POST" and action != "confirm" else None,
-            initial={"billing_start_date": lease.start_date},
-        )
-        review = None
-        recovery_error = None
-        if request.method == "POST" and action == "confirm":
-            try:
-                history_recovery.confirm(
-                    lease.pk, token=request.POST.get("review_token", ""), actor=request.user
-                )
-            except ValidationError as exc:
-                recovery_error = " ".join(exc.messages)
-            else:
-                messages.success(
-                    request,
-                    "Billing start date confirmed. Existing charges and payments were kept; "
-                    "no financial entries were added.",
-                )
-                return redirect("leases:lease-detail", pk=lease.pk)
-        elif request.method == "POST" and action == "review" and form.is_valid():
-            try:
-                review = history_recovery.prepare(lease, actor=request.user, **form.cleaned_data)
-            except ValidationError as exc:
-                form.add_error(None, " ".join(exc.messages))
-        return render(
-            request,
-            "management/lease_existing_history.html",
-            {
-                "lease": lease,
-                "form": form,
-                "review": review,
-                "recovery_error": recovery_error,
-                "ledger": ledger_services.build_ledger(lease),
-            },
-        )
-
-    def _context(self, lease, form):
-        return {
-            "lease": lease,
-            "form": form,
-            "charges_through": ledger_services.charges_due(),
-            "rent_periods": lease.rent_periods_ordered,
-            "nnn_rates": lease.nnn_rates_ordered,
-            "expected_months": _months_between(lease.bill_from, timezone.localdate()),
-        }
-
-    def get(self, request, pk):
-        lease = _schedule_lease(pk)
-        if not lease.needs_onboarding:
-            messages.info(request, "Prior activity has already been set up for this lease.")
-            return redirect("leases:lease-detail", pk=lease.pk)
-        if lease.charges.exists():
-            return self._existing_history(request, lease)
-        form = OnboardingForm(
-            initial={
-                "method": OnboardingMethod.HISTORY,
-                "as_of": timezone.localdate(),
-                "billing_start_date": lease.start_date,
-            }
-        )
-        return render(request, self.template_name, self._context(lease, form))
-
-    def post(self, request, pk):
-        lease = _schedule_lease(pk)
-        if not lease.needs_onboarding:
-            messages.info(request, "Prior activity has already been set up for this lease.")
-            return redirect("leases:lease-detail", pk=lease.pk)
-
-        if lease.charges.exists() or request.POST.get("history_recovery") == "1":
-            return self._existing_history(request, lease)
-
-        form = OnboardingForm(request.POST)
-        if form.is_valid():
-            data = form.cleaned_data
-            try:
-                onboarding = lease_services.onboard_lease(
-                    lease,
-                    method=data["method"],
-                    as_of=data["as_of"],
-                    received_total=data["received_total"],
-                    opening_amount=data["opening_amount"],
-                    billing_start_date=data["billing_start_date"],
-                    note=data["note"],
-                    actor=request.user,
-                )
-            except ValidationError as exc:
-                form.add_error(None, " ".join(exc.messages))
-            else:
-                logger.info(
-                    "lease onboarded pk=%s method=%s by=%s",
-                    lease.pk,
-                    onboarding.method,
-                    request.user.pk,
-                )
-                messages.success(
-                    request,
-                    f"Prior activity for {lease.unit.label} was set up using "
-                    f"{onboarding.get_method_display().lower()}. Charges are posted from "
-                    f"{lease.bill_from:%b} {lease.bill_from.day}, {lease.bill_from.year} onward.",
-                )
-                return redirect("leases:lease-detail", pk=lease.pk)
-        return render(request, self.template_name, self._context(lease, form))
-
-
-def _months_between(start: dt.date, end: dt.date) -> int:
-    """Whole months from one date to another, for the onboarding screen's arithmetic."""
-    return max((end.year - start.year) * 12 + (end.month - start.month), 0)
-
-
 class LeaseDeleteView(AdminRequiredMixin, DeleteView):
     """Deleting is for drafts only; anything that was real stays."""
 
@@ -887,5 +767,6 @@ class TenantLeaseView(TenantAreaMixin, TemplateView):
         # The tenant reads the same numbers as the staff ledger: one definition,
         # so the two can never disagree (ADR-008).
         context["ledger"] = ledger_services.build_ledger(lease) if lease else None
+        context["deposit_held"] = ledger_deposits.held(lease) if lease else None
         context["activity_limit"] = settings.RHP_LEDGER_ACTIVITY_LIMIT
         return context

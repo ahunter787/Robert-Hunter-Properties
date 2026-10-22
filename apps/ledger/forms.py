@@ -11,7 +11,18 @@ from decimal import Decimal
 from django import forms
 
 from apps.common.forms import StyledModelForm
-from apps.ledger.models import Charge, Direction, Payment, PaymentStatus
+from apps.documents.models import Document
+from apps.ledger.models import (
+    Charge,
+    DepositKind,
+    Direction,
+    Payment,
+    PaymentMethod,
+    PaymentStatus,
+)
+
+#: The methods a deposit can arrive or leave by.
+PaymentMethodChoices = PaymentMethod.choices
 
 #: Recording "money we expect" is allowed; void and reversal are separate acts.
 PAYMENT_STATUS_CHOICES = [
@@ -91,3 +102,45 @@ class VoidPaymentForm(forms.Form):
     """Cancel money that was only ever expected."""
 
     reason = forms.CharField(max_length=200, label="Why (optional)", required=False)
+
+
+class DepositForm(forms.Form):
+    """One deposit fact: received, returned, retained, or explicitly not collected."""
+
+    kind = forms.ChoiceField(
+        label="What happened",
+        choices=[
+            (DepositKind.RECEIVED, "Received and held"),
+            (DepositKind.RETURNED, "Returned to the tenant"),
+            (DepositKind.WITHHELD, "Retained — deduct from the deposit"),
+            (DepositKind.NOT_COLLECTED, "No deposit was collected"),
+        ],
+    )
+    amount = forms.DecimalField(
+        label="Amount", max_digits=12, decimal_places=2, min_value=Decimal("0"), required=False
+    )
+    date = forms.DateField(
+        label="Date", widget=forms.DateInput(attrs={"type": "date"}), required=True
+    )
+    method = forms.ChoiceField(
+        label="Method", choices=[("", "—")] + list(PaymentMethodChoices), required=False
+    )
+    reference = forms.CharField(label="Reference", max_length=255, required=False)
+    reason = forms.CharField(
+        label="Reason",
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 2}),
+        help_text="Required for a retention, and for saying none was collected.",
+    )
+    evidence = forms.ModelChoiceField(
+        label="Supporting document (optional)",
+        queryset=Document.objects.none(),
+        required=False,
+    )
+
+    def __init__(self, *args, lease, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["evidence"].queryset = Document.objects.filter(
+            lease=lease, tenant_visible=False
+        )

@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from apps.audit.models import AuditAction, AuditEvent
 from apps.leases import history_recovery
-from apps.leases.models import LeaseAccountStatus, LeaseStatus
+from apps.leases.models import LeaseAccountStatus, LeaseOpeningRecord, LeaseStatus
 from apps.ledger import services
 from tests.factories import (
     make_charge,
@@ -82,12 +82,14 @@ def test_review_back_and_cancel_never_write_and_confirm_keeps_every_entry(client
     assert response.status_code == 302
     lease.refresh_from_db()
     assert lease.billing_start_date == lease.start_date
-    assert not lease.needs_onboarding
+    assert not lease.needs_starting_account
     assert services.charge_refusal(lease) is None
     assert list(lease.charges.values()) == charges
     assert list(lease.payments.values()) == payments
     assert services.build_ledger(lease).balance_due == balance == Decimal("840")
-    assert not lease.has_onboarding, "Do not invent a history/position record or historical receipt"
+    assert not LeaseOpeningRecord.objects.filter(lease=lease).exists(), (
+        "Do not invent a starting record or historical receipt"
+    )
     event = AuditEvent.objects.get(action=AuditAction.LEASE_ONBOARDED, lease=lease)
     assert event.actor == manager
     assert event.metadata["workflow"] == "keep_existing_history"

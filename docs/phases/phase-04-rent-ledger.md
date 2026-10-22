@@ -25,14 +25,16 @@ merge. Remaining entry/correction forms await separate review. See
 [implementation record](../design/financial-implementation.md). Phase 4 remains complete.
 
 - **Models** (`apps/ledger/models.py`): `Charge` (lease, kind, direction, amount, due date, description,
-  optional responsibility link) and `Payment` (lease, kind, status, method, amount, date, reference,
-  reversal links). Enumerations: `ChargeKind` (`RENT`, `NNN`, `RESPONSIBILITY`, `MANUAL`, `ADJUSTMENT`,
-  `OPENING`), `Direction`, `ChargeState`, `PaymentKind`, `PaymentStatus`, `PaymentMethod`.
-- **The one derivation** (`apps/ledger/services.py`): `build_ledger(lease) → LeaseLedger`, which allocates
-  cleared and pending money oldest-first (`_allocate`), nets adjustments into the charge they correct
-  (`StatementCharge`), groups a month into a card (`StatementMonth`), answers balance, due now, past due,
-  and upcoming amounts, and projects one chronological staff transaction ledger with a running balance.
-  Nothing stores a balance; every screen and page reads this.
+  optional responsibility link), `Payment` (lease, kind, status, method, amount, date, reference,
+  reversal links), the recorded `FundsApplication`/repayment-plan rows, and the append-only
+  `DepositEntry` register. Enumerations: `ChargeKind` (`RENT`, `NNN`, `RESPONSIBILITY`, `MANUAL`,
+  `ADJUSTMENT`, `OPENING`), `Direction`, `ChargeState`, `PaymentKind`, `PaymentStatus`, `PaymentMethod`,
+  `DepositKind`.
+- **The one derivation** (`apps/ledger/services.py`): `build_ledger(lease) → LeaseLedger` reads the
+  recorded application rows (there is no read-time allocation — ADR-028 D3), nets adjustments into the
+  charge they correct (`StatementCharge`), groups a month into a card (`StatementMonth`), answers
+  balance, due now, past due and upcoming amounts, and projects one chronological staff transaction
+  ledger with a running balance. Nothing stores a balance; every screen and page reads this.
 - **Actions:** `generate_charges` (rent, NNN, responsibilities, opening), `create_charge`,
   `create_adjustment`, `record_payment`, `clear_payment`, `void_payment`, `reverse_payment`, plus
   `rent_due_dates` / `generation_horizon` for the charging window.
@@ -53,7 +55,11 @@ merge. Remaining entry/correction forms await separate review. See
 | [ADR-011](../decisions/ADR-011-tenant-statement.md) | The tenant's statement absorbs a correction into the charge it corrects, and shows paid and credited money separately |
 | [ADR-012](../decisions/ADR-012-owed-now-and-coming-due.md) | A tenant's headline is what is due now; what is billed but not yet due is stated in a sentence |
 | [ADR-014](../decisions/ADR-014-property-responsibilities.md) | P4-E2: responsibilities as a charge kind, with the tenant's month readable as rent, NNN and responsibilities |
-| [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) | P4-E4: the cutover, the opening position, and the guard that refuses to bill a past nobody has placed |
+| [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) | P4-E4: the cutover, the opening position, and the guard that refuses to bill a past nobody has placed — the onboarding mechanism is retired by [ADR-028](../decisions/ADR-028-one-kernel.md); its cutover term remains |
+
+*Amended October 21, 2026:* the ledger's allocation is now **only** persisted `FundsApplication` rows
+(ADR-028 D3); the read-time FIFO projection is deleted. The deposit is tracked by a held-liability
+register with a move-out outcome (ADR-028 D5), so settlement is no longer blocked without a path.
 
 ## Extensions filed under this phase
 
@@ -79,14 +85,16 @@ moved to a later date, recorded as a decision rather than as a deleted charge. *
 merge into the charge-lifecycle work below: forgiveness and deferral are charge-lifecycle decisions, and
 answering P4-Q2 and P4-Q3 may settle most of E3's design.
 
-**P4-E4 — Retroactive onboarding** (register id `E4`, **in `main`**,
-[ADR-016](../decisions/ADR-016-retroactive-onboarding.md)). A live tenancy that began before RHP cannot be
-onboarded by activating it: the generator walks from the term start and bills the whole past. The extension
-adds `Lease.billing_start_date` as the cutover that unlocks charging, `LeaseOnboarding` recording how the
-tenancy was placed, `ChargeKind.OPENING` for a brought-forward line, two methods (raise the history and
-record what was received, or start at a date and state the position), the `STATED` rent template, the rule
-that a hand-entered period survives regeneration, and the guard that refuses to charge an unplaced
-retroactive tenancy.
+**P4-E4 — Retroactive onboarding** (register id `E4`, **retired by
+[ADR-028](../decisions/ADR-028-one-kernel.md)**, [ADR-016](../decisions/ADR-016-retroactive-onboarding.md)
+historical). A live tenancy that began before RHP cannot be onboarded by activating it: the generator walks
+from the term start and bills the whole past. The extension added `Lease.billing_start_date` as the cutover
+that unlocks charging, `LeaseOnboarding` recording how the tenancy was placed, `ChargeKind.OPENING` for a
+brought-forward line, two methods (raise the history and record what was received, or start at a date and
+state the position), the `STATED` rent template, the rule that a hand-entered period survives regeneration,
+and the guard that refuses to charge an unplaced retroactive tenancy. ADR-027 replaced the onboarding
+workflow with the reviewed starting account; ADR-028 removes the E4 mechanism itself and keeps the
+`billing_start_date`, `OPENING` entry and placement guard.
 
 ## Acceptance criteria and evidence
 
@@ -123,7 +131,9 @@ page, the authorization matrix, and the ledger screens.
 
 Proration (a part month is a one-off charge typed by the office); late fees and interest (manual charge with
 a reason if ever needed — see `extensions.md`); invoicing, statements and receipts as documents (Phase 6
-makes them possible); deposit returns and deductions; any payment provider (Phase 11).
+makes them possible); the E5 remainder of move-out settlement (final statement, forwarding address,
+withheld-to-arrears) — the held-deposit register and outcome are now present (ADR-028 D5); any payment
+provider (Phase 11).
 
 ## Known gaps and defects
 
@@ -137,9 +147,10 @@ What is still open here:
 
 - **Post-tenancy charges with their just cause (E6) are blocked by Phase 6.** Reopening a financial
   account does not restore occupancy or permit recurring rent; E6 will add the evidence-backed exception.
-- **Move-out settlement (E5) is only partially present**: an ended, zero-balance account can be settled,
-  but any nonzero recorded deposit blocks settlement until E5 records its complete disposition and final
-  statement.
+- **Move-out settlement (E5) remains partial, but settlement now has a path.** A nonzero recorded deposit is
+  tracked as a held liability with an explicit move-out outcome (ADR-028 D5); the financial account can
+  settle once nothing is held and an outcome is recorded. The E5 remainder — forwarding address, final
+  statement, and applying withheld funds to outstanding arrears — is still open.
 - **A unit's ledger history (E7)** — the office can see a unit's tenancies one at a time, not as a history.
 - The audit trail is written but has no browser until Phase 9.
 - Lease 14 still carries the November charge raised under the old horizon rule. It is left alone; a

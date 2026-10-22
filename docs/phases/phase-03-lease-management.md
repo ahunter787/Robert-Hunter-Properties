@@ -19,7 +19,7 @@ is easy to distinguish.
 - **Models** (`apps/leases/models.py`): `Lease` (unit, term, monthly rent, template, step-up rule, billing
   cutover, deposit, rent due day, status, **`ended_on`**, **`end_reason`** and **`end_reason_note`**, lease
   file, notes), `LeaseTenant` (with exactly one primary contact per lease), `RentPeriod` and `NnnRate`
-  (from P3-E1), and `LeaseOnboarding` (from P4-E4).
+  (from P3-E1), and `LeaseOpeningRecord` (E10/ADR-027; the E4 `LeaseOnboarding` record is retired by ADR-028).
 - **Two lifecycles** (P4-E5, [ADR-020](../decisions/ADR-020-tenancy-lifecycle.md)): occupancy is `DRAFT`,
   `ACTIVE`, or `ENDED`; the financial account is `OPEN` or `SETTLED`. Ending records a citable reason and
   the day occupancy stopped while preserving the signed term. Managers may settle a zero-balance ended
@@ -31,7 +31,8 @@ is easy to distinguish.
   history and refuses term edits (`_refuse_ended_terms`).
 - **Staff screens** (`/manage/leases/`): list with search, detail, create, edit, activate, **end (a review
   of what the money will do)**, **settle**, **reopen**, delete a draft, the lease document, the rent schedule,
-  the NNN rate, and (from P4-E4) onboarding.
+  the NNN rate, and the starting-account / existing-history workflow (E10, ADR-027; the old P4-E4
+  onboarding screen was retired by ADR-028).
 - **Tenant page** (`/lease/`): unit, term, rent, deposit, co-tenants, the lease document, and — since
   Phase 4/5 — the balance and activity. The document URL carries no id, so it cannot be pointed at
   somebody else's file.
@@ -42,7 +43,7 @@ is easy to distinguish.
 | --- | --- |
 | [ADR-007](../decisions/ADR-007-lease-modeling.md) | One active lease per unit as a database constraint; explicit status; the unit frozen after draft; co-tenants with one primary contact; one lease file; one definition of occupancy |
 | [ADR-013](../decisions/ADR-013-lease-templates.md) | P3-E1: how a month's rent is decided — a stored schedule, not a rule re-derived each time; amended by E4 so NNN is a term of the lease rather than a template |
-| [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) | P4-E4: the billing cutover and the stated-amount template — this phase's terms, used by the ledger |
+| [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) | P4-E4: the billing cutover and the stated-amount template — this phase's terms, used by the ledger; the onboarding mechanism is retired by ADR-028, the terms remain |
 | [ADR-020](../decisions/ADR-020-tenancy-lifecycle.md) | P4-E5: separate occupancy and account states, the citable end reason, settlement prerequisites, and financial-account reopening |
 | [ADR-017](../decisions/ADR-017-charge-lifecycle.md) | P4-E5: what each state may do with money — the rule this phase's states exist to carry |
 
@@ -55,9 +56,10 @@ as the single place every caller asks what a month costs. Activating a stepped l
 out once and stores it, so a later rounding or rule change cannot rewrite a month already billed.
 
 Reached into this phase from other extensions: **P4-E4** added `LeaseTemplate.STATED` ("the lease states
-the amounts"), `Lease.billing_start_date`, the `LeaseOnboarding` record, and the rule that a period entered
-by hand is never removed by regenerating. **P4-E1's sibling NNN rule** — `Lease.carries_nnn` — is also a
-lease term, recorded here and charged by Phase 4.
+the amounts"), `Lease.billing_start_date`, and the rule that a period entered by hand is never removed by
+regenerating. Its `LeaseOnboarding` record is retired by [ADR-028](../decisions/ADR-028-one-kernel.md);
+the starting-account workflow (ADR-027) is what places a tenancy now. **P4-E1's sibling NNN rule** —
+`Lease.carries_nnn` — is also a lease term, recorded here and charged by Phase 4.
 
 ## Acceptance criteria and evidence
 
@@ -88,6 +90,12 @@ lease that has already been charged.
   correctly, but the status word says active and the ledger overview lists it as a live tenancy. This is
   P3-Q1 below, and it is half of the tenancy-and-money problem in
   [the case study](../workflows/tenancy-and-money.md).
+- **A signed tenancy that has not started still reads `ACTIVE`.** The unit reads vacant and nothing is
+  charged before the start date, so the money is right, but the word is not. [ADR-028](../decisions/ADR-028-one-kernel.md)
+  D6 (industry conformance) adds a `FUTURE` state and a calendar-driven, idempotent start in M2; the
+  direction is recorded, the implementation is not in this release.
+- **The E4 onboarding mechanism is retired by ADR-028.** Starting accounts are the E10/ADR-027 workflow;
+  any old E4 placement decision is preserved as an audit event, not as a live record.
 
 ## Open questions for the owner
 

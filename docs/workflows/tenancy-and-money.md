@@ -53,7 +53,9 @@ Settlement is a separate act. It requires:
 - ended occupancy;
 - a zero account balance, with no credit remaining;
 - no pending payment; and
-- no recorded security deposit, until P4-E5 records the deposit's complete disposition.
+- nothing left held on the security-deposit register, and a recorded move-out outcome (returned,
+  itemised retention, or explicitly not collected) — ADR-028 D5. The E5 remainder is the final statement
+  and applying a retention to outstanding arrears.
 
 Settlement records the timestamp, manager, optional note, and an audit event. Reopening requires a reason,
 records another audit event, and changes only `account_status` to `OPEN`. It never changes `ended_on`,

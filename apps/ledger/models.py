@@ -28,16 +28,6 @@ from apps.leases.models import ImmutableCutoverRecord, Lease, LeaseStatus
 MINIMUM_AMOUNT = Decimal("0.01")
 
 
-class AllocationAccount(models.Model):
-    """Marker: this tenancy uses recorded applications, never read-time allocation."""
-
-    lease = models.OneToOneField(Lease, on_delete=models.PROTECT, related_name="allocation_account")
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Recorded allocations for lease {self.lease_id}"
-
-
 class RepaymentPlan(ImmutableCutoverRecord):
     lease = models.ForeignKey(Lease, on_delete=models.PROTECT, related_name="repayment_plans")
     charge = models.ForeignKey("Charge", on_delete=models.PROTECT)
@@ -512,3 +502,63 @@ class Payment(models.Model):
         if self.pk is None:
             return False
         return type(self).objects.filter(reverses_id=self.pk).exists()
+
+
+# --- security deposits ------------------------------------------------------
+# A deposit is the tenant's money held until move-out: not AR, not a credit, and
+# never inferred from the lease term. The register is append-only; its derived
+# held balance is what RHP is holding (ADR-028 D5).
+
+
+class DepositKind(models.TextChoices):
+    RECEIVED = "RECEIVED", "Received and held"
+    RETURNED = "RETURNED", "Returned to the tenant"
+    WITHHELD = "WITHHELD", "Retained (deducted)"
+    NOT_COLLECTED = "NOT_COLLECTED", "No deposit was collected"
+
+
+class DepositEntry(ImmutableCutoverRecord):
+    """One deposit fact: money held, returned, retained, or explicitly not collected."""
+
+    lease = models.ForeignKey(Lease, on_delete=models.PROTECT, related_name="deposit_entries")
+    kind = models.CharField(max_length=16, choices=DepositKind.choices)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    date = models.DateField()
+    method = models.CharField(max_length=16, choices=PaymentMethod.choices, blank=True)
+    reference = models.CharField(max_length=255, blank=True)
+    #: Required for a withholding (what it is for) and for "not collected" (why).
+    reason = models.CharField(max_length=500, blank=True)
+    evidence = models.ForeignKey(
+        "documents.Document",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("date", "pk")
+        verbose_name = "security deposit entry"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(kind="NOT_COLLECTED", amount=0)
+                    | (~models.Q(kind="NOT_COLLECTED") & models.Q(amount__gte=MINIMUM_AMOUNT))
+                ),
+                name="deposit_amount_by_kind",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.amount} (lease {self.lease_id})"
+
+    def clean(self):
+        super().clean()
+        if self.kind in (DepositKind.WITHHELD, DepositKind.NOT_COLLECTED) and not self.reason:
+            raise ValidationError(
+                {"reason": "Say what the money was retained for, or why none was collected."}
+            )

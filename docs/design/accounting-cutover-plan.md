@@ -1,5 +1,11 @@
 # E10 — Simple cutover first, accounting in reviewed stages
 
+**October 21 kernel consolidation:** [ADR-028](../decisions/ADR-028-one-kernel.md) finishes the cutover's
+deletion on an industry-standard basis — one opening position, one allocation engine, one charge write
+path, and deposits as a held-liability register with a move-out outcome — and records the conformance
+table behind the GL slices. The cutover release below is otherwise unchanged; B1–B5 remain separately
+reviewed.
+
 **Status:** Tenant-cutover and [held-credit/dated-repayment refinement](held-credit-repayments.md)
 implemented and verified; owner accepted for local preservation and merge October 21. Final gate: 1,185 passed, 5 opt-in browser
 suites skipped. Earlier verification below describes the initial release. Further financial expansion

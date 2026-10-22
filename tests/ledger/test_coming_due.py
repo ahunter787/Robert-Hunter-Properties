@@ -144,14 +144,20 @@ def test_a_raised_charge_for_the_coming_month_is_the_next_rent():
     assert ledger.next_rent_amount == Decimal("2084.00")
 
 
-def test_the_next_rent_is_what_is_left_on_the_coming_charge():
+def test_a_prepayment_does_not_settle_a_charge_that_is_not_due_yet():
+    """Held credit is applied explicitly, never by a read going looking for a bill.
+
+    A payment received before the due date is held credit (held-credit refinement);
+    the coming charge stays gross until a manager applies the credit.
+    """
     lease = a_lease(rent_due_day=1, monthly_rent=Decimal("2084.00"))
     year, month = month_after(TODAY, 1)
     make_charge(lease, amount=Decimal("2084.00"), due_date=dt.date(year, month, 1))
     make_payment(lease, amount=Decimal("1000.00"), payment_date=TODAY)
 
     ledger = services.build_ledger(lease)
-    assert ledger.next_rent_amount == Decimal("1084.00"), "what is left, not the gross"
+    assert ledger.next_rent_amount == Decimal("2084.00")
+    assert ledger.credit == Decimal("1000.00")
 
 
 def test_the_oldest_money_settles_the_oldest_month_first():

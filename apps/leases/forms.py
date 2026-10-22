@@ -17,7 +17,6 @@ from apps.leases.models import (
     LeaseStatus,
     LeaseTemplate,
     LeaseTenant,
-    OnboardingMethod,
     RentPeriod,
 )
 from apps.properties.models import Unit
@@ -109,6 +108,20 @@ class LeaseForm(StyledModelForm):
         start_date, end_date = cleaned.get("start_date"), cleaned.get("end_date")
         if start_date and end_date and end_date < start_date:
             self.add_error("end_date", "A lease cannot end before it starts.")
+
+        # The agreed deposit cannot be edited below the money RHP already holds for it
+        # (ADR-028 D5): return or retain the held money first, then record the new term.
+        if self.instance.pk:
+            from apps.ledger import deposits
+
+            held = deposits.held(self.instance)
+            deposit = cleaned.get("deposit")
+            if deposit is not None and deposit < held:
+                self.add_error(
+                    "deposit",
+                    f"{held} is already held for this tenancy. Record the return or retention "
+                    "first, then change the agreed amount.",
+                )
 
         if self.instance.pk and self.instance.status != LeaseStatus.DRAFT:
             # The unit field is disabled, so Django ignores what was posted and
@@ -252,63 +265,6 @@ class RentPeriodCreateForm(StyledForm):
         required=False,
         help_text="What changed: 'extra space', 'renewal', 'agreed reduction'.",
     )
-
-
-class OnboardingForm(StyledForm):
-    """Place a tenancy that began before RHP: the history, or the position (E4)."""
-
-    method = forms.ChoiceField(
-        choices=OnboardingMethod.choices,
-        initial=OnboardingMethod.HISTORY,
-        label="How to record prior activity",
-        help_text=(
-            "Recreate charges from the lease start and record payments already received, or "
-            "start from a date and enter an opening balance."
-        ),
-    )
-    as_of = forms.DateField(
-        label="Figures as of",
-        widget=forms.DateInput(attrs={"type": "date"}),
-        help_text="The date the amounts below speak to.",
-    )
-    received_total = forms.DecimalField(
-        label="Received before RHP",
-        max_digits=12,
-        decimal_places=2,
-        min_value=Decimal("0"),
-        required=False,
-        help_text="Everything the tenant has paid to date. It settles the oldest months first.",
-    )
-    opening_amount = forms.DecimalField(
-        label="Opening balance",
-        max_digits=12,
-        decimal_places=2,
-        required=False,
-        help_text=(
-            "Positive if the tenant owes, negative for a credit balance, or 0 if paid in full."
-        ),
-    )
-    billing_start_date = forms.DateField(
-        label="Bill from",
-        widget=forms.DateInput(attrs={"type": "date"}),
-        required=False,
-        help_text="The first month RHP posts charges for. Leave blank to use the whole term.",
-    )
-    note = forms.CharField(max_length=200, required=False, help_text="Where the figures came from.")
-
-    def clean(self):
-        cleaned = super().clean()
-        method = cleaned.get("method")
-        if method == OnboardingMethod.HISTORY and cleaned.get("received_total") is None:
-            self.add_error(
-                "received_total", "Say what the tenant had paid before RHP (0 if nothing)."
-            )
-        if method == OnboardingMethod.POSITION:
-            if cleaned.get("opening_amount") is None:
-                self.add_error("opening_amount", "Enter 0 if the account was paid in full.")
-            if not cleaned.get("billing_start_date"):
-                self.add_error("billing_start_date", "Say which month RHP starts billing from.")
-        return cleaned
 
 
 # --- ending a tenancy (P4-Q1, P4-Q2) ---------------------------------------

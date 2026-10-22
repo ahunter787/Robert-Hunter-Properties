@@ -90,7 +90,8 @@
         </div>
         <div>
           <dt class="text-ink-muted">Security deposit</dt>
-          <dd class="font-medium">{{ lease.deposit|money }}</dd>
+          <dd class="font-medium">{{ lease.deposit|money }}{% if deposit_held %} · {{ deposit_held|money }} held{% endif %}</dd>
+          <dd><a class="rhp-link text-xs" href="{% url 'ledger:deposit' lease.pk %}">Security deposit record</a></dd>
         </div>
       </dl>
       {% if lease.notes %}
@@ -101,7 +102,7 @@
       {% endif %}
     </section>
 
-    {% if lease.needs_onboarding %}
+    {% if lease.needs_starting_account %}
       <section class="rhp-card border-warning/30 bg-warning/5">
         {% if ledger.charges %}
         <h2 class="text-sm font-semibold">Confirm the billing start date</h2>
@@ -128,21 +129,6 @@
         <p class="mt-2 text-sm">{{ lease.opening_record.note }}</p>
         {% if lease.opening_record.evidence %}<a class="rhp-link" href="{% url 'documents:download' lease.opening_record.evidence_id %}">{{ lease.opening_record.evidence.title }} · Staff only</a>{% endif %}
       </section>
-    {% elif lease.has_onboarding %}
-      {% with record=lease.onboarding_record %}
-        <section class="rhp-card">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-sm font-semibold">Prior lease activity</h2>
-            <span class="text-sm text-ink-muted">charges from {{ lease.bill_from|date:"M j, Y" }}</span>
-          </div>
-          <p class="mt-2 text-sm leading-relaxed">
-            {{ record.get_method_display }} as of {{ record.as_of|date:"M j, Y" }}
-            {% if record.received_total is not None %}· {{ record.received_total|money }} received before RHP{% endif %}
-            {% if record.opening_amount is not None %}· {{ record.opening_amount|money }} brought forward{% endif %}
-            {% if record.note %}· {{ record.note }}{% endif %}
-          </p>
-        </section>
-      {% endwith %}
     {% endif %}
 
 

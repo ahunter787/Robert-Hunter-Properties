@@ -4,6 +4,12 @@
 superseded by [ADR-027](ADR-027-simple-cutover.md). This document retains the old rationale and
 existing-history recovery; no old financial entries are rewritten by the new cutover.
 
+**October 21, 2026 — retired:** [ADR-028](ADR-028-one-kernel.md) D2 removes the E4 onboarding mechanism
+itself. `LeaseOnboarding`, `onboard_lease()` and the HISTORY/POSITION workflow are deleted; any recorded
+E4 decision is preserved as an append-only audit event before its table is removed, and the surviving
+placement gate is `Lease.needs_starting_account` (E10 starting accounts, ADR-027). This document is
+historical: it records why the design existed, not a live mechanism.
+
 - **Status:** Accepted (extension E4, approved 2026-10-03)
 - **Date:** 2026-10-03
 - **Context:** every RHP tenancy is live now, and none of them began in RHP

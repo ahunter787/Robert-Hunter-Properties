@@ -29,7 +29,7 @@ def _authorize(actor):
 
 def _snapshot(lease):
     if (
-        not lease.needs_onboarding
+        not lease.needs_starting_account
         or lease.account_status != LeaseAccountStatus.OPEN
         or not (lease.charges.exists() or lease.payments.exists())
     ):

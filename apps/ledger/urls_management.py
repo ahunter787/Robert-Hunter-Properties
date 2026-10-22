@@ -7,7 +7,7 @@ screens link into it rather than growing their own payment routes.
 from django.urls import path
 
 from apps.ledger import views
-from apps.ledger.finance_views import FinancialReviewView
+from apps.ledger.finance_views import DepositView, FinancialReviewView
 
 app_name = "ledger"
 
@@ -32,6 +32,7 @@ urlpatterns = [
         FinancialReviewView.as_view(action="plan"),
         name="repayment-plan",
     ),
+    path("leases/<int:pk>/deposit/", DepositView.as_view(), name="deposit"),
     path("", views.LedgerOverviewView.as_view(), name="overview"),
     path("leases/<int:pk>/", views.LeaseLedgerView.as_view(), name="lease-ledger"),
     path(

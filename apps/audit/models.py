@@ -27,6 +27,7 @@ class AuditAction(models.TextChoices):
     RESPONSIBILITY_CYCLE_STAGED = "RESPONSIBILITY_CYCLE_STAGED", "Billing period scheduled"
     RESPONSIBILITY_SHARES_SET = "RESPONSIBILITY_SHARES_SET", "Unit amounts changed"
     CHARGE_CREATED = "CHARGE_CREATED", "Charge posted"
+    DEPOSIT_CHANGED = "DEPOSIT_CHANGED", "Security deposit changed"
     CHARGE_ADJUSTED = "CHARGE_ADJUSTED", "Charge adjusted"
     PAYMENT_RECORDED = "PAYMENT_RECORDED", "Payment recorded"
     PAYMENT_CLEARED = "PAYMENT_CLEARED", "Payment cleared"

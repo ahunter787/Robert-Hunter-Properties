@@ -576,6 +576,22 @@ end of a tenancy without a reason. Both are now specified:
   financial corrections. Role changes, site configuration, Django administration, and
   destructive deletion remain administrator duties.
 
+AMENDMENT, 2026-10-21 (owner-directed industry conformance, recorded in ADR-028 D5). The
+settlement rule above keeps its meaning but now has the path it promised:
+
+- The **agreed** security deposit remains a lease term. The **money held** is an append-only
+  deposit register (received, returned, withheld with a reason, or explicitly not collected);
+  the register's derived balance is what RHP holds. A deposit is never tenant AR and never a
+  tenant credit.
+- A recorded move-out outcome (full refund, itemised partial refund, or full withhold) is
+  required before a financial account can settle. Settlement is refused while anything is still
+  held, or while an agreed deposit has no recorded outcome — with a message naming the action,
+  not a dead end.
+- Held-deposit liability, refund and retained-amount postings belong to the accounting slices
+  (E10 B2). Applying withheld funds to outstanding arrears is a later refinement; until then the
+  desk corrects the arrears through the existing adjustment path.
+
+
 
 PHASE 4 — RENT LEDGER
 ---------------------

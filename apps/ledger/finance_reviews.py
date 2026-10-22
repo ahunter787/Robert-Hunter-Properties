@@ -278,12 +278,8 @@ def schedule(ledger, data):
 
 def prepare(lease, *, actor, action, data=None, application=None):
     applications.writable(lease, actor)
-    # Preview must not initialize legacy accounts or create any financial rows.
+    # Preview must not create any financial rows: it reads the applications that exist.
     ledger = build_ledger(lease)
-    if not ledger.recorded_allocations:
-        raise ValidationError(
-            "This legacy account must be initialized by the financial migration before review."
-        )
     payload = {
         "actor": actor.pk,
         "lease": lease.pk,

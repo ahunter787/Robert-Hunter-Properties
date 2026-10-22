@@ -14,7 +14,7 @@
       {% if lease %}
         <p class="mt-2 text-sm text-ink-muted">
           {{ lease.unit.display_name }} · {{ lease.unit.property.name }} · rent
-          {{ lease.monthly_rent|money }}, due {{ lease.due_day_label }}
+          {{ lease.current_base_rent|money }}, due {{ lease.due_day_label }}
         </p>
       {% endif %}
     </div>

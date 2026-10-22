@@ -8,9 +8,10 @@ is a specification amendment (the states and what they mean for money), recorded
 [ADR-020](decisions/ADR-020-tenancy-lifecycle.md). **Phase 6 (documents) is complete and in `main`**;
 it is the phase E6 was waiting for, so **E6 is no longer blocked** — it follows **E5 (move-out settlement), which is the next piece**. **E3
 (concessions) is proposed**, re-scoped by the owner's own 2022 example; **E7 (a unit's ledger history)
-and E8 (early termination) are proposed; **E10 (property accounting) is in design** — the owner's decision to
+and E8 (early termination) are proposed; **E10 (property accounting) is building** — the owner's decision to
 build it, and to export to an accountant rather than integrate an external ledger, is
-[ADR-026](decisions/ADR-026-property-accounting.md).**
+[ADR-026](decisions/ADR-026-property-accounting.md), and the core-kernel consolidation is
+[ADR-028](decisions/ADR-028-one-kernel.md).**
 
 The source document is [`RHP-5 Owner Requested Extension Spec.txt`](RHP-5%20Owner%20Requested%20Extension%20Spec.txt),
 the working model compiled by the owner with Robert. The governing specification is
@@ -33,7 +34,7 @@ parser accepts the longer form.
 | **E7** | **A unit's ledger history** (`P4-E7`) — every tenancy that unit has had, expandable, for the admin. The tenant's own view never crosses tenancies | Additive | Proposed — the owner's "maybe", from P4-Q5 |
 | **E8** | **A tenant's request for early termination** (`P3-E2`) — the tenant asks, RHP approves, and the early-termination clauses follow | Additive | Proposed — filed under Phase 3, because it changes a lease's terms |
 | **E9** | **Plain-language interface** — portal-wide product vocabulary, due-now/account-balance hierarchy, and unified staff transaction ledger | Presentation | **Built** — [ADR-021](decisions/ADR-021-plain-language-interface.md); October 20 financial reading surface, expandable bills and history recovery owner-accepted for local merge; remaining forms deferred [record](design/financial-implementation.md) |
-| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **Building** — tenant cutover, held credit and dated repayments owner-accepted for local merge October 21; [record](design/held-credit-repayments.md), [ADR-027](decisions/ADR-027-simple-cutover.md); accounting [ADR-026](decisions/ADR-026-property-accounting.md) remains separately reviewed |
+| **E10** | **RHP property accounting** — landlord-side income, expenses, reconciliation, and reporting for properties owned by RHP only | Additive | **Building** — tenant cutover, held credit and dated repayments owner-accepted for local merge October 21; the core-kernel consolidation is [ADR-028](decisions/ADR-028-one-kernel.md) with [kernel vocabulary](kernel/events.md); [record](design/held-credit-repayments.md), [ADR-027](decisions/ADR-027-simple-cutover.md); accounting [ADR-026](decisions/ADR-026-property-accounting.md) remains separately reviewed |
 | **E11** | **Operations desk application migration** — persistent sidebar, unified Properties and existing portal workflows; RHP domain rules preserved | Presentation | In main — [owner accepted October 19, 2026](design/implementation.md); local merge authorized, no push |
 | **E12** | **Tenant–RHP messaging** (`P8-E1`) — saved private conversations, attachments, per-user unread state, email alerts and announcement follow-up; no native app or push | Additive | In main — owner accepted for local merge; [Phase 8](phases/phase-08-communications.md), ADR-024 |
 
@@ -440,6 +441,17 @@ ecosystem verification are separate from asset-publication completion.
 
 ## 11. E10 — RHP property accounting
 
+**October 21 kernel decision — [ADR-028](decisions/ADR-028-one-kernel.md):** the E10 cutover's unfinished
+deletion is completed on an **industry-standard basis** (owner direction: where RHP's early accounting
+choices differ from established property-management practice, industry practice decides; the foundation
+is kept, not rebuilt). One opening position (`LeaseOpeningRecord`; E4 onboarding retired), one allocation
+engine (persisted applications), one charge write path, deposits as a held-liability register with a
+move-out outcome, and the kernel vocabulary in [`docs/kernel/`](kernel/events.md). A `FUTURE` lease state
+and a person/login split are accepted direction, staged before E5/E6. The conformance table in ADR-028
+records what RHP keeps (append-only derived sub-ledger, corrections as entries, persisted applications,
+due-date charging), what it changes (deposits, lifecycle, party) and what is operational work (scheduled
+posting Phase 12; receipt vs bank settlement B3). B1–B5 remain separately reviewed.
+
 **October 21 refinement accepted for local merge:** [Held credit and dated repayments](design/held-credit-repayments.md)
 keeps credits separate until manager-confirmed application and schedules existing opening debt without
 new charges. Only due installments count as payable/overdue; full principal stays in account balance.
@@ -450,8 +462,9 @@ in `design/accounting-cutover-plan.md`. Manual stated balances do not require ve
 The development database is archived/restored before a fresh synthetic database is selected. B1–B5
 accounting remains separately reviewed; no GL, bank matching or tax-readiness is delivered by cutover.
 
-**Status: in design** — the decision is [ADR-026](decisions/ADR-026-property-accounting.md) and the working
-blueprint is [the property-accounting study](design/property-accounting.md).
+**Status: Building** — the decision for the stack is [ADR-026](decisions/ADR-026-property-accounting.md),
+the kernel direction is [ADR-028](decisions/ADR-028-one-kernel.md), and the working blueprint is
+[the property-accounting study](design/property-accounting.md).
 
 This extension adds landlord-side accounting only for properties Robert Hunter Properties owns. It is not
 third-party property-management accounting and does not change the tenant rent ledger. The owner's question

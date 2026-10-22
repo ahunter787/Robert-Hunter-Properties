@@ -94,13 +94,6 @@ STEPPING_TEMPLATES = (LeaseTemplate.STEP_UP, LeaseTemplate.NNN)
 SCHEDULED_TEMPLATES = (LeaseTemplate.STEP_UP, LeaseTemplate.NNN, LeaseTemplate.STATED)
 
 
-class OnboardingMethod(models.TextChoices):
-    """How a live tenancy that began before RHP was brought in (E4)."""
-
-    HISTORY = "HISTORY", "Recreate charges from the lease start"
-    POSITION = "POSITION", "Enter an opening balance"
-
-
 class ImmutableCutoverQuerySet(models.QuerySet):
     def update(self, **kwargs):
         raise ValidationError("Starting records cannot be overwritten. Use a linked correction.")
@@ -516,31 +509,15 @@ class Lease(models.Model):
         return self.billing_start_date or self.start_date
 
     @property
-    def is_retroactive(self) -> bool:
-        """A tenancy whose term began before this month: it has a history to place."""
-        return self.start_date < timezone.localdate().replace(day=1)
-
-    @property
-    def onboarding_record(self) -> LeaseOnboarding | None:
-        """How this tenancy was brought in, if it has been (E4)."""
-        if not self.pk:
-            return None
-        return LeaseOnboarding.objects.filter(lease_id=self.pk).first()
-
-    @property
-    def has_onboarding(self) -> bool:
-        """Whether the opening position has been recorded at all (E4)."""
-        return self.onboarding_record is not None
-
-    @property
-    def needs_onboarding(self) -> bool:
+    def needs_starting_account(self) -> bool:
         """A live tenancy from before RHP that nobody has placed yet.
 
         While this is true no charges may be raised: the generator would bill the
-        whole past as if it were new, which is the phantom debt E4 exists to make
-        impossible (ADR-016). *Placing* the tenancy is what sets the cutover, and the
-        cutover is what unlocks charging — the onboarding record says how it was
-        placed, while the cutover says from when RHP bills.
+        whole past as if it were new, which is the phantom debt the starting-account
+        workflow exists to make impossible (ADR-027, ADR-028 D2). Recording the
+        starting account is what sets the cutover, and the cutover is what unlocks
+        charging. This is the *placement* question; whether a starting account may be
+        recorded now is `cutover.eligible()`'s different question.
         """
         if self.financial_ready or self.billing_start_date is not None:
             return False
@@ -549,7 +526,7 @@ class Lease(models.Model):
             return self.status == LeaseStatus.ACTIVE and self.start_date < cutover.first_native_date
         return (
             self.status == LeaseStatus.ACTIVE
-            and self.is_retroactive
+            and self.start_date < timezone.localdate().replace(day=1)
             and self.billing_start_date is None
         )
 
@@ -758,65 +735,6 @@ class NnnRate(models.Model):
         _check_due_date(self)
         if self.lease_id is not None and not self.lease.uses_nnn:
             raise ValidationError({"lease": "Only a lease that carries NNN takes an NNN amount."})
-
-
-class LeaseOnboarding(models.Model):
-    """How a live tenancy that began before RHP was brought in (E4).
-
-    One record per lease, written once, saying which of the two ways the tenancy
-    was placed and what figures it was placed with. The money itself lives in the
-    ledger — a brought-forward charge, a credit, or the payment that settled the
-    history — so this table is the *decision*, and the ledger is the arithmetic.
-    """
-
-    lease = models.OneToOneField(Lease, on_delete=models.PROTECT, related_name="onboarding")
-    method = models.CharField(max_length=10, choices=OnboardingMethod.choices)
-    as_of = models.DateField(help_text="The date this position speaks to.")
-    #: Method HISTORY: the total received from the tenant before RHP, as one figure.
-    received_total = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(Decimal("0"))],
-        help_text="Everything received before RHP, brought in as one settling payment.",
-    )
-    #: Method POSITION: what was owed at the cutover. Positive owed, negative in credit.
-    opening_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Balance brought forward: positive owed, negative paid ahead.",
-    )
-    note = models.CharField(max_length=200, blank=True)
-    set_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="lease_onboardings_set",
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = "lease onboarding"
-
-    def __str__(self) -> str:
-        return f"{self.lease} · {self.get_method_display()}"
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        return super().save(*args, **kwargs)
-
-    def clean(self):
-        super().clean()
-        if self.method == OnboardingMethod.HISTORY and self.received_total is None:
-            raise ValidationError({"received_total": "Say what the tenant had paid before RHP."})
-        if self.method == OnboardingMethod.POSITION and self.opening_amount is None:
-            raise ValidationError(
-                {"opening_amount": "Enter 0 if the account was paid in full on that date."}
-            )
 
 
 class LeaseTenant(models.Model):

@@ -1,10 +1,19 @@
 # ADR-020 — Occupancy and financial-account lifecycles are separate
 
-**Status:** Accepted (owner-directed, amended 2026-10-14)
+**Status:** Accepted (owner-directed, amended 2026-10-14; amended 2026-10-21 by
+[ADR-028](ADR-028-one-kernel.md))
 **Date:** 2026-10-07
 **Related:** [ADR-007](ADR-007-lease-modeling.md) (the lease is ended by a person, never the calendar),
 [ADR-017](ADR-017-charge-lifecycle.md) (what each state may do with money), [ADR-008](ADR-008-rent-ledger.md)
 (append-only ledger), [Phase 3 record](../phases/phase-03-lease-management.md)
+
+**October 21, 2026 amendment (ADR-028):** two changes, stated as direction and staged where noted.
+(1) *Deposits (live now):* a nonzero recorded security deposit no longer blocks settlement forever — the
+deposit register's held balance must be zero and a move-out outcome recorded, which is the path this ADR
+previously said did not exist. The occupancy/account split itself is unchanged.
+(2) *A future state (staged, M2):* a signed tenancy whose start date is ahead becomes `FUTURE`, so
+occupancy **starting** is calendar-driven and idempotent while occupancy **ending** remains a person's
+act with a citable reason. Until that change lands, the states remain `DRAFT/ACTIVE/ENDED` as below.
 
 ## Context
 

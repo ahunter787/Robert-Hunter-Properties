@@ -224,6 +224,34 @@ def make_lease(
     return lease
 
 
+def place_lease(
+    lease, actor, *, kind="ZERO", amount=Decimal("0"), note="Synthetic starting account"
+):
+    """Place a tenancy through the reviewed starting-account workflow (ADR-027).
+
+    The E4 onboarding mechanism is retired (ADR-028); this is the one way a tenancy
+    that began before RHP's records is brought in, at the service level.
+    """
+    from apps.leases import cutover
+    from apps.leases.models import FinancialCutover
+
+    if not FinancialCutover.objects.exists():
+        date = timezone.localdate().replace(day=1)
+        cutover.confirm_date(
+            actor=actor,
+            token=cutover.prepare_date(actor=actor, first_native_date=date, note="Synthetic test"),
+        )
+    token = cutover.prepare(
+        lease,
+        actor=actor,
+        kind=kind,
+        amount=Decimal(amount),
+        note=note,
+        legacy_undated=kind == "DEBT",
+    )["token"]
+    return cutover.confirm(lease.pk, token=token, actor=actor)
+
+
 # --- Accounting -----------------------------------------------------------
 
 
@@ -271,16 +299,12 @@ def make_payment(
         status=status,
         **fields,
     )
-    # Recorded-allocation accounts must exercise the same receipt allocation as services.
-    # Older fixture accounts intentionally retain legacy read-only projection semantics.
+    # A cleared receipt always allocates against the bills due, exactly as the
+    # service does: there is one allocation engine (ADR-028 D3).
     from apps.ledger.applications import allocate_receipt
-    from apps.ledger.models import AllocationAccount, PaymentKind
+    from apps.ledger.models import PaymentKind
 
-    if (
-        status == PaymentStatus.CLEARED
-        and payment.kind == PaymentKind.RECEIVED
-        and AllocationAccount.objects.filter(lease=lease).exists()
-    ):
+    if status == PaymentStatus.CLEARED and payment.kind == PaymentKind.RECEIVED:
         allocate_receipt(payment)
     return payment
 

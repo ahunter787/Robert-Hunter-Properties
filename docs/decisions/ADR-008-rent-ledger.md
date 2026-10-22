@@ -3,6 +3,10 @@
 - **Status:** Accepted (Phase 4)
 - **Date:** 2026-10-01
 - **Context:** Phase 4 — charges, payments, reversals, adjustments, and a balance that can be trusted
+- **Amended 2026-10-21:** the deposit section below is amended by [ADR-028](ADR-028-one-kernel.md) D5 —
+  the lease keeps the agreed deposit term, and the money held becomes an append-only deposit register
+  (held liability) with an explicit move-out outcome. The rent ledger itself is unchanged; a deposit is
+  still not AR and not a credit.
 
 ## Context
 
@@ -149,6 +153,13 @@ A deposit is not rent: making it a charge would show a tenant "in credit" for mo
 paid ahead, and deposit returns and deductions are their own rules (what is withheld, and why). The
 field remains the record, and the open question stays open with a decision attached: when deposit
 returns are needed, they get their own treatment rather than being smuggled into the rent balance.
+
+*Amended 2026-10-21 (ADR-028 D5).* "Off the rent ledger" is kept — a deposit is never AR and never a
+tenant credit — but it is no longer only a lease field. The **agreed** deposit stays on the lease; the
+**money held** is an append-only register (`DepositEntry`: received / returned / withheld with a reason /
+explicitly not collected) whose derived balance is what RHP holds, and a recorded move-out outcome is
+required before the financial account can settle. GL postings are B2 work; see
+[ADR-028](ADR-028-one-kernel.md) and [`docs/kernel/events.md`](../kernel/events.md).
 
 ## Consequences
 

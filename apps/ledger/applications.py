@@ -5,14 +5,12 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.utils import timezone
 
 from apps.audit.models import AuditAction
 from apps.audit.services import record
 from apps.leases.cutover import authorize
-from apps.leases.models import Lease
-from apps.ledger.models import AllocationAccount, ChargeKind, FundsApplication
+from apps.ledger.models import ChargeKind, FundsApplication
 
 ZERO = Decimal("0.00")
 
@@ -107,44 +105,30 @@ def read(ledger):
                 }
             )
     ledger.credit_sources = [source for source in sources if source["available"] > ZERO]
+    _project_pending(ledger)
 
 
-@transaction.atomic
-def initialize(lease):
-    """Called by mutations/migration, never a read. Snapshot the old implied coverage."""
-    lease = Lease.objects.select_for_update().get(pk=lease.pk)
-    if AllocationAccount.objects.filter(lease=lease).exists():
-        return lease
-    from apps.ledger.services import build_ledger
+def _project_pending(ledger):
+    """Mark which bills a *pending* payment is expected to cover, for display only.
 
-    ledger = build_ledger(lease)
-    sources = [("source_payment_id", p.pk, p.amount, False) for p in ledger.effective_payments]
-    sources += [
-        ("source_charge_id", line.charge.pk, -line.net_amount, True)
-        for line in ledger.charges
-        if line.charge.kind == ChargeKind.OPENING and line.net_amount < ZERO
-    ]
-    remaining = {line.charge.pk: line.settled for line in ledger.charges if line.settled > ZERO}
-    for field, pk, amount, credit in sources:
-        for line in sorted(ledger.charges, key=lambda row: (row.charge.due_date, row.charge.pk)):
-            portion = min(amount, remaining.get(line.charge.pk, ZERO))
-            if portion <= ZERO:
-                continue
-            FundsApplication.objects.create(
-                lease=lease,
-                target=line.charge,
-                amount=portion,
-                is_credit=credit,
-                legacy_derived=True,
-                reason="Legacy-derived allocation; not a manager-confirmed application",
-                **{field: pk},
-            )
-            amount -= portion
-            remaining[line.charge.pk] -= portion
-    if any(value != ZERO for value in remaining.values()):
-        raise ValidationError("Legacy allocations did not reconcile; initialization stopped.")
-    AllocationAccount.objects.create(lease=lease)
-    return lease
+    Pending money moves no balance and creates no application. This is the same
+    oldest-first reading the ledger has always shown the desk, kept out of the
+    persisted engine because expected money is not a fact yet.
+    """
+    pool = sum((payment.amount for payment in ledger.pending_payments), ZERO)
+    if pool <= ZERO:
+        return
+    for line in sorted(ledger.charges, key=lambda item: (item.charge.due_date, item.charge.pk)):
+        if line.charge.kind == ChargeKind.ADJUSTMENT or line.net_amount <= ZERO:
+            continue
+        remaining = line.net_amount - line.settled - line.pending
+        if remaining <= ZERO:
+            continue
+        applied = min(remaining, pool)
+        line.pending += applied
+        pool -= applied
+        if pool <= ZERO:
+            return
 
 
 def release(row, *, actor=None, reason="", review_key=""):

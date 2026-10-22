@@ -3,6 +3,11 @@
 - **Status:** Accepted (Phase 3)
 - **Date:** 2026-10-01
 - **Context:** Phase 3 — lease management: the first record that ties a person to a unit and to money
+- **Amended 2026-10-21 (direction):** [ADR-028](ADR-028-one-kernel.md) D6 adds a `FUTURE` state (a signed
+  tenancy that has not started) in a later, separately reviewed change. Occupancy **starting** becomes
+  calendar-driven and idempotent; occupancy **ending** stays a person's act with a citable reason, as
+  decided here and in ADR-020. Until that change lands, a future-start tenancy is an `ACTIVE` lease whose
+  unit is not occupied — the current occupancy rule already reads correctly.
 
 ## Context
 

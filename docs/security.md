@@ -1,5 +1,20 @@
 # Security
 
+## Accounting kernel consolidation — ADR-028
+
+Single allocation engine: balances are read from recorded `FundsApplication` rows; the retired read-time
+projection cannot allocate. Opening charges are created only by `ledger.services.create_charge`, which
+re-checks the account state and records `CHARGE_CREATED`; the reviewed starting-account workflow is the
+only `openings` path and is manager-authorized. No direct charge write exists outside the ledger app.
+
+Security deposits are manager-only: `apps/ledger/deposits.record` reauthorizes the act through the view's
+manager gate, refuses a settled account and any release beyond what is held, requires a reason for a
+retention or a "not collected" statement, and appends `DEPOSIT_CHANGED` in the same transaction. Entries
+are append-only (`save()` refuses edits, `delete()` raises); evidence is a private, lease-scoped staff
+document. Tenants see the held amount, never another tenancy's deposit, and the register is not a credit
+they can apply. The agreed deposit cannot be edited below money already held. Settlement is refused
+while anything is held or the agreed deposit has no recorded outcome.
+
 ## Held credit and repayments — October 21
 
 Manager/admin confirmation is required to apply/release held credit or set/replace repayment terms.

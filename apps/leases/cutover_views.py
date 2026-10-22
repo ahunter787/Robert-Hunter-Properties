@@ -8,7 +8,9 @@ from django.views import View
 
 from apps.accounts.permissions import AdminRequiredMixin, ManagerRequiredMixin
 from apps.leases import cutover
+from apps.leases.forms import ExistingHistoryForm
 from apps.leases.models import FinancialCutover, Lease, LeaseOpeningRecord
+from apps.ledger import services as ledger_services
 from apps.ledger.finance_reviews import display_review
 
 
@@ -62,12 +64,52 @@ class StartingAccountView(ManagerRequiredMixin, View):
     def post(self, request, pk):
         return self.handle(request, pk)
 
+    def _existing_history(self, request, lease):
+        """Recover a missing billing start date without recreating any history (ADR-016)."""
+        from apps.leases import history_recovery
+
+        action = request.POST.get("action", "edit")
+        form = ExistingHistoryForm(
+            request.POST if request.method == "POST" and action != "confirm" else None,
+            initial={"billing_start_date": lease.start_date},
+        )
+        review = None
+        recovery_error = None
+        if request.method == "POST" and action == "confirm":
+            try:
+                history_recovery.confirm(
+                    lease.pk, token=request.POST.get("review_token", ""), actor=request.user
+                )
+            except ValidationError as exc:
+                recovery_error = " ".join(exc.messages)
+            else:
+                messages.success(
+                    request,
+                    "Billing start date confirmed. Existing charges and payments were kept; "
+                    "no financial entries were added.",
+                )
+                return redirect("leases:lease-detail", pk=lease.pk)
+        elif request.method == "POST" and action == "review" and form.is_valid():
+            try:
+                review = history_recovery.prepare(lease, actor=request.user, **form.cleaned_data)
+            except ValidationError as exc:
+                form.add_error(None, " ".join(exc.messages))
+        return render(
+            request,
+            "management/lease_existing_history.html",
+            {
+                "lease": lease,
+                "form": form,
+                "review": review,
+                "recovery_error": recovery_error,
+                "ledger": ledger_services.build_ledger(lease),
+            },
+        )
+
     def handle(self, request, pk):
         lease = get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
-        if (lease.charges.exists() or lease.payments.exists()) and lease.needs_onboarding:
-            from apps.leases.views import LeaseOnboardView
-
-            return LeaseOnboardView()._existing_history(request, lease)
+        if (lease.charges.exists() or lease.payments.exists()) and lease.needs_starting_account:
+            return self._existing_history(request, lease)
         opening = LeaseOpeningRecord.objects.filter(lease=lease).first()
         form = cutover.StartingForm(request.POST or None, lease=lease)
         review = None

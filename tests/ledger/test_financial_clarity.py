@@ -149,7 +149,8 @@ def test_shared_summary_states_use_authoritative_amounts(state):
     elif state == "upcoming":
         assert ledger.due_now == 0
         assert ledger.not_yet_due == Decimal("840")
-        assert html.count('money-owed">$840.00</dd>') == 2
+        # The available-credit / unpaid-charges pair is now always shown (one engine).
+        assert html.count('money-owed">$840.00</dd>') == 3
         assert "Includes upcoming charges" in html
     elif state == "pending":
         assert ledger.due_now == Decimal("840")

@@ -236,20 +236,6 @@ def test_immutable_application_and_plain_form_authorization(setup, client):
         FinancialCutover.objects.get().delete()
 
 
-def test_legacy_snapshot_preserves_coverage(setup):
-    actor, _ = setup
-    lease = make_lease()
-    charge = make_charge(lease, amount=Decimal("1000"), due_date=TODAY)
-    from tests.factories import make_payment
-
-    make_payment(lease, amount=Decimal("200"), payment_date=TODAY)
-    before = services.build_ledger(lease)
-    applications.initialize(lease)
-    after = services.build_ledger(lease)
-    assert before.due_now == after.due_now == 800
-    assert FundsApplication.objects.get(target=charge).legacy_derived
-
-
 def test_correcting_paid_charge_releases_surplus_without_receipt(setup):
     actor, lease, _ = opening(setup, "ZERO", "0")
     charge = make_charge(lease, amount=Decimal("1000"), due_date=TODAY)
@@ -462,29 +448,6 @@ def test_plain_form_review_back_and_tenant_privacy(setup, client):
     assert b"Owner-authorized synthetic rehearsal" not in page.content
     assert b"Correct starting debt" not in page.content
     assert client.get(path).status_code == 403
-
-
-def test_historical_backfill_conserves_coverage_and_original_money(setup):
-    from importlib import import_module
-    from types import SimpleNamespace
-
-    from django.apps import apps
-    from django.db import connection
-
-    from tests.factories import make_payment
-
-    _, lease = setup
-    make_charge(lease, amount=Decimal("1000"), due_date=TODAY)
-    make_payment(lease, amount=Decimal("1200"), payment_date=TODAY)
-    before = services.build_ledger(lease)
-    snapshot = (before.balance_due, before.due_now, before.credit)
-    counts = (Charge.objects.count(), lease.payments.count())
-    migration = import_module("apps.ledger.migrations.0008_preserve_legacy_applications")
-    migration.preserve(apps, SimpleNamespace(connection=connection))
-    after = services.build_ledger(lease)
-    assert (after.balance_due, after.due_now, after.credit) == snapshot
-    assert counts == (Charge.objects.count(), lease.payments.count())
-    assert FundsApplication.objects.get(lease=lease).legacy_derived
 
 
 def test_correction_review_release_matches_out_of_order_early_applications(setup):

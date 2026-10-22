@@ -22,17 +22,14 @@ from apps.audit.services import record
 from apps.common.dates import due_date_in, due_date_on_or_after
 from apps.leases.models import (
     ZERO,
-    FinancialCutover,
     Lease,
     LeaseAccountStatus,
-    LeaseOnboarding,
     LeaseStatus,
     NnnRate,
-    OnboardingMethod,
     RentPeriod,
     RentPeriodOrigin,
 )
-from apps.ledger.models import ChargeKind, PaymentMethod
+from apps.ledger.models import ChargeKind
 
 #: The smallest amount a rent period or an NNN rate may carry.
 MINIMUM_AMOUNT = Decimal("0.01")
@@ -458,138 +455,6 @@ def remove_rent_period(period: RentPeriod, *, actor=None) -> None:
     )
 
 
-# --- bringing a live tenancy in (E4) --------------------------------------
-
-
-@transaction.atomic
-def onboard_lease(
-    lease: Lease,
-    *,
-    method: str,
-    as_of: dt.date,
-    received_total: Decimal | None = None,
-    opening_amount: Decimal | None = None,
-    billing_start_date: dt.date | None = None,
-    note: str = "",
-    through: dt.date | None = None,
-    actor=None,
-) -> LeaseOnboarding:
-    """Place a tenancy that began before RHP, without inventing a debt (E4).
-
-    Two ways in, both recorded on the lease:
-
-    * **history** — the term's charges are raised and everything the tenant had
-      already paid is brought in as one settling payment. The ledger's oldest-first
-      allocation then leaves the true position, and the tenant has a full statement.
-    * **position** — charging starts at the cutover and the past is one line: a
-      brought-forward balance, or a credit on account.
-
-    Either way the lease may not be charged before this runs, which is what makes
-    the phantom back-bill impossible rather than merely discouraged (ADR-016).
-    """
-    from apps.ledger import services as ledger_services
-    from apps.ledger.models import ChargeKind
-
-    if FinancialCutover.objects.exists():
-        raise ValidationError(
-            "Use the reviewed starting account workflow; historical reconstruction is retired."
-        )
-    if method not in OnboardingMethod.values:
-        raise ValidationError({"method": "Choose how this tenancy is being brought in."})
-    if lease.status == LeaseStatus.DRAFT:
-        raise ValidationError("Activate the lease first: a draft's terms can still change.")
-    if lease.charges.exists():
-        raise ValidationError(
-            "This lease already has charges. Correct them with adjustments rather than "
-            "bringing it in again."
-        )
-    if not lease.is_retroactive:
-        raise ValidationError(
-            "This tenancy begins in the current month or later. Use Post due rent charges."
-        )
-
-    if method == OnboardingMethod.HISTORY:
-        if received_total is None or received_total < ZERO:
-            raise ValidationError(
-                {"received_total": "Say what the tenant had paid before RHP (0 if nothing)."}
-            )
-        # The whole term is billed from its start, up to today: nothing is charged ahead
-        # of the day it falls due (P4-Q7). The payment settles it oldest-first.
-        lease.billing_start_date = billing_start_date or lease.start_date
-        lease.save(update_fields=["billing_start_date", "updated_at"])
-        through = through or ledger_services.charges_due()
-        ledger_services.generate_charges(lease, through=through, actor=actor)
-        if received_total > ZERO:
-            ledger_services.record_payment(
-                lease,
-                amount=received_total,
-                payment_date=as_of,
-                method=PaymentMethod.OTHER,
-                external_reference="Opening balance",
-                notes="Payments received before RHP began tracking this lease.",
-                actor=actor,
-            )
-    else:
-        cutover = billing_start_date or ledger_services.upcoming_rent_date(lease) or as_of
-        if cutover < lease.start_date or cutover > lease.end_date:
-            raise ValidationError(
-                {"billing_start_date": "The first month billed has to fall inside the term."}
-            )
-        if opening_amount is None:
-            raise ValidationError({"opening_amount": "Enter 0 if the account was paid in full."})
-        lease.billing_start_date = cutover
-        lease.save(update_fields=["billing_start_date", "updated_at"])
-        if opening_amount > ZERO:
-            ledger_services.create_charge(
-                lease,
-                description="Balance brought forward",
-                amount=opening_amount,
-                due_date=as_of,
-                actor=actor,
-                kind=ChargeKind.OPENING,
-            )
-        elif opening_amount < ZERO:
-            # Paid ahead: money on account, which is what a credit is.
-            ledger_services.record_payment(
-                lease,
-                amount=-opening_amount,
-                payment_date=as_of,
-                method=PaymentMethod.OTHER,
-                external_reference="Opening balance",
-                notes="Credit brought forward from before RHP (E4).",
-                actor=actor,
-            )
-
-    onboarding = LeaseOnboarding(
-        lease=lease,
-        method=method,
-        as_of=as_of,
-        received_total=received_total if method == OnboardingMethod.HISTORY else None,
-        opening_amount=opening_amount if method == OnboardingMethod.POSITION else None,
-        note=note,
-        set_by=_actor(actor),
-    )
-    onboarding.save()
-    _forget_cached(lease)
-
-    record(
-        _actor(actor),
-        AuditAction.LEASE_ONBOARDED,
-        obj=lease,
-        lease=lease,
-        summary=(
-            f"Prior activity for {lease.unit.label} set up using "
-            f"{onboarding.get_method_display().lower()} as of {_date_label(as_of)}"
-        ),
-        method=method,
-        as_of=as_of,
-        received_total=received_total,
-        opening_amount=opening_amount,
-        billing_start_date=lease.billing_start_date,
-    )
-    return onboarding
-
-
 # --- ending a tenancy, and closing its money (P4-Q1, P4-Q2, P4-Q3) ---------
 
 
@@ -705,11 +570,11 @@ def settle_account(lease: Lease, *, note: str = "", actor=None) -> Lease:
         raise ValidationError(
             "A payment is still pending. Clear or void it before settling the account."
         )
-    if lease.deposit > ZERO:
-        raise ValidationError(
-            "The recorded security deposit must be fully disposed of before this account can "
-            "be settled. Deposit disposition will be recorded by the move-out workflow."
-        )
+    from apps.ledger import deposits
+
+    deposit_blocker = deposits.blocker(lease)
+    if deposit_blocker is not None:
+        raise ValidationError(deposit_blocker)
 
     lease.account_status = LeaseAccountStatus.SETTLED
     lease.settled_at = timezone.now()

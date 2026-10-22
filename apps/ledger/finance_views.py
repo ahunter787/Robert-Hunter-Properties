@@ -10,7 +10,9 @@ from django.views import View
 from apps.accounts.permissions import ManagerRequiredMixin
 from apps.common.forms import StyledForm
 from apps.leases.models import Lease
+from apps.ledger import deposits
 from apps.ledger import finance_reviews as reviews
+from apps.ledger.forms import DepositForm
 from apps.ledger.services import build_ledger
 
 
@@ -113,5 +115,54 @@ class FinancialReviewView(ManagerRequiredMixin, View):
                     "undo": "Undo credit application",
                     "plan": "Starting-debt payment dates",
                 }[self.action],
+            },
+        )
+
+
+class DepositView(ManagerRequiredMixin, View):
+    """Record one deposit fact; the register is the audit-able answer to "what is held?"."""
+
+    def get(self, request, pk):
+        return self.handle(request, pk)
+
+    def post(self, request, pk):
+        return self.handle(request, pk)
+
+    def handle(self, request, pk):
+        lease = get_object_or_404(Lease.objects.select_related("unit__property"), pk=pk)
+        form = DepositForm(
+            request.POST or None,
+            lease=lease,
+            initial={"date": timezone.localdate(), "kind": "RECEIVED"},
+        )
+        error = None
+        if request.method == "POST" and form.is_valid():
+            try:
+                deposits.record(
+                    lease,
+                    kind=form.cleaned_data["kind"],
+                    amount=form.cleaned_data.get("amount") or 0,
+                    date=form.cleaned_data["date"],
+                    method=form.cleaned_data.get("method", ""),
+                    reference=form.cleaned_data.get("reference", ""),
+                    reason=form.cleaned_data.get("reason", ""),
+                    evidence=form.cleaned_data.get("evidence"),
+                    actor=request.user,
+                )
+            except ValidationError as exc:
+                error = " ".join(exc.messages)
+            else:
+                messages.success(request, "The security deposit record was added.")
+                return redirect("ledger:lease-ledger", pk=lease.pk)
+        return render(
+            request,
+            "management/deposit.html",
+            {
+                "lease": lease,
+                "form": form,
+                "error": error,
+                "entries": deposits.entries(lease),
+                "held": deposits.held(lease),
+                "agreed": lease.deposit,
             },
         )

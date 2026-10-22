@@ -45,9 +45,9 @@ tooling accepts it.
 | --- | --- | --- | --- |
 | P3-E1 | `E1` | Lease templates: Fixed, Step Up, Triple net (NNN), and amounts the lease states | In `main` — [ADR-013](../decisions/ADR-013-lease-templates.md) |
 | P4-E2 | `E2` | Property responsibilities charged to the unit, read as one month by the tenant | In `main` — [ADR-014](../decisions/ADR-014-property-responsibilities.md) |
-| P4-E4 | `E4` | Retroactive onboarding: a live tenancy brought in without inventing a debt | In `main` — [ADR-016](../decisions/ADR-016-retroactive-onboarding.md) |
+| P4-E4 | `E4` | Retroactive onboarding: a live tenancy brought in without inventing a debt | Retired — the onboarding mechanism is retired by [ADR-028](../decisions/ADR-028-one-kernel.md) (ADR-027 governs starting balances); the stated-rent part is in `main` |
 | P4-E3 | `E3` | Concessions: a month forgiven or deferred | Proposed |
-| P8-E1 | `E12` | Tenant–RHP messaging: private conversations, attachments, unread state and email | Approved scope — unbuilt; decisions pending |
+| P8-E1 | `E12` | Tenant–RHP messaging: private conversations, attachments, unread state and email | In main — [ADR-024](../decisions/ADR-024-communications.md) |
 
 Extensions are listed in the record of the phase whose deliverable they changed most. Several reach
 across phases — P4-E2 also touched the portfolio, P4-E4 also touched lease terms — and each record names
