@@ -14,6 +14,16 @@ charge, and the deposit control difference is reported rather than adjusted. Ban
 the data the office imports; no bank credentials are stored, and reconciliation requires every line to be
 matched plus a GL tie.
 
+## Proposed product extensions — E15–E17
+
+The TenantCloud-derived plan keeps the same authorization rule for every proposed surface. Messenger
+quick replies, archive/mute, exports and internal notes are staff-only; internal notes are never returned
+to a tenant, never emailed and never included in a tenant timeline or tenant export. The tenant timeline
+is scoped by lease membership in the query, hides staff-only and internal events, and never offers
+cross-tenancy search. The proposed insurance-proof workflow is tenant-own-lease only, uses the private
+document store and permission-checked downloads, and has no insurance sales, quotes or partner path. E17
+is conditional on the owner amending the written insurance non-goal first.
+
 ## Move-out settlement — ADR-031
 
 A retained deposit is applied to a bill only through the same manager-only signed review as held credit;

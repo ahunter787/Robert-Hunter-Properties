@@ -376,3 +376,8 @@ readings cannot drift. The GL is staff-only: managers read and reconcile, admini
 accounts and manual journals, and no tenant route reaches any accounting record. Bank statements are
 imported and reconciled against journal lines; they never rewrite an entry. The blueprint is
 [`design/property-accounting.md`](design/property-accounting.md) and the build is sliced `E10-B1`…`B5`.
+
+The next product work is proposed, not approved: the TenantCloud/TurboTenant study produced
+[`design/tenantcloud-modifications-plan.md`](design/tenantcloud-modifications-plan.md), covering E15
+messenger enhancements, E16 the tenant timeline and a conditional E17 proof-of-insurance workflow. The
+plan keeps E12's messaging boundaries and the written non-goals; E17 needs an owner decision first.
