@@ -47,6 +47,7 @@ class DocumentCategory(models.TextChoices):
     RECEIPT = "RECEIPT", "Receipt"
     INSPECTION = "INSPECTION", "Inspection"
     CORRESPONDENCE = "CORRESPONDENCE", "Correspondence"
+    INSURANCE = "INSURANCE", "Renters insurance proof"
     OTHER = "OTHER", "Other"
 
 

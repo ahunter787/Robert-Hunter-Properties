@@ -281,6 +281,10 @@ class Lease(models.Model):
             "The first month RHP posts charges for. Leave blank to start with the lease term."
         ),
     )
+    renters_insurance_required = models.BooleanField(
+        default=False,
+        help_text="The lease requires the tenant to supply proof of renters insurance.",
+    )
     deposit = models.DecimalField(
         max_digits=12,
         decimal_places=2,

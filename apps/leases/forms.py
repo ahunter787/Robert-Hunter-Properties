@@ -36,6 +36,7 @@ class LeaseForm(StyledModelForm):
             "step_up_percent",
             "step_up_amount",
             "deposit",
+            "renters_insurance_required",
             "rent_due_day",
             "notes",
         ]
@@ -47,6 +48,7 @@ class LeaseForm(StyledModelForm):
             "monthly_rent": "Rent at the start of the term",
             "template": "Lease template",
             "carries_nnn": "The tenant pays NNN on top of rent",
+            "renters_insurance_required": "Require renters insurance proof",
         }
         help_texts = {
             "template": (

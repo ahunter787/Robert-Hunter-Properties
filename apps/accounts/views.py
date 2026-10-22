@@ -113,6 +113,7 @@ class TenantDashboardView(LoginRequiredMixin, View):
         lease = leases_visible_for(request.user)
         ledger = ledger_services.build_ledger(lease) if lease else None
         from apps.communications.summary import communications_summary
+        from apps.insurance.services import state_for as insurance_state_for
         from apps.maintenance.summary import maintenance_summary
 
         return render(
@@ -125,6 +126,8 @@ class TenantDashboardView(LoginRequiredMixin, View):
                 "lease_days_remaining": _days_remaining(lease),
                 "maintenance": maintenance_summary(request.user),
                 "communications": communications_summary(request.user),
+                "insurance_lease": lease,
+                "insurance_state": insurance_state_for(lease) if lease else None,
             },
         )
 

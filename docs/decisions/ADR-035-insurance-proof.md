@@ -31,6 +31,13 @@ No automated screening in this slice, no fourth expiry/waiver state, no partner 
 insurance product recommendation. No new dependency. Tenant routes are lease-scoped; staff routes are
 manager-only; downloads never bypass document authorization.
 
+## Implementation note (2026-10-22)
+
+Built in development on `rhp-e17-insurance`: `apps.insurance` with `InsuranceProof` (append-only
+submissions, one-time manager decision), lease flag, tenant upload and status page, manager review list
+and detail, dashboard to-do, timeline events and private document download. The tenant view is exactly
+missing / submitted-pending-review / accepted-or-rejected; a rejection reason is required and visible.
+
 ## Verification
 
 Tests cover requirement off/on, missing warning and onboarding item, tenant upload and own-lease scope,

@@ -1,0 +1,16 @@
+{% if insurance_lease and insurance_state != "NOT_REQUIRED" %}
+<section class="rhp-card" role="status">
+  <p class="rhp-eyebrow">Things to do</p>
+  <h2 class="mt-1 text-sm font-semibold">Renters insurance</h2>
+  {% if insurance_state == "MISSING" %}
+    <p class="mt-2 text-sm money-owed">Your lease requires renters insurance. Supply proof to your landlord in the portal.</p>
+  {% elif insurance_state == "SUBMITTED" %}
+    <p class="mt-2 text-sm text-ink-muted">Your proof is submitted and waiting for manager review.</p>
+  {% elif insurance_state == "REJECTED" %}
+    <p class="mt-2 text-sm money-owed">Your proof was rejected. Read the reason and submit a replacement.</p>
+  {% else %}
+    <p class="mt-2 text-sm money-received">Your renters insurance proof is accepted.</p>
+  {% endif %}
+  <a class="rhp-btn rhp-btn-secondary mt-3" href="{% url 'tenant_insurance:insurance' %}">Open renters insurance</a>
+</section>
+{% endif %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Renters insurance — RHP{% endblock %}
+{% block content %}
+  <div class="mx-auto w-full max-w-4xl space-y-6">
+    <div><p class="rhp-eyebrow">Tenant compliance</p><h1 class="mt-1 text-2xl font-semibold tracking-tight">Renters insurance</h1><p class="mt-2 text-sm text-ink-muted">Required leases and whether proof is missing, waiting for review, accepted or rejected.</p></div>
+    <div class="rhp-card overflow-x-auto"><table class="rhp-table"><thead><tr><th>Tenancy</th><th>Property / unit</th><th>Status</th></tr></thead><tbody>
+      {% for row in rows %}<tr><td><a class="rhp-link" href="{% url 'insurance:staff-detail' row.lease.pk %}">{{ row.lease.tenant_names }}</a></td><td>{{ row.lease.unit.property.name }} · {{ row.lease.unit.label }}</td><td>{% if row.state == "MISSING" %}<span class="text-warning">Missing</span>{% elif row.state == "SUBMITTED" %}Submitted — pending review{% elif row.state == "ACCEPTED" %}Accepted{% elif row.state == "REJECTED" %}Rejected{% else %}Not required{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="3" class="text-ink-muted">No leases require renters insurance.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+{% endblock %}

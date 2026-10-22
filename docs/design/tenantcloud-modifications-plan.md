@@ -243,7 +243,15 @@ the evidence and the manager's decision. No partner funnel, AI audit, scoring or
 - Timeline (E16) events: requirement set, proof submitted, accepted, rejected, replaced.
 - File access uses the existing private document serve view and tenancy authorization; no public URL.
 
-### 5.4 Tests and exclusions
+### 5.4 Implementation status
+
+Implemented in development on `rhp-e17-insurance`: lease requirement flag, tenant proof upload (private
+document store), manager accept/reject with a required rejection reason, the three-state tenant view and
+dashboard to-do, and timeline events. There is no automated screening, OCR, sales or quote path. The
+requirement is editable in the existing lease form. Tests cover missing/submitted/accepted/rejected,
+replacement history, tenant/staff authorization and timeline visibility.
+
+### 5.5 Tests and exclusions
 
 - Requirement off means no warning and no tenant to-do; requirement on and no proof shows missing.
 - Tenant sees only own lease; staff sees portfolio; download requires authorization.

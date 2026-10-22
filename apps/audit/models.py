@@ -28,6 +28,8 @@ class AuditAction(models.TextChoices):
     ACCOUNTING_CLOSING_POSTED = "ACCOUNTING_CLOSING_POSTED", "Closing entry posted"
     OWNER_TRANSACTION_RECORDED = "OWNER_TRANSACTION_RECORDED", "Owner transaction recorded"
     ACCOUNTING_EXPORT_CREATED = "ACCOUNTING_EXPORT_CREATED", "Accounting export created"
+    INSURANCE_PROOF_SUBMITTED = "INSURANCE_PROOF_SUBMITTED", "Insurance proof submitted"
+    INSURANCE_PROOF_REVIEWED = "INSURANCE_PROOF_REVIEWED", "Insurance proof reviewed"
     MOVE_OUT_DETAILS_UPDATED = "MOVE_OUT_DETAILS_UPDATED", "Move-out details updated"
     MOVE_OUT_STATEMENT_ISSUED = "MOVE_OUT_STATEMENT_ISSUED", "Move-out statement issued"
     LEASE_SETTLED = "LEASE_SETTLED", "Financial account settled"

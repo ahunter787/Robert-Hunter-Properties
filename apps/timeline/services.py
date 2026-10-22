@@ -198,6 +198,45 @@ def _message_events(lease, viewer):
     return events
 
 
+def _insurance_events(lease, staff):
+    events = []
+    for proof in lease.insurance_proofs.select_related("reviewed_by", "submitted_by"):
+        if proof.status == "SUBMITTED":
+            title = "Renters insurance proof submitted"
+            detail = "Waiting for manager review."
+        elif proof.status == "ACCEPTED":
+            title = "Renters insurance accepted"
+            detail = "The manager accepted the proof."
+        else:
+            title = "Renters insurance proof rejected"
+            detail = proof.review_note
+        events.append(
+            Event(
+                proof.submitted_at,
+                "insurance",
+                title,
+                detail,
+                proof.submitted_by.display_name if proof.submitted_by else "",
+                True,
+                f"insurance:{proof.pk}",
+            )
+        )
+        if proof.reviewed_at and proof.reviewed_by:
+            events.append(
+                Event(
+                    proof.reviewed_at,
+                    "insurance",
+                    "Renters insurance reviewed",
+                    f"{proof.get_status_display()}"
+                    + (f" · {proof.review_note}" if proof.review_note else ""),
+                    proof.reviewed_by.display_name,
+                    True,
+                    f"insurance-review:{proof.pk}",
+                )
+            )
+    return events
+
+
 def _manual_events(lease, staff):
     rows = TimelineEntry.objects.filter(lease=lease).select_related("author")
     if not staff:
@@ -226,6 +265,7 @@ def timeline_for(lease, viewer):
     events += _maintenance_events(lease, staff)
     events += _document_events(lease, staff)
     events += _message_events(lease, viewer)
+    events += _insurance_events(lease, staff)
     events += _manual_events(lease, staff)
     if not staff:
         events = [event for event in events if event.visible_to_tenant]
