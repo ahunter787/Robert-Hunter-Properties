@@ -87,11 +87,19 @@ complete posting matrix and is exactly the kind of unknown the kernel process re
 
 ### D7 — Go-live is gated on owner facts and external review, not on code completion
 
-B1 implementation does not start until the owner supplies only business facts — bank accounts, fiscal year
-and entity/tax basis, opening-balance source, external reviewer, and the operating state's deposit rules —
-and that reviewer confirms the chart, Schedule E mapping, opening journal and retained-deposit mapping.
-These are recorded in §10 of the readiness document. No owner opinion on accounting method is requested;
-the reviewer confirms the method against the evidence and RHP's facts.
+B1 implementation does not start until the owner supplies only business facts — fiscal year and
+entity/tax basis, opening-balance source (non-bank first), external reviewer, and the operating state's
+deposit rules — and that reviewer confirms the chart, Schedule E mapping, opening journal and
+retained-deposit mapping. These are recorded in §10 of the readiness document. No owner opinion on
+accounting method is requested; the reviewer confirms the method against the evidence and RHP's facts.
+
+**The owner's actual bank accounts are not one of those B1 facts.** They are data entered in B3: a bank
+account is a record with a chart account, property/payout assignment and connection status, not a code
+constant. TenantCloud adds accounts and assigns properties (#11 in the readiness evidence); Buildium links
+existing accounts through a provider and imports transactions (#12). B1 posts receipts to undeposited funds
+and needs no bank account at all; B3 builds the registry and a provider-agnostic statement/feed adapter
+(CSV/OFX first, connection service later). This avoids hard-coding any owner institution and lets the
+office add or reconnect accounts without a code change.
 
 ## Consequences
 
@@ -123,7 +131,7 @@ the reviewer confirms the method against the evidence and RHP's facts.
 ## Open items carried to B1 review
 
 - B1 implementation plan and estimate (separate review).
-- Owner business facts in §10 of the readiness document.
+- Owner business facts in §10 of the readiness document (not bank accounts — those are B3 data).
 - External reviewer's confirmation of the chart, Schedule E mapping, opening journal, reconciliation
   procedure and retained-deposit mapping.
 - E6 (post-tenancy damage/cleaning charges with evidence) if the reviewer prefers charge-then-apply over

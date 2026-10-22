@@ -12,7 +12,8 @@ Deposit terms do not prove held deposits. Journal idempotency identifies individ
 and dated AR controls must distinguish future charges from earned income. Opening AP/bank outstanding
 items need evidence; no unexplained equity plug is approved. Resolve prepayment/control classification
 before the separately reviewed B1 implementation. Reconciliation and external approval gate accounting
-go-live, not tenant setup. Bank accounts, fiscal year and reviewer remain actual information to obtain.
+go-live, not tenant setup. Fiscal year, opening balances and reviewer remain actual information to
+obtain; the owner's bank accounts are B3 data entered through a registry/connection, not a launch constant.
 
 ## October 22 B1 readiness amendment (governs the earlier draft below)
 
@@ -254,7 +255,10 @@ invariants 2 and 4 hold immediately.
    a reason (mirroring the ledger's settled-account rule).
 
 Statement import is CSV first, per the Phase 10 convention; no bank feed and no aggregator in this
-extension.
+extension. A bank account is a **data record** (name, institution, last four, kind, chart account,
+property/payout assignment, active, connection status), created in the office. The import/matching layer is
+provider-agnostic: CSV/OFX first, and a bank-feed adapter can be added later without changing the ledger or
+hard-coding a bank. The owner's actual accounts are entered when B3 starts, not before B1.
 
 ## 9. Cash out and deposit movements (the new records)
 
@@ -323,8 +327,9 @@ the tenant portal.
 
 1. **Schedule E mapping** — confirm with the owner's accountant before B4 (the chart is editable; the
    default is a proposal).
-2. **Bank statement export** — which bank/format will the office import? CSV is assumed; the column-mapping
-   review step handles variation.
+2. **Bank setup (B3)** — which operating/deposit accounts the office registers; whether it wants automatic
+   feeds or CSV/OFX first and which provider, if any. Accounts are data, never code constants; the
+   column-mapping review handles statement variation.
 3. **Deposit account separation** — does state law require deposits held in a separate account? The model
    supports it; the owner decides whether to use it.
 4. **Disbursement discipline** — who records vendor payments, and with what evidence, so reconciliation is

@@ -27,6 +27,8 @@ copied into RHP, and none replaces the owner's or accountant's review of RHP's o
 | 8 | [APM Help — trust accounting and bookkeeping](https://www.apmhelp.com/services/trust-bookkeeping) | Operational control practice: daily bank reconciliations, and a **three-way reconciliation** of bank balance, book balance and tenant/owner sub-ledgers; move-in/move-out accounting is where deposits and transfers most often break. |
 | 9 | [Oracle JD Edwards EnterpriseOne General Accounting guide](https://docs.oracle.com/cd/B31039_02/jded/acrobat/e1_812aga-b_0406.pdf) | Posted journal entries cannot be revised; corrections are a **void/reversing journal entry**, and the system maintains an audit trail. This supports RHP's append-only journal design. |
 | 10 | [CommunityPay — what an idempotency key is](https://www.communitypay.us/concepts/what-is-an-idempotency-key/) and [Apideck — Intuit Enterprise Suite idempotency](https://developers.apideck.com/apis/accounting/intuit-enterprise-suite/gotchas) | Retried writes must be deduplicated by a caller/source-supplied key; the accounting ecosystem treats repeated requests with the same key as the same transaction (Intuit carries the key as its request id). RHP adapts this to posting source events. |
+| 11 | [TenantCloud — assign a property to a bank account](https://support.tenantcloud.com/en/articles/11909479-how-do-i-assign-a-property-to-a-bank-account) | Bank accounts are **added by the user as data**, not hard-coded: the first becomes the main operating account, properties are linked to an account, and income and deposit payouts can be routed to different accounts. Accounts can be reassigned later, including the deposit/liability account. |
+| 12 | [APM Help — Buildium bank feeds](https://www.apmhelp.com/blog/bank-feeds-buildium-automatic-import) | Established PM products connect the user's existing bank accounts through a provider (not a fixed bank list in the product), import transactions, match them, and fall back to CSV/OFX for history or unsupported institutions. Bank-connection credentials are held by the provider, not by the PM application. |
 
 What the evidence does **not** settle for RHP: the entity's tax basis, fiscal year, bank-account structure,
 opening balances and reviewer (owner/accountant facts); and the GL mapping for a retained deposit that is
@@ -76,6 +78,27 @@ owner ledgers. Those belong to the separate business/tax domain or are out of RH
 **Property dimension is mandatory** on every income, expense, AR, AP and deposit line whose source has a
 property. Bank/equity lines may be property-less only when the source is owner-level. The evidence (#2)
 prefers one chart plus a property dimension over a chart per property.
+
+### 2.1 Bank accounts are data, not a launch constant
+
+A bank account is a **record** created by the office (name, institution, last four, kind, ledger account,
+property/payout assignment), not a Python setting, a list in source, or an owner fact that B1 needs in
+order to compile. This is how the products do it: TenantCloud adds accounts and assigns properties to
+them (#11); Buildium links existing bank accounts through a provider and imports their transactions (#12).
+
+- **B1 needs no actual bank account.** B1 posts receipts to `1450 Undeposited funds`; moving money into a
+  bank is the separate bank-deposit event in B3 (kernel events). B1's opening journal can start with
+  AR/AP/deposits/credits/equity and leave bank opening balances to B3.
+- **B3 builds the registry**, not hard-coded banks: a `BankAccount` record (data) with one chart account
+  per bank account, property/payout assignment, opening balance/date, active flag, and connection status.
+  The office adds an account in a screen; nothing ships with an owner's account baked in.
+- **The bank connection is an adapter, not a bank list.** Start with CSV/OFX statement import (no new
+  dependency), then a provider-backed connection service if the owner wants automatic feeds (B3/B5 scope,
+  needs a dependency/credential decision). Credentials/tokens stay with the provider, never in RHP; the
+  adapter exposes "accounts, statements, transactions" and the rest of B3 is provider-agnostic.
+- **Owner's actual accounts are a B3 setup task, not a B1 coding prerequisite.** When B3 starts, the
+  office registers the operating account and any separate deposit account; B1 can be built and tested
+  before that, with no owner bank data at all.
 
 ## 3. Basis and periods
 
@@ -270,23 +293,24 @@ This is the one evidence-conflict that stops a complete B1 posting matrix. It is
 
 ## 10. Go-live boundary — facts only the owner/accountant can supply
 
-B1 implementation does not start until these are answered and reviewed. These are **business facts**, not
-questions about industry method:
+B1 implementation does not need the owner's actual bank accounts (see §2.1). It waits on the following
+**business facts and review**, not on industry-method opinions:
 
-1. **Bank accounts.** Institution and last four digits for each account; which is operating and whether a
-   separate deposit/escrow account exists; opening balance and date per account; statement format available
-   for B3 (CSV/OFX/PDF).
-2. **Fiscal year and entity.** Fiscal year end; entity type (sole proprietor/LLC/S-corp); tax basis the
+1. **Fiscal year and entity.** Fiscal year end; entity type (sole proprietor/LLC/S-corp); tax basis the
    accountant requires (cash or accrual) and confirmation of the Schedule E mapping for the chart.
-3. **Opening balances.** The date RHP's GL begins; the source of each opening balance (bank statement,
-   closing statement, prior accounting system, accountant-prepared trial balance); a prepared list of
-   bank/AR/AP/deposits/credits/equity balances; who prepares and who reviews it.
-4. **External reviewer.** Name and role of the accountant/CPA who will review the chart, opening journal,
+2. **Opening balances (non-bank first).** The date RHP's GL begins; the source of each opening AR, AP,
+   deposit, credit and equity balance (closing statement, prior accounting system, accountant-prepared
+   trial balance, or prepared schedule); who prepares and who reviews it. Bank opening balances can arrive
+   with B3's bank registry; they do not block B1.
+3. **External reviewer.** Name and role of the accountant/CPA who will review the chart, opening journal,
    reconciliation procedure and go-live sign-off; the reports/format they require.
-5. **Deposit rules.** The operating state's deposit return/itemisation deadline and whether a separate
+4. **Deposit rules.** The operating state's deposit return/itemisation deadline and whether a separate
    trust/escrow account is required (carried from ADR-031).
-6. **Retained-deposit mapping.** Reviewer's agreement to the clearing-account adaptation in §9, or an
+5. **Retained-deposit mapping.** Reviewer's agreement to the clearing-account adaptation in §9, or an
    instruction to wait for E6 charges first.
+6. **B3 bank setup (when B3 starts, not B1).** Which operating and deposit accounts to register; whether
+   the office wants automatic bank feeds or CSV/OFX first; which provider (if any); and who authorises the
+   connection. These are data and scope decisions, not code constants.
 
 Until then, the B1 status is **ready for review, not ready to build**. No GL table, no migration, no owner
 data import and no production change is included in this readiness pass.

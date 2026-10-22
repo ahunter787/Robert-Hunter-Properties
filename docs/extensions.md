@@ -467,8 +467,10 @@ guessed: the GL mapping for a retained deposit that is applied to AR after withh
 industry's charge-then-apply order, with E6 missing) is blocked pending external review, and B1 does not
 post it. **B1 implementation is not started**: it waits on the owner's business facts (bank accounts,
 fiscal year/entity/tax basis, opening-balance source, external reviewer, state deposit rules) and that
-reviewer's confirmation of the chart, opening journal and the retained-deposit mapping. No GL table,
-migration or production change is included.
+reviewer's confirmation of the chart, opening journal and the retained-deposit mapping. The owner's
+actual bank accounts are **not** a B1 prerequisite: B1 posts receipts to undeposited funds, and B3 adds a
+bank-account registry plus a provider-agnostic statement/feed adapter (CSV/OFX first), so no institution
+is hard-coded. No GL table, migration or production change is included.
 
 **October 22 M2b implemented — [ADR-030](decisions/ADR-030-people-and-portal-logins.md):** a lease
 party is a `contacts.Person` (tenant, adult occupant, guarantor or authorized contact); the portal
