@@ -49,7 +49,7 @@ additions that are **not** phases are proposed, approved and tracked in
 | E15 | Messenger operational enhancements — quick replies, archive/mute, export, shared media, internal notes | **In `main`** — optional maintenance context deferred | ADR-033 | folded |
 | E16 | Tenant timeline — authorized, date-grouped read model | **In `main`** — first slice | ADR-034 | folded |
 | E17 | Renters-insurance proof — three-state proof intake and manager decision | **In `main`** | ADR-035 | folded |
-| E18 | Portal UX hardening — grouped navigation, messenger, action-first dashboards, accessibility | Built in development — owner review pending | [ux-hardening](design/ux-hardening.md) | `rhp-e18-ux` |
+| E18 | Portal UX hardening — grouped navigation, messenger, action-first dashboards, accessibility | Built — folded into `main` | [ux-hardening](design/ux-hardening.md) | `main` |
 
 ## Milestones
 

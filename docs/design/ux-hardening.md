@@ -1,6 +1,6 @@
 # E18 — Portal UX hardening
 
-**Status:** Built in development — owner review pending. The E18-0 baseline, E18-A shell/navigation,
+**Status:** Built and folded into `main` (2026-10-24). The E18-0 baseline, E18-A shell/navigation,
 E18-B messenger, E18-C dashboard/onboarding and E18-D accessibility/browser QA are implemented on
 `rhp-e18-ux`. Nothing has been merged into `main`.
 **Baseline:** [ux-baseline.md](ux-baseline.md), tag `ux-baseline-2026-10-22`.
@@ -109,5 +109,6 @@ SDK, native app, SMS, AI, listings, applications, screening, e-sign or marketpla
   focus to it; and with JavaScript disabled the manual read control is visible and the normal composer form
   remains. The Chrome accessibility tree exposes the conversation as a “Conversation messages” log, the
   composer as a “Message” textbox, and the Send/Attach controls by name. The final owner review remains.
-- The baseline tag remains available for rollback; no schema migration is required for the current E18
+- The baseline tag remains available for rollback; the E18 presentation work adds no schema migration.
+  The follow-on account-photo slice adds `accounts.0005_user_photo` and is covered by the same review.
   slices.
