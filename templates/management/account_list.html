@@ -49,7 +49,7 @@
               <tr>
                 <td class="py-3 pr-4">
                   <div class="flex items-center gap-3">
-                    {% if account.tenant_profile.photo %}
+                    {% if account.photo %}
                       {% url 'manage:account-photo' account.pk as photo_url %}
                     {% else %}
                       {% firstof '' as photo_url %}

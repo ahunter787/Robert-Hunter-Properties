@@ -1,45 +1,102 @@
 {% extends "base.html" %}
-{% load rhp_format %}
 
 {% block title %}People — RHP{% endblock %}
 
 {% block content %}
-  <div class="mx-auto w-full max-w-5xl space-y-6">
+  <div class="list-page-width space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p class="rhp-eyebrow">Leasing</p>
         <h1 class="mt-1 text-2xl font-semibold tracking-tight">People</h1>
-        <p class="mt-2 text-sm text-ink-muted">
-          The people on leases. A person does not need a portal login; a login is optional and
-          belongs to one person.
-        </p>
+        <p class="mt-2 text-sm text-ink-muted">Your directory of lease contacts. Portal logins are optional.</p>
       </div>
       <a href="{% url 'contacts:person-create' %}" class="rhp-btn rhp-btn-primary">Add a person</a>
     </div>
 
-    <form method="get" class="flex flex-wrap items-end gap-3">
-      <div class="min-w-64 flex-1"><label class="rhp-label" for="q">Search</label>
-        <input class="rhp-field" type="search" id="q" name="q" value="{{ search }}" placeholder="Name, email or phone"></div>
-      <button class="rhp-btn rhp-btn-secondary" type="submit">Search</button>
+    <form method="get" class="rhp-card flex flex-wrap items-end gap-3">
+      <div class="min-w-0 grow basis-56">
+        <label class="rhp-label" for="q">Search</label>
+        <input type="search" name="q" id="q" value="{{ search }}" class="rhp-field"
+               placeholder="Name, email or phone">
+      </div>
+      <button type="submit" class="rhp-btn rhp-btn-secondary">Search</button>
+      {% if search %}<a href="{% url 'contacts:person-list' %}" class="rhp-btn rhp-btn-secondary">Clear search</a>{% endif %}
     </form>
 
-    <div class="rhp-card overflow-x-auto">
-      <table class="rhp-table">
-        <thead><tr><th>Name</th><th>Contact</th><th>Portal login</th><th>Leases</th><th></th></tr></thead>
-        <tbody>
-          {% for person in people %}
+    <div class="rhp-card overflow-x-auto" {% if people %}role="region" aria-label="People directory" tabindex="0"{% endif %}>
+      {% if people %}
+        <table class="w-full min-w-[640px] text-left text-sm">
+          <caption class="sr-only">People, contact details, portal login status and lease counts</caption>
+          <thead class="text-xs uppercase tracking-wide text-ink-muted">
             <tr>
-              <td><a href="{% url 'contacts:person-detail' person.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">{{ person.display_name }}</a></td>
-              <td class="text-ink-muted">{{ person.email|default:"—" }}{% if person.phone %} · {{ person.phone }}{% endif %}</td>
-              <td>{% if person.portal_user %}{{ person.portal_user.username }}{% if not person.portal_user.is_active %} <span class="rhp-badge-warning">inactive</span>{% endif %}{% else %}<span class="text-ink-muted">None</span>{% endif %}</td>
-              <td class="text-ink-muted">{{ person.lease_memberships.all|length }}</td>
-              <td class="text-right"><a class="rhp-link" href="{% url 'contacts:person-detail' person.pk %}">Open</a></td>
+              <th scope="col" class="py-2 pr-4">Person</th>
+              <th scope="col" class="py-2 pr-4">Contact</th>
+              <th scope="col" class="py-2 pr-4">Portal login</th>
+              <th scope="col" class="py-2 pr-4">Leases</th>
+              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
             </tr>
-          {% empty %}
-            <tr><td colspan="5" class="text-ink-muted">No people yet. Add the first person, or create a tenant account and it will create one.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody class="divide-y divide-surface-muted">
+            {% for person in people %}
+              <tr>
+                <th scope="row" class="py-3 pr-4 text-left font-medium">
+                  <div class="flex items-center gap-3">
+                    <span class="rhp-avatar" aria-hidden="true">{{ person.first_name|slice:":1"|upper }}{{ person.last_name|slice:":1"|upper }}</span>
+                    <span class="text-ink">{{ person.display_name }}</span>
+                  </div>
+                </th>
+                <td class="py-3 pr-4">
+                  {% if person.email or person.phone %}
+                    {% if person.email %}<span class="block break-words">{{ person.email }}</span>{% endif %}
+                    {% if person.phone %}<span class="block text-ink-muted">{{ person.phone }}</span>{% endif %}
+                  {% else %}<span class="text-ink-muted">No contact details</span>{% endif %}
+                </td>
+                <td class="py-3 pr-4">
+                  {% if person.portal_user %}
+                    {% if not person.portal_user.is_active %}
+                      <span class="rhp-status rhp-status-danger">Deactivated</span>
+                    {% elif person.portal_user.has_usable_password %}
+                      <span class="rhp-status rhp-status-success">Active</span>
+                    {% else %}
+                      <span class="rhp-status rhp-status-warning">Invitation pending</span>
+                    {% endif %}
+                    <span class="mt-1 block text-xs text-ink-muted">{{ person.portal_user.username }}</span>
+                  {% else %}<span class="rhp-status">No portal login</span>{% endif %}
+                </td>
+                <td class="py-3 pr-4 tabular-nums">{{ person.lease_memberships.all|length }}</td>
+                <td class="py-3 text-right">
+                  <a href="{% url 'contacts:person-detail' person.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">Open<span class="sr-only"> {{ person.display_name }}</span></a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="rhp-empty">
+          {% if search %}
+            <h2>No people match your search</h2>
+            <p>Try another name, email or phone number, or clear your search to see the directory.</p>
+            <a href="{% url 'contacts:person-list' %}" class="rhp-btn rhp-btn-secondary">Clear search</a>
+          {% else %}
+            <h2>No people yet</h2>
+            <p>Add your first lease contact. A person can be added without a portal login.</p>
+            <a href="{% url 'contacts:person-create' %}" class="rhp-btn rhp-btn-primary">Add a person</a>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
+
+    {% if is_paginated %}
+      <nav aria-label="People pages" class="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <span class="text-ink-muted">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+        <div class="flex gap-2">
+          {% if page_obj.has_previous %}
+            <a class="rhp-btn rhp-btn-secondary" href="?{% if search %}q={{ search|urlencode }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="rhp-btn rhp-btn-secondary" href="?{% if search %}q={{ search|urlencode }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>
+          {% endif %}
+        </div>
+      </nav>
+    {% endif %}
   </div>
 {% endblock %}

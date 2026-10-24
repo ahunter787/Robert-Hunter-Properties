@@ -1,0 +1,9 @@
+{% if portal_is_tenant %}
+<nav class="portal-bottom-nav" aria-label="Tenant quick navigation">
+  <a href="{% url 'accounts:home' %}" {% if portal_active == 'dashboard' %}aria-current="page"{% endif %}><span aria-hidden="true">⌂</span>Home</a>
+  <a href="{% url 'payments:home' %}" {% if portal_active == 'payments' %}aria-current="page"{% endif %}><span aria-hidden="true">$</span>Pay</a>
+  <a href="{% url 'tenant_communications:index' %}" {% if portal_active == 'communications' %}aria-current="page"{% endif %} class="portal-bottom-messages"><span aria-hidden="true">✉</span>Messages{% if portal_unread %}<span class="portal-nav-badge">{{ portal_unread }}</span>{% endif %}</a>
+  <a href="{% url 'tenant_maintenance:list' %}" {% if portal_active == 'maintenance' %}aria-current="page"{% endif %}><span aria-hidden="true">✎</span>Repairs</a>
+  <button type="button" class="portal-menu" aria-controls="portal-sidebar" aria-expanded="false"><span aria-hidden="true">☰</span>More</button>
+</nav>
+{% endif %}

@@ -36,7 +36,7 @@ authentication enters the application. Preserve existing URLs and authorization 
 | Property/unit create, edit, retirement, restricted deletion | Record actions and existing forms | Preserve |
 | Maps, square feet, amenities, property notes | Overview/Details local sections | Preserve |
 | Unit photo | Unit form and authorized image views | Implemented additive field |
-| Tenants and invitations/profile/photos | Overview, Tenancies, Contact & photo, Account & access | Implemented; permissions retained |
+| Tenants and invitations/profile/photos | Overview, Tenancies, Contact & photo, Account & access | Implemented; account-level photos, self-service and admin-any-account upload |
 | Lease lifecycle/schedule/NNN/prior activity | Lease second navigation tier and existing forms | Implemented |
 | Payment recording/corrections/account lifecycle | Rent & Payments and existing confirmations | Implemented; services unchanged |
 | Bills, allocation, review, charge posting | Expense-recovery property workspace; scoped property section | Implemented; signed calculation/review unchanged |
@@ -187,7 +187,9 @@ reviews should accompany their next migration slice rather than being inferred f
 People-first account sections now show current and historical memberships, location/lease/ledger
 links and read-only contact information; account administration is secondary. Portraits have initials
 or icon fallbacks, with independent image URLs. Existing invitation, activation and role permissions
-remain unchanged, and photo operations return to Contact & photo.
+remain unchanged. Account photos are now account-level (`User.photo`): the owner uploads or replaces
+their own from Profile & account, and admins can set any account's photo from Contact & photo. Legacy
+`TenantProfile.photo` rows are copied forward by migration 0005 and retained for reversibility.
 
 Maintenance has Conversations, Work details and Internal notes; only managers receive Repair expenses
 and Delivery & history. Each conversation resolves an Audience belonging to this authorized request;

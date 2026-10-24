@@ -7,7 +7,7 @@
     <div class="rhp-card">
       <p class="rhp-eyebrow">Account</p>
       <div class="mt-1 flex items-center gap-4">
-        {% if profile.photo %}
+        {% if user.photo %}
           {% url 'accounts:photo' as photo_url %}
         {% endif %}
         {% include "components/avatar.html" with photo_url=photo_url size="md" %}
@@ -34,6 +34,19 @@
       </dl>
 
       <a href="{% url 'accounts:password-change' %}" class="rhp-btn rhp-btn-secondary mt-6">Change password</a>
+    </div>
+
+    <div class="rhp-card">
+      <h2 class="text-sm font-semibold">Photo</h2>
+      <p class="mt-2 text-sm leading-relaxed text-ink-muted">
+        Shown beside your name in RHP. Upload a new image any time to replace the current one.
+      </p>
+      <form method="post" action="{% url 'accounts:photo-update' %}" enctype="multipart/form-data"
+            class="mt-5 space-y-4" novalidate>
+        {% csrf_token %}
+        {% include "components/form.html" with form=photo_form %}
+        <button type="submit" class="rhp-btn rhp-btn-primary">Save photo</button>
+      </form>
     </div>
 
     {% if form %}

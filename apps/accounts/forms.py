@@ -83,12 +83,12 @@ class ProfileForm(StyledModelForm):
         }
 
 
-class TenantProfileForm(StyledModelForm):
-    """The staff-side edit of a tenant's photo.
+class AccountPhotoForm(StyledModelForm):
+    """Upload, replace, or remove the photo on any account.
 
-    Contact details are the tenant's own to change on their account page; this
-    form exists so staff can put a face to a name, and deliberately edits nothing
-    else.
+    The same form is used by the owner on Profile & account and by an admin on
+    the account detail screen; authorization is enforced by the view, not by the
+    form.
     """
 
     remove_photo = forms.BooleanField(
@@ -98,7 +98,7 @@ class TenantProfileForm(StyledModelForm):
     )
 
     class Meta:
-        model = TenantProfile
+        model = User
         fields = ["photo"]
         labels = {"photo": "Photo"}
         widgets = {"photo": forms.FileInput()}
@@ -117,8 +117,6 @@ class TenantProfileForm(StyledModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        # Only a *fresh* upload conflicts with removal: on an edit form the field
-        # still holds the file already on disk, which is truthy.
         if cleaned.get("remove_photo") and self.files.get("photo"):
             self.add_error(
                 "remove_photo", "Keep the new photo, or tick this to remove the current one."
@@ -130,7 +128,7 @@ class TenantProfileForm(StyledModelForm):
         if self.cleaned_data.get("remove_photo"):
             instance.photo = None
         if commit:
-            instance.save()
+            instance.save(update_fields=["photo"])
         return instance
 
 

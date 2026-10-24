@@ -24,10 +24,10 @@ from django.views.generic import DetailView, FormView, ListView, TemplateView
 
 from apps.accounts import emails
 from apps.accounts.forms import (
+    AccountPhotoForm,
     InvitationPasswordForm,
     ProfileForm,
     TenantCreateForm,
-    TenantProfileForm,
     TenantRoleForm,
     ThrottledLoginForm,
 )
@@ -116,6 +116,48 @@ class TenantDashboardView(LoginRequiredMixin, View):
         from apps.insurance.services import state_for as insurance_state_for
         from apps.maintenance.summary import maintenance_summary
 
+        communications = communications_summary(request.user)
+        insurance_state = insurance_state_for(lease) if lease else None
+        days_remaining = _days_remaining(lease)
+        next_steps = []
+        if insurance_state in ("MISSING", "REJECTED"):
+            next_steps.append(
+                {
+                    "label": "Supply renters insurance proof",
+                    "detail": "Your lease requires proof. Upload it so the manager can review it.",
+                    "url": reverse("tenant_insurance:insurance"),
+                    "action": "Open insurance",
+                }
+            )
+        if communications and communications["unread"]:
+            next_steps.append(
+                {
+                    "label": "Read your messages",
+                    "detail": f"You have {communications['unread']} unread conversation"
+                    f"{'' if communications['unread'] == 1 else 's'} from RHP.",
+                    "url": reverse("tenant_communications:index"),
+                    "action": "Open messages",
+                }
+            )
+        if ledger and ledger.due_now > 0:
+            next_steps.append(
+                {
+                    "label": "Payment due now",
+                    "detail": f"{ledger.due_now} is due now; see your statement for the details.",
+                    "url": reverse("payments:home"),
+                    "action": "View payments",
+                }
+            )
+        if days_remaining is not None and 0 <= days_remaining <= 30:
+            next_steps.append(
+                {
+                    "label": "Your lease ends soon",
+                    "detail": f"Your current term ends in {days_remaining} day"
+                    f"{'' if days_remaining == 1 else 's'}.",
+                    "url": reverse("tenancy:lease"),
+                    "action": "View lease",
+                }
+            )
         return render(
             request,
             self.template_name,
@@ -123,11 +165,12 @@ class TenantDashboardView(LoginRequiredMixin, View):
                 "lease": lease,
                 "ledger": ledger,
                 "activity_limit": settings.RHP_LEDGER_ACTIVITY_LIMIT,
-                "lease_days_remaining": _days_remaining(lease),
+                "lease_days_remaining": days_remaining,
                 "maintenance": maintenance_summary(request.user),
-                "communications": communications_summary(request.user),
+                "communications": communications,
                 "insurance_lease": lease,
-                "insurance_state": insurance_state_for(lease) if lease else None,
+                "insurance_state": insurance_state,
+                "next_steps": next_steps,
             },
         )
 
@@ -150,7 +193,15 @@ class ProfileView(LoginRequiredMixin, View):
     def get(self, request):
         profile = getattr(request.user, "tenant_profile", None)
         form = ProfileForm(instance=profile) if request.user.is_tenant else None
-        return render(request, self.template_name, {"form": form, "profile": profile})
+        return render(
+            request,
+            self.template_name,
+            {
+                "form": form,
+                "profile": profile,
+                "photo_form": AccountPhotoForm(instance=request.user),
+            },
+        )
 
     def post(self, request):
         if not request.user.is_tenant:
@@ -273,6 +324,33 @@ class ManageHomeView(StaffRequiredMixin, TemplateView):
 
         if user.is_manager_or_above:
             context["tenant_invited_count"] = _invited_accounts().filter(role=Role.TENANT).count()
+            setup_steps = [
+                (
+                    "Add a property",
+                    context["property_total_count"] > 0,
+                    reverse("portfolio:property-create"),
+                ),
+                (
+                    "Add a unit",
+                    context["unit_total_count"] > 0,
+                    reverse("portfolio:unit-create"),
+                ),
+                (
+                    "Add a tenant",
+                    context["tenant_active_count"] > 0,
+                    reverse("manage:account-create"),
+                ),
+                (
+                    "Create or activate a lease",
+                    context["lease_active_count"] > 0,
+                    reverse("leases:lease-create"),
+                ),
+            ]
+            context["setup_checklist"] = [
+                {"label": label, "done": done, "url": url, "action": "Review" if done else "Add"}
+                for label, done, url in setup_steps
+            ]
+            context["setup_complete_count"] = sum(done for _, done, _ in setup_steps)
             context["recent_events"] = activity.project(
                 activity.visible(user).exclude(action=AuditAction.ROLE_CHANGED)[:10]
             )
@@ -370,7 +448,10 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         context["can_change_roles"] = self.request.user.is_superadmin
         profile = getattr(self.object, "tenant_profile", None)
         context["profile"] = profile
-        context["photo_form"] = TenantProfileForm(instance=profile) if profile else None
+        context["photo_form"] = AccountPhotoForm(instance=self.object)
+        context["can_manage_photo"] = (
+            self.request.user.is_admin_or_above or self.request.user.pk == self.object.pk
+        )
         sections = (
             ("overview", "Overview"),
             ("tenancies", "Tenancies"),
@@ -401,20 +482,19 @@ class TenantAccountDetailView(ManagerRequiredMixin, DetailView):
         return context
 
 
-class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
-    """Set, replace, or remove a tenant's photo.
+class AccountPhotoUpdateView(AdminRequiredMixin, View):
+    """Set, replace, or remove any account's photo.
 
-    Managers maintain tenant records. Replacing or removing the photo deletes the
-    file it replaced, so nothing accumulates as an orphan.
+    Administrators may edit any account. Managers and tenants change their own
+    photo through Profile & account, not this management route.
     """
 
     http_method_names = ["post"]
 
     def post(self, request, pk):
-        account = get_object_or_404(User, pk=pk, role=Role.TENANT)
-        profile, _ = TenantProfile.objects.get_or_create(user=account)
-        previous = profile.photo.name if profile.photo else ""
-        form = TenantProfileForm(request.POST, request.FILES, instance=profile)
+        account = get_object_or_404(User, pk=pk)
+        previous = account.photo.name if account.photo else ""
+        form = AccountPhotoForm(request.POST, request.FILES, instance=account)
 
         if not form.is_valid():
             for error in form.errors.get("photo", []):
@@ -425,12 +505,12 @@ class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
                 reverse("manage:account-detail", args=[account.pk]) + "?section=contact"
             )
 
-        profile = form.save()
-        current = profile.photo.name if profile.photo else ""
+        account = form.save()
+        current = account.photo.name if account.photo else ""
         if previous and previous != current:
-            profile.photo.storage.delete(previous)
+            account.photo.storage.delete(previous)
 
-        logger.info("tenant photo updated user=%s has_photo=%s", account.pk, bool(current))
+        logger.info("account photo updated user=%s has_photo=%s", account.pk, bool(current))
         messages.success(
             request,
             f"{account.display_name}'s photo was removed."
@@ -440,30 +520,53 @@ class TenantAccountPhotoUpdateView(ManagerRequiredMixin, View):
         return redirect(reverse("manage:account-detail", args=[account.pk]) + "?section=contact")
 
 
-class TenantPhotoView(ManagerRequiredMixin, View):
-    """Serve a tenant's photo through the application, never from /media."""
+class AccountPhotoView(ManagerRequiredMixin, View):
+    """Serve an account photo through the application, never from /media."""
 
     http_method_names = ["get"]
 
     def get(self, request, pk):
-        account = get_object_or_404(User, pk=pk, role=Role.TENANT)
-        profile = getattr(account, "tenant_profile", None)
-        if profile is None or not profile.photo:
-            raise Http404("This tenant has no photo.")
-        return photo_response(profile.photo)
+        account = get_object_or_404(User, pk=pk)
+        if not account.photo:
+            raise Http404("This account has no photo.")
+        return photo_response(account.photo)
+
+
+class OwnPhotoUpdateView(LoginRequiredMixin, View):
+    """The signed-in user's own photo. The account is implied by the session."""
+
+    http_method_names = ["post"]
+
+    def post(self, request):
+        previous = request.user.photo.name if request.user.photo else ""
+        form = AccountPhotoForm(request.POST, request.FILES, instance=request.user)
+        if not form.is_valid():
+            for error in form.errors.get("photo", []):
+                messages.error(request, error)
+            for error in form.errors.get("remove_photo", []):
+                messages.error(request, error)
+            return redirect("accounts:profile")
+        user = form.save()
+        current = user.photo.name if user.photo else ""
+        if previous and previous != current:
+            user.photo.storage.delete(previous)
+        logger.info("own photo updated user=%s has_photo=%s", user.pk, bool(current))
+        messages.success(
+            request,
+            "Your photo was updated." if current else "Your photo was removed.",
+        )
+        return redirect("accounts:profile")
 
 
 class OwnPhotoView(LoginRequiredMixin, View):
-    """A tenant's own photo. The resource is implied by the session, so there is
-    no id in the URL that could be changed to reach somebody else's."""
+    """A user's own photo, served by session identity rather than a URL id."""
 
     http_method_names = ["get"]
 
     def get(self, request):
-        profile = getattr(request.user, "tenant_profile", None)
-        if profile is None or not profile.photo:
+        if not request.user.photo:
             raise Http404("There is no photo on your account.")
-        return photo_response(profile.photo)
+        return photo_response(request.user.photo)
 
 
 class TenantAccountToggleActiveView(ManagerRequiredMixin, View):

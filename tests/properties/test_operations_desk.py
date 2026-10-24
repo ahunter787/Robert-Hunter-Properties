@@ -42,14 +42,15 @@ def test_sidebar_order_and_no_redundant_middle_navigation(client, manager):
         "Properties",
         "Tenants",
         "People",
-        "Leases",
         "Timeline",
         "Insurance",
+        "Leases",
         "Rent & Payments",
-        "Accounting",
         "Expense recoveries",
+        "Accounting",
         "Maintenance",
-        "Communications",
+        "Messages",
+        "Announcements",
         "Documents",
     ]
     body = response.content.decode()

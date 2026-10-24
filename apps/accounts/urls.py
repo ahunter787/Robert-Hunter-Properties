@@ -20,6 +20,7 @@ urlpatterns = [
     path("profile/", views.ProfileView.as_view(), name="profile"),
     # The tenant's own photo: no id in the URL by design.
     path("photo/", views.OwnPhotoView.as_view(), name="photo"),
+    path("photo/set/", views.OwnPhotoUpdateView.as_view(), name="photo-update"),
     path(
         "password/",
         auth_views.PasswordChangeView.as_view(

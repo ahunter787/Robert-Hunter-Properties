@@ -1,1 +1,14 @@
-<div data-message-batch data-last-id="{{ last_id }}" data-read-receipt="{{ read_receipt }}" data-work-state="{{ conversation.get_state_display }}">{% for message in message_rows %}<article id="message-{{ message.pk }}" class="workspace-section my-3 space-y-3"><p class="font-semibold">{{ message.author.display_name }} <span class="text-sm font-normal">{% if message.author.is_tenant %}Tenant{% else %}RHP staff{% endif %} · {{ message.created_at|date:"M j, Y, g:i A" }}</span></p>{% if message.body %}<p class="whitespace-pre-wrap break-words">{{ message.body }}</p>{% endif %}<ul>{% for attachment in message.attachments.all %}<li><a class="rhp-link" href="{% url namespace|add:':attachment' attachment.public_id %}">{{ attachment.display_name }}</a></li>{% endfor %}</ul></article>{% endfor %}</div>
+<div data-message-batch data-last-id="{{ last_id }}" data-read-receipt="{{ read_receipt }}" data-work-state="{{ conversation.get_state_display }}">
+{% for message in message_rows %}
+  {% ifchanged message.created_at|date:"Y-m-d" %}<div class="chat-day"><span>{{ message.created_at|date:"l, M j" }}</span></div>{% endifchanged %}
+  <article id="message-{{ message.pk }}" class="chat-message{% if message.author_id == request.user.pk %} mine{% endif %}" data-message-id="{{ message.pk }}">
+    {% if message.author_id != request.user.pk %}<span class="rhp-avatar chat-avatar" aria-hidden="true">{{ message.author.display_name|slice:":1" }}</span>{% endif %}
+    <div class="chat-bubble">
+      <p class="chat-author">{{ message.author.display_name }} <span>{% if message.author.is_tenant %}Tenant{% else %}RHP staff{% endif %}</span></p>
+      {% if message.body %}<p class="chat-body">{{ message.body }}</p>{% endif %}
+      {% if message.attachments.all %}<ul class="chat-attachments">{% for attachment in message.attachments.all %}<li><a class="rhp-link" href="{% url namespace|add:':attachment' attachment.public_id %}">{{ attachment.display_name }}</a></li>{% endfor %}</ul>{% endif %}
+      <time class="chat-time" datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"g:i A" }}</time>
+    </div>
+  </article>
+{% endfor %}
+</div>

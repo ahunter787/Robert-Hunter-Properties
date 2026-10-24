@@ -21,6 +21,7 @@
         Your tenancy begins {{ lease.start_date|date:"M j, Y" }}. Nothing is due before then.
       </p>
     {% endif %}
+    {% include "account/_next_steps.html" %}
     {% include "maintenance/summary.html" %}
     {% include "communications/summary.html" %}
     {% include "insurance/summary.html" %}

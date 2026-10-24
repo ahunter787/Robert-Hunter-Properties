@@ -1,13 +1,15 @@
 {% load rhp_format %}
 <div class="space-y-8">
   <header class="workspace-page-heading"><h1>Dashboard</h1><p class="rhp-help">Updated {{ dashboard.updated_at|date:"M j, Y, g:i A T" }} · Refresh the page for current figures.</p></header>
+  {% include "dashboard/_attention.html" %}
+  {% include "dashboard/_setup.html" %}
   {% for label,metrics in dashboard.groups %}
-  <section class="space-y-4 {% if forloop.counter > 2 %}workspace-section{% endif %}" aria-label="{{ label }}"><h2 class="text-xl font-semibold">{{ label }}</h2>
+  <section class="space-y-4" aria-label="{{ label }}"><h2 class="text-xl font-semibold">{{ label }}</h2>
     {% if forloop.counter == 2 %}<p class="rhp-help">Payments may cover earlier charges. These totals are not subtracted to calculate an account balance.</p>{% endif %}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-    {% for metric in metrics %}<a class="block hover:border-primary {% if forloop.parentloop.first %}rhp-card{% elif forloop.parentloop.counter == 2 and forloop.counter <= 2 %}rhp-card{% else %}border-b border-border py-3{% endif %}" href="{{ metric.url }}">
+    <div class="dashboard-metrics grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+    {% for metric in metrics %}<a class="rhp-card block hover:border-primary" href="{{ metric.url }}">
       <h3 class="rhp-eyebrow">{{ metric.label }}</h3>
-      <p class="{% if forloop.parentloop.first %}text-3xl{% else %}text-2xl{% endif %} font-semibold mt-2 {% if metric.key == 'past-due' and metric.value %}text-danger{% elif metric.key == 'credits' %}text-success{% endif %}">{% if metric.money %}{{ metric.value|money }}{% else %}{{ metric.value }}{% endif %}</p>
+      <p class="text-2xl font-semibold mt-2 {% if metric.key == 'past-due' and metric.value %}text-danger{% elif metric.key == 'credits' %}text-success{% endif %}">{% if metric.money %}{{ metric.value|money }}{% else %}{{ metric.value }}{% endif %}</p>
       <p class="rhp-help mt-2">{{ metric.help }}</p>
       <span class="rhp-link mt-3 inline-block">View matching records</span>
     </a>{% endfor %}</div>

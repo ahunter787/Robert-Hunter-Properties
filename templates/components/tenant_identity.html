@@ -1,4 +1,4 @@
-{% if person.portal_user.tenant_profile.photo %}{% url 'manage:account-photo' person.portal_user.pk as portrait_url %}{% else %}{% firstof '' as portrait_url %}{% endif %}
+{% if person.portal_user.photo %}{% url 'manage:account-photo' person.portal_user.pk as portrait_url %}{% else %}{% firstof '' as portrait_url %}{% endif %}
 <a href="{% url 'contacts:person-detail' person.pk %}" class="inline-flex items-center gap-2">
   <span class="person-image"><span aria-hidden="true">{{ person.display_name|first }}</span>{% if portrait_url %}<img src="{{ portrait_url }}" alt="" loading="lazy">{% endif %}</span>
   <span>{{ person.display_name }}</span>

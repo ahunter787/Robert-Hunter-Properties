@@ -35,6 +35,9 @@ def test_a_manager_can_read_the_accounting_overview_and_control():
     assert overview.status_code == 200
     assert overview.context["tie"]["difference"] == Decimal("0.00")
     assert overview.context["journal_count"] == 1
+    assert b"Accounting tasks" in overview.content
+    assert b"Trial balance" in overview.content
+    assert b"Record a bill" in overview.content
     assert client.get(reverse("accounting:control")).status_code == 200
     assert client.get(reverse("accounting:chart")).status_code == 200
     assert client.get(reverse("accounting:journal-list")).status_code == 200

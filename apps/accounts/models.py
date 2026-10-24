@@ -18,11 +18,24 @@ from django.db import models
 from django.utils import timezone
 
 
-def tenant_photo_path(instance, filename: str) -> str:
-    """Randomised storage path for a tenant photo.
+def account_photo_path(instance, filename: str) -> str:
+    """Randomised storage path for an account photo.
 
     Never the client's filename: uploads are stored under a generated name so a
     crafted name cannot influence where a file lands (docs/security.md).
+    """
+    suffix = Path(filename).suffix.lower()
+    if len(suffix) > 10 or not suffix.isascii():
+        suffix = ""
+    return f"account_photos/{uuid4().hex}{suffix}"
+
+
+def tenant_photo_path(instance, filename: str) -> str:
+    """Legacy tenant-only path retained for historical rows.
+
+    New uploads use ``account_photo_path`` on :class:`User`; the tenant field is
+    copied forward by migration 0005 and kept so old records remain readable
+    while the rest of the code moves to the account-level photo.
     """
     suffix = Path(filename).suffix.lower()
     if len(suffix) > 10 or not suffix.isascii():
@@ -70,6 +83,12 @@ class User(AbstractUser):
         default=Role.TENANT,
         db_index=True,
         help_text="Determines which parts of RHP this account may use.",
+    )
+    photo = models.ImageField(
+        upload_to=account_photo_path,
+        blank=True,
+        null=True,
+        help_text="JPEG, PNG, or WebP. Shown beside the account name.",
     )
 
     objects = UserManager()

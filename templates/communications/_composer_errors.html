@@ -1,0 +1,2 @@
+{% if form.non_field_errors %}{% for error in form.non_field_errors %}<p class="composer-error">{{ error }}</p>{% endfor %}{% endif %}
+{% for field in form %}{% for error in field.errors %}<p class="composer-error">{{ field.label }}: {{ error }}</p>{% endfor %}{% endfor %}

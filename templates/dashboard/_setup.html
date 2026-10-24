@@ -1,0 +1,16 @@
+{% if setup_checklist and setup_complete_count < setup_checklist|length %}
+<section class="workspace-section" aria-labelledby="setup-title">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <div><p class="rhp-eyebrow">Getting started</p><h2 id="setup-title" class="mt-1">Set up RHP</h2></div>
+    <span class="rhp-help">{{ setup_complete_count }} of {{ setup_checklist|length }} ready</span>
+  </div>
+  <div class="setup-list mt-4">
+    {% for step in setup_checklist %}
+      <a class="rhp-list-row" href="{{ step.url }}">
+        <span class="flex items-center gap-3"><span class="setup-check{% if step.done %} done{% endif %}" aria-hidden="true">{% if step.done %}✓{% else %}○{% endif %}</span><strong>{{ step.label }}</strong></span>
+        <span class="rhp-link">{% if step.done %}Open{% else %}Add →{% endif %}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

@@ -53,3 +53,6 @@ ecosystem/
 .vscode/
 *.swp
 .DS_Store
+
+# Local browser/QA scratch space; never commit profile or screenshots from it.
+.e18/

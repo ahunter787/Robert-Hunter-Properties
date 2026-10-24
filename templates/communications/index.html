@@ -1,13 +1,48 @@
 {% extends "communications/base.html" %}
-{% block workspace %}<div class="section-heading"><h2 class="text-lg font-semibold">Messages</h2><a class="rhp-btn rhp-btn-primary" href="{{ new_url }}">New conversation</a></div>
-{% if user.is_manager_or_above %}<p class="space-x-4"><a class="rhp-link" href="{% url 'communications:deliveries' %}">Review email delivery</a><a class="rhp-link" href="{% url 'communications:quick-replies' %}">Quick replies</a>{% if archived %}<a class="rhp-link" href="{% url 'communications:index' %}">Active inbox</a>{% else %}<a class="rhp-link" href="?archived=1">Archived for me</a>{% endif %}</p>{% endif %}
-<form method="get" class="workspace-section space-y-4">
-  <div class="workspace-filters">
-    <label class="rhp-label">Search conversations<input class="rhp-field" name="q" value="{{ search }}" placeholder="Subject, person, property, or unit"></label>
-    <label class="rhp-label">Work status<select class="rhp-field" name="state"><option value="">All statuses</option>{% for value,label in states %}<option value="{{ value }}" {% if request.GET.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
-    <label><input type="checkbox" name="unread" value="1" {% if request.GET.unread %}checked{% endif %}> Unread for me</label>
-    <button class="rhp-btn rhp-btn-secondary">Apply filters</button>
-  </div>
-  <details {% if request.GET.property or request.GET.unit or request.GET.tenant %}open{% endif %}><summary class="rhp-link">Filter by property, unit, or tenant</summary><div class="workspace-filters mt-4">{% for field in inbox_filters %}<div>{% include "components/field.html" %}</div>{% endfor %}</div></details>
-</form>
-<ul class="space-y-3">{% for row in page %}<li class="workspace-section"><a class="rhp-link font-semibold" href="{% url namespace|add:':conversation' row.public_id %}">{{ row.subject }}</a>{% if row.unread %}<strong class="text-primary"> · Unread for you</strong>{% endif %}<p>{{ row.lease.unit.label }} · {{ row.get_visibility_display }} · {{ row.get_state_display }}</p><p class="text-sm">{% for participant in row.participants.all %}{{ participant.user.display_name }}{% if not forloop.last %}, {% endif %}{% endfor %} · RHP staff</p><p class="text-sm text-ink-muted">Updated {{ row.updated_at|date:"M j, Y, g:i A" }}{% if row.frozen_at %} · Household history — read-only{% endif %}</p></li>{% empty %}<li class="workspace-section">No conversations match. Start a new conversation to contact {% if user.is_tenant %}RHP{% else %}a tenant{% endif %}.</li>{% endfor %}</ul>{% include "communications/pagination.html" %}{% endblock %}
+{% block workspace %}
+<div class="chat-page chat-page-inbox">
+  <section class="chat-panel" aria-labelledby="inbox-title">
+    <div class="rhp-page-header chat-inbox-heading">
+      <div><p class="rhp-eyebrow">Inbox</p><h2 id="inbox-title" class="text-xl font-semibold">Conversations</h2></div>
+      <a class="rhp-btn rhp-btn-primary" href="{{ new_url }}">New conversation</a>
+    </div>
+    {% if user.is_manager_or_above %}
+      <div class="chat-toolbar-links">
+        <a class="rhp-link" href="{% url 'communications:deliveries' %}">Email delivery</a>
+        <a class="rhp-link" href="{% url 'communications:quick-replies' %}">Quick replies</a>
+        {% if archived %}<a class="rhp-link" href="{% url 'communications:index' %}">Active inbox</a>{% else %}<a class="rhp-link" href="?archived=1">Archived for me</a>{% endif %}
+      </div>
+    {% endif %}
+    <form method="get" class="chat-search" role="search">
+      <div class="chat-search-row">
+        <label class="sr-only" for="inbox-search">Search conversations</label>
+        <input id="inbox-search" class="rhp-field" name="q" value="{{ search }}" placeholder="Search person, property, unit, subject" type="search">
+        <button class="rhp-btn rhp-btn-secondary" type="submit">Search</button>
+      </div>
+      <div class="chat-chips" aria-label="Conversation filters">
+        <a class="chat-chip{% if not request.GET.unread and not request.GET.archived %} active{% endif %}" href="{% url namespace|add:':index' %}">All</a>
+        <a class="chat-chip{% if request.GET.unread %} active{% endif %}" href="?unread=1">Unread</a>
+        {% if archived %}<a class="chat-chip active" href="?archived=1">Archived</a>{% else %}<a class="chat-chip" href="?archived=1">Archived</a>{% endif %}
+      </div>
+      <div class="chat-filter-row">
+        <label class="rhp-label">Work status
+          <select class="rhp-field" name="state" onchange="this.form.requestSubmit()">
+            <option value="">All statuses</option>
+            {% for value,label in states %}<option value="{{ value }}" {% if request.GET.state == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </label>
+        <details class="chat-more-filters" {% if request.GET.property or request.GET.unit or request.GET.tenant %}open{% endif %}>
+          <summary>Property or tenant filter</summary>
+          <div class="chat-filter-fields">{% for field in inbox_filters %}<div>{% include "components/field.html" %}</div>{% endfor %}</div>
+        </details>
+      </div>
+    </form>
+    {% if page.object_list %}
+      {% include "communications/_conversation_list.html" with rows=page.object_list selected_id=None %}
+      {% include "communications/pagination.html" %}
+    {% else %}
+      <div class="rhp-empty"><h2>No conversations match</h2><p>Try a different search or clear the filters. Every conversation is tied to one tenancy and only its participants can read it.</p><a class="rhp-btn rhp-btn-primary" href="{{ new_url }}">Start a conversation</a></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

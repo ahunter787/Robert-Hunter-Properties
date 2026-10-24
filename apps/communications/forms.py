@@ -110,11 +110,24 @@ class MultipleFiles(forms.FileField):
 
 class MessageForm(StyledForm):
     body = forms.CharField(
-        required=False, max_length=10000, widget=forms.Textarea(attrs={"rows": 5}), label="Message"
+        required=False,
+        max_length=10000,
+        widget=forms.Textarea(
+            attrs={
+                "rows": 1,
+                "class": "chat-input",
+                "placeholder": "Write a message…",
+                "aria-label": "Message",
+                "data-chat-input": "",
+            }
+        ),
+        label="Message",
     )
     files = MultipleFiles(
         required=False,
-        widget=MultipleFileInput(attrs={"accept": ".jpg,.jpeg,.png,.webp,.pdf"}),
+        widget=MultipleFileInput(
+            attrs={"accept": ".jpg,.jpeg,.png,.webp,.pdf", "class": "chat-file"}
+        ),
         label="Attachments",
         help_text=(
             "Up to ten JPEG, PNG, WebP or PDF files within the portal upload limit. "

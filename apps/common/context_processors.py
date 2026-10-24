@@ -3,6 +3,19 @@
 from django.urls import reverse
 
 
+def _nav_unread(user):
+    """One small, authorized count for the Messages badge."""
+    if not (user.is_active and (user.is_tenant or user.is_manager_or_above)):
+        return 0
+    try:
+        from apps.communications.summary import communications_summary
+
+        summary = communications_summary(user)
+    except Exception:  # pragma: no cover - a broken optional summary must not break the shell
+        return 0
+    return summary["unread"] if summary else 0
+
+
 def portal_navigation(request):
     user = request.user
     if not user.is_authenticated:
@@ -37,41 +50,95 @@ def portal_navigation(request):
         active = "people"
     if namespace == "accounts" and name not in ("home", "login"):
         active = "profile"
+    if namespace in ("communications", "tenant_communications") and name == "announcements":
+        active = "announcements"
+
     if user.is_manager_or_above:
-        items = [
-            ("dashboard", "Dashboard", "manage:home"),
-            ("properties", "Properties", "portfolio:property-list"),
-            ("tenants", "Tenants", "manage:account-list"),
-            ("people", "People", "contacts:person-list"),
-            ("leases", "Leases", "leases:lease-list"),
-            ("timeline", "Timeline", "timeline:list"),
-            ("insurance", "Insurance", "insurance:staff-list"),
-            ("ledger", "Rent & Payments", "ledger:overview"),
-            ("accounting", "Accounting", "accounting:overview"),
-            ("recoveries", "Expense recoveries", "responsibilities:overview"),
-            ("maintenance", "Maintenance", "maintenance:list"),
-            ("communications", "Communications", "communications:index"),
-            ("documents", "Documents", "documents:list"),
+        groups = [
+            ("", [("dashboard", "Dashboard", "manage:home")]),
+            ("Portfolio", [("properties", "Properties", "portfolio:property-list")]),
+            (
+                "People",
+                [
+                    ("tenants", "Tenants", "manage:account-list"),
+                    ("people", "People", "contacts:person-list"),
+                    ("timeline", "Timeline", "timeline:list"),
+                    ("insurance", "Insurance", "insurance:staff-list"),
+                ],
+            ),
+            ("Leasing", [("leases", "Leases", "leases:lease-list")]),
+            (
+                "Money",
+                [
+                    ("ledger", "Rent & Payments", "ledger:overview"),
+                    ("recoveries", "Expense recoveries", "responsibilities:overview"),
+                    ("accounting", "Accounting", "accounting:overview"),
+                ],
+            ),
+            ("Work", [("maintenance", "Maintenance", "maintenance:list")]),
+            (
+                "Communications",
+                [
+                    ("communications", "Messages", "communications:index"),
+                    ("announcements", "Announcements", "communications:announcements"),
+                ],
+            ),
+            ("Workspace", [("documents", "Documents", "documents:list")]),
         ]
     elif user.is_tenant:
-        items = [
-            ("dashboard", "Dashboard", "accounts:home"),
-            ("lease", "Lease", "tenancy:lease"),
-            ("timeline", "Timeline", "tenant_timeline:timeline"),
-            ("insurance", "Insurance", "tenant_insurance:insurance"),
-            ("payments", "Payments", "payments:home"),
-            ("maintenance", "Maintenance", "tenant_maintenance:list"),
-            ("communications", "Communications", "tenant_communications:index"),
-            ("documents", "Documents", "tenant_documents:list"),
+        groups = [
+            ("", [("dashboard", "Dashboard", "accounts:home")]),
+            (
+                "Tenancy",
+                [
+                    ("lease", "Lease", "tenancy:lease"),
+                    ("timeline", "Timeline", "tenant_timeline:timeline"),
+                    ("insurance", "Insurance", "tenant_insurance:insurance"),
+                ],
+            ),
+            ("Money", [("payments", "Payments", "payments:home")]),
+            (
+                "Home",
+                [
+                    ("maintenance", "Maintenance", "tenant_maintenance:list"),
+                    ("documents", "Documents", "tenant_documents:list"),
+                ],
+            ),
+            (
+                "Inbox",
+                [
+                    ("communications", "Messages", "tenant_communications:index"),
+                    ("announcements", "Announcements", "tenant_communications:announcements"),
+                ],
+            ),
         ]
     else:
-        items = [("maintenance", "Assigned work", "maintenance:list")]
+        groups = [("", [("maintenance", "Assigned work", "maintenance:list")])]
+
+    unread = _nav_unread(user)
+    portal_groups = []
+    portal_nav = []
+    for title, rows in groups:
+        group_items = []
+        for key, label, route in rows:
+            item = {
+                "key": key,
+                "label": label,
+                "url": reverse(route),
+                "active": key == active,
+                "badge": unread if key == "communications" and unread else 0,
+                "badge_label": f"{unread} unread message{'s' if unread != 1 else ''}",
+            }
+            group_items.append(item)
+            portal_nav.append(item)
+        portal_groups.append({"title": title, "items": group_items})
+
     return {
         "portal_shell": True,
         "portal_active": active,
-        "portal_nav": [
-            {"key": key, "label": label, "url": reverse(route), "active": key == active}
-            for key, label, route in items
-        ],
+        "portal_nav": portal_nav,
+        "portal_groups": portal_groups,
+        "portal_is_tenant": user.is_tenant,
+        "portal_unread": unread,
         "portfolio_units_active": namespace == "portfolio" and name.startswith("unit-"),
     }

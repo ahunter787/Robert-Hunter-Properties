@@ -37,15 +37,19 @@ additions that are **not** phases are proposed, approved and tracked in
 | E1 | Lease templates — Fixed, Step Up, Triple Net (NNN) | **In `main`** | [ADR-013](decisions/ADR-013-lease-templates.md) | folded |
 | E2 | Property responsibilities charged to the unit | **In `main`** | [ADR-014](decisions/ADR-014-property-responsibilities.md) | folded |
 | E4 | Retroactive onboarding, and a stated rent schedule | **Retired** — the stated-rent part is in `main`; the onboarding mechanism is retired by ADR-028 (ADR-027 supersedes it) | [ADR-016](decisions/ADR-016-retroactive-onboarding.md) | folded |
-| E5 | Move-out settlement — the deposit, deductions, a final statement | Built in development — ADR-031; awaiting review/merge | ADR-031 | `rhp-e10-kernel` |
+| E5 | Move-out settlement — the deposit, deductions, a final statement | **In `main`** — ADR-031 | ADR-031 | folded |
 | E6 | Post-tenancy charges with their evidence | Proposed — no longer blocked by Phase 6 | — | — |
 | E7 | A unit's ledger history | Proposed | — | — |
 | E8 | A tenant's request for early termination (filed under Phase 3) | Proposed | — | — |
 | E3 | Concessions — forgiveness, a deferral plan, a term extension | Proposed, re-scoped | — | — |
 | E9 | Plain-language interface — product vocabulary and account-first design | **In `main`** | [ADR-021](decisions/ADR-021-plain-language-interface.md) | folded |
-| E10 | RHP property accounting — general-ledger style books | Building — tenant cutover accepted; core kernel (ADR-028), M2 (ADR-029/030) and E5 (ADR-031) complete; **B1–B5 implemented in development (ADR-032)** — chart, journals, hooks, AR/AP/deposit/bank controls, accounting screens, opening balances, vendor bills/payments, deposit movements, bank registry, CSV import/reconciliation, B4 statements/aging/CSV reports, and B5 closing/owner/export batches; go-live onboarding and bank-feed follow-ups remain | ADR-026 / ADR-027 / ADR-028 / ADR-029 / ADR-030 / ADR-031 / ADR-032 | `rhp-e10-kernel` |
+| E10 | RHP property accounting — general-ledger style books | Building — **B1–B5 in `main`** (ADR-032); go-live onboarding, opening data load and bank-feed follow-ups remain | ADR-026 / ADR-027 / ADR-028 / ADR-029 / ADR-030 / ADR-031 / ADR-032 | folded |
 | E11 | Operations desk — shared shell and application migration | In main — owner accepted October 19, 2026; local merge authorized | [Implementation](design/implementation.md) | `codex/operations-desk` |
 | E12 | Tenant–RHP messaging (`P8-E1`) — conversations, unread state, protected attachments and email | In main — owner accepted for local merge | [ADR-024](decisions/ADR-024-communications.md) | folded |
+| E15 | Messenger operational enhancements — quick replies, archive/mute, export, shared media, internal notes | **In `main`** — optional maintenance context deferred | ADR-033 | folded |
+| E16 | Tenant timeline — authorized, date-grouped read model | **In `main`** — first slice | ADR-034 | folded |
+| E17 | Renters-insurance proof — three-state proof intake and manager decision | **In `main`** | ADR-035 | folded |
+| E18 | Portal UX hardening — grouped navigation, messenger, action-first dashboards, accessibility | Built in development — owner review pending | [ux-hardening](design/ux-hardening.md) | `rhp-e18-ux` |
 
 ## Milestones
 

@@ -1,0 +1,21 @@
+<ul class="chat-list" aria-label="Conversations">
+  {% for row in rows %}
+    <li>
+      <a class="chat-row{% if row.public_id == selected_id %} selected{% endif %}{% if row.unread %} unread{% endif %}" href="{% url namespace|add:':conversation' row.public_id %}">
+        <span class="rhp-avatar" aria-hidden="true">{% with first=row.participants.all|first %}{% if first %}{{ first.user.display_name|slice:":1" }}{% else %}R{% endif %}{% endwith %}</span>
+        <span class="chat-row-main">
+          <span class="chat-row-top">
+            <strong>{% for participant in row.participants.all %}{{ participant.user.display_name }}{% if not forloop.last %}, {% endif %}{% empty %}RHP{% endfor %}</strong>
+            <time>{% if row.latest_at %}{{ row.latest_at|timesince }} ago{% else %}{{ row.updated_at|timesince }} ago{% endif %}</time>
+          </span>
+          <span class="chat-row-subject">{{ row.subject }}</span>
+          <span class="chat-row-snippet">{{ row.latest_body|default:"Attachment"|truncatechars:88 }}</span>
+          <span class="chat-row-meta">{{ row.lease.unit.label }} · {{ row.get_state_display }}{% if row.frozen_at %} · read-only{% endif %}</span>
+        </span>
+        {% if row.unread_count %}<span class="chat-unread" aria-label="{{ row.unread_count }} unread">{{ row.unread_count }}</span>{% elif row.unread %}<span class="chat-unread chat-unread-dot" aria-label="Unread">•</span>{% endif %}
+      </a>
+    </li>
+  {% empty %}
+    <li class="chat-empty">No conversations match. <a class="rhp-link" href="{{ new_url }}">Start one</a>.</li>
+  {% endfor %}
+</ul>

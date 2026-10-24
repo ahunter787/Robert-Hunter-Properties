@@ -295,8 +295,97 @@ def project(user):
         ("Portfolio", ["properties", "units", "occupied", "vacant", "tenants", "invitations"]),
         ("Leases", ["ending-30", "ending-90"]),
     ]
+    attention = []
+    if metrics["past-due"].value:
+        attention.append(
+            {
+                "label": "Past-due rent",
+                "detail": f"${metrics['past-due'].value:,.2f} is past due across "
+                f"{metrics['overdue-accounts'].value} tenanc"
+                f"{'y' if metrics['overdue-accounts'].value == 1 else 'ies'}.",
+                "url": reverse("manage:dashboard-detail", args=["past-due"]),
+                "severity": "danger",
+                "action": "Review",
+            }
+        )
+    from apps.insurance.models import TenantState
+    from apps.insurance.services import state_for as insurance_state_for
+    from apps.leases.models import LeaseStatus
+
+    insurance_missing = 0
+    for lease in Lease.objects.filter(
+        renters_insurance_required=True,
+        status__in=[LeaseStatus.FUTURE, LeaseStatus.ACTIVE],
+    ).select_related("unit__property"):
+        if insurance_state_for(lease) in (TenantState.MISSING, TenantState.REJECTED):
+            insurance_missing += 1
+    if insurance_missing:
+        attention.append(
+            {
+                "label": "Renters insurance missing",
+                "detail": (
+                    f"{insurance_missing} tenanc"
+                    f"{'y needs' if insurance_missing == 1 else 'ies need'} "
+                    "proof or a manager decision."
+                ),
+                "url": reverse("insurance:staff-list"),
+                "severity": "warning",
+                "action": "Review",
+            }
+        )
+    if metrics["needs-reply"].value:
+        attention.append(
+            {
+                "label": "Conversations need a reply",
+                "detail": f"{metrics['needs-reply'].value} conversation"
+                f"{' is' if metrics['needs-reply'].value == 1 else 's are'} waiting for RHP.",
+                "url": reverse("communications:index") + "?state=NEEDS_RHP",
+                "severity": "warning",
+                "action": "Open inbox",
+            }
+        )
+    if metrics["unread"].value:
+        attention.append(
+            {
+                "label": "Unread messages",
+                "detail": (
+                    f"{metrics['unread'].value} conversation"
+                    f"{' has' if metrics['unread'].value == 1 else 's have'} "
+                    "messages you have not read."
+                ),
+                "url": reverse("communications:index") + "?unread=1",
+                "severity": "info",
+                "action": "Read",
+            }
+        )
+    draft_leases = Lease.objects.filter(status=LeaseStatus.DRAFT).count()
+    if draft_leases:
+        attention.append(
+            {
+                "label": "Draft leases",
+                "detail": (
+                    f"{draft_leases} draft lease{'' if draft_leases == 1 else 's'} "
+                    "still need setup."
+                ),
+                "url": reverse("leases:lease-list") + "?status=DRAFT",
+                "severity": "info",
+                "action": "Finish setup",
+            }
+        )
+    if metrics["maintenance"].value:
+        attention.append(
+            {
+                "label": "Open maintenance",
+                "detail": f"{metrics['maintenance'].value} request"
+                f"{' is' if metrics['maintenance'].value == 1 else 's are'} unresolved.",
+                "url": reverse("maintenance:list"),
+                "severity": "info",
+                "action": "Triage",
+            }
+        )
     return {
         "updated_at": now,
         "metrics": metrics,
         "groups": [(label, [metrics[key] for key in keys]) for label, keys in groups],
+        "attention": attention,
     }

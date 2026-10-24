@@ -1,12 +1,26 @@
 <aside class="portal-sidebar" id="portal-sidebar" aria-label="Portal navigation">
   <a class="portal-brand" href="{% if user.is_tenant %}{% url 'accounts:home' %}{% elif user.is_manager_or_above %}{% url 'manage:home' %}{% else %}{% url 'maintenance:list' %}{% endif %}"><span class="portal-brand-mark">R</span><span>Robert Hunter<br><small>PROPERTIES</small></span></a>
-  <nav aria-label="Primary">
-    {% for item in portal_nav %}
-      <a class="portal-nav-item {% if item.active %}current{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>{{ item.label }}</a>
-      {% if item.key == 'properties' and item.active %}
-        <div class="portal-subnav"><a href="{% url 'portfolio:property-list' %}" {% if not portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All properties</a><a href="{% url 'portfolio:unit-list' %}" {% if portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All units</a></div>
-      {% endif %}
+  <nav aria-label="Primary" class="portal-nav">
+    {% for group in portal_groups %}
+      {% if group.title %}<p class="portal-nav-heading">{{ group.title }}</p>{% endif %}
+      {% for item in group.items %}
+        <a class="portal-nav-item {% if item.active %}current{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>
+          <span>{{ item.label }}</span>
+          {% if item.badge %}<span class="portal-nav-badge" aria-label="{{ item.badge_label }}">{{ item.badge }}</span>{% endif %}
+        </a>
+        {% if item.key == 'properties' and item.active %}
+          <div class="portal-subnav"><a href="{% url 'portfolio:property-list' %}" {% if not portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All properties</a><a href="{% url 'portfolio:unit-list' %}" {% if portfolio_units_active and not workspace_location %}aria-current="page"{% endif %}>All units</a></div>
+        {% endif %}
+      {% endfor %}
     {% endfor %}
   </nav>
-  <div class="portal-utilities"><strong>{{ user.display_name }}</strong><small>{{ user.get_role_display }}</small><a href="{% url 'accounts:profile' %}" {% if portal_active == 'profile' %}aria-current="page"{% endif %}>Profile &amp; account</a>{% if user.is_staff %}<a href="{% url 'admin:index' %}">Site administration</a>{% endif %}<form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sign out</button></form></div>
+  <div class="portal-utilities">
+    <a class="portal-account" href="{% url 'accounts:profile' %}" {% if portal_active == 'profile' %}aria-current="page"{% endif %}>
+      {% if user.photo %}{% url 'accounts:photo' as account_photo %}{% else %}{% firstof '' as account_photo %}{% endif %}
+      {% include "components/avatar.html" with photo_url=account_photo size="sm" %}
+      <span><strong>{{ user.display_name }}</strong><small>{{ user.get_role_display }}</small></span>
+    </a>
+    {% if user.is_staff %}<a href="{% url 'admin:index' %}">Site administration</a>{% endif %}
+    <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit">Sign out</button></form>
+  </div>
 </aside>

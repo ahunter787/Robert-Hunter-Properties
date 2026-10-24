@@ -50,7 +50,9 @@ def test_person_workspace_separates_current_history_and_access(client):
     assert b"Back to tenant accounts" not in page.content
     assert b"Deactivate account" not in page.content
     assert b"Deactivate account" in client.get(url, {"section": "access"}).content
-    assert b"Add photo" in client.get(url, {"section": "contact"}).content
+    contact = client.get(url, {"section": "contact"}).content
+    assert b"Only administrators can add or change another account" in contact
+    assert b"Add photo" not in contact
     client.force_login(tenant)
     assert client.get(url, {"section": "access"}).status_code == 403
 

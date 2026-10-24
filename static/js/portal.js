@@ -14,23 +14,30 @@
     card.open = !card.open;
   });
   const sidebar = document.querySelector('#portal-sidebar');
-  const button = document.querySelector('.portal-menu');
+  const menuButtons = [...document.querySelectorAll('.portal-menu')];
   const mobile = matchMedia('(max-width:900px)');
+  let lastTrigger = null;
   const sync = () => {
     if (!sidebar) return;
     sidebar.inert = mobile.matches && !sidebar.classList.contains('open');
     if (sidebar.inert) sidebar.setAttribute('aria-hidden', 'true');
     else sidebar.removeAttribute('aria-hidden');
   };
-  const close = () => { sidebar?.classList.remove('open'); button?.setAttribute('aria-expanded', 'false'); sync(); };
-  button?.addEventListener('click', () => {
-    const open = sidebar.classList.toggle('open');
-    button.setAttribute('aria-expanded', String(open)); sync();
-    if (open) sidebar.querySelector('a')?.focus();
-  });
+  const close = () => {
+    sidebar?.classList.remove('open');
+    menuButtons.forEach(item => item.setAttribute('aria-expanded', 'false'));
+    sync();
+  };
+  menuButtons.forEach(button => button.addEventListener('click', () => {
+    const open = sidebar?.classList.toggle('open');
+    lastTrigger = button;
+    menuButtons.forEach(item => item.setAttribute('aria-expanded', String(Boolean(open))));
+    sync();
+    if (open) sidebar?.querySelector('a')?.focus();
+  }));
   mobile.addEventListener('change', close); sync();
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && sidebar?.classList.contains('open')) { close(); button?.focus(); }
+    if (e.key === 'Escape' && sidebar?.classList.contains('open')) { close(); lastTrigger?.focus(); }
     if (e.key === 'Tab' && mobile.matches && sidebar?.classList.contains('open')) {
       const focusable = [...sidebar.querySelectorAll('a[href],button')];
       const first = focusable[0], last = focusable.at(-1);
@@ -39,7 +46,7 @@
     }
   });
   document.addEventListener('click', e => {
-    if (sidebar?.classList.contains('open') && !sidebar.contains(e.target) && !button?.contains(e.target)) close();
+    if (sidebar?.classList.contains('open') && !sidebar.contains(e.target) && !menuButtons.some(button => button.contains(e.target))) close();
   });
   document.querySelectorAll('.location-image img, .person-image img').forEach(img => {
     const failed = () => { img.hidden = true; };

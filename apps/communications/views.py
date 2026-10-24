@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
-from django.db.models import BigIntegerField, Exists, OuterRef, Q, Subquery, Value
+from django.db.models import BigIntegerField, Count, Exists, F, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -90,11 +90,21 @@ def with_unread(rows, actor):
     unread = Message.objects.filter(
         conversation=OuterRef("pk"), pk__gt=OuterRef("last_read")
     ).exclude(author=actor)
-    return rows.annotate(unread=Exists(unread))
+    latest = Message.objects.filter(conversation=OuterRef("pk")).order_by("-pk")
+    rows = rows.annotate(
+        unread=Exists(unread),
+        unread_count=Count(
+            "messages", filter=Q(messages__pk__gt=F("last_read")) & ~Q(messages__author=actor)
+        ),
+        latest_body=Subquery(latest.values("body")[:1]),
+        latest_at=Subquery(latest.values("created_at")[:1]),
+    )
+    return rows
 
 
 @login_required
-def index(request):
+def inbox_data(request):
+    """Shared inbox projection for the list page and the chat rail."""
     ns = namespace(request)
     rows = (
         Conversation.objects.visible_to(request.user)
@@ -129,28 +139,29 @@ def index(request):
         conversation=OuterRef("pk"), user=request.user
     )
     rows = rows.annotate(my_archived=Exists(preferences.filter(archived_at__isnull=False)))
-    rows = rows.filter(my_archived=archived)
+    rows = rows.filter(my_archived=archived).order_by("-updated_at", "-pk")
     rows = with_unread(rows, request.user)
     if request.GET.get("unread") == "1":
         rows = rows.filter(unread=True)
     params = request.GET.copy()
     params.pop("page", None)
-    return render(
-        request,
-        "communications/index.html",
-        context(
-            request,
-            page=Paginator(rows, 25).get_page(request.GET.get("page")),
-            search=q,
-            states=Conversation.State.choices,
-            filter_query=params.urlencode(),
-            new_url=reverse(f"{ns}:new"),
-            inbox_filters=forms.InboxFilters(
-                actor=request.user,
-                initial={key: request.GET.get(key) for key in ("property", "unit", "tenant")},
-            ),
+    return {
+        "page": Paginator(rows, 25).get_page(request.GET.get("page")),
+        "search": q,
+        "states": Conversation.State.choices,
+        "filter_query": params.urlencode(),
+        "new_url": reverse(f"{ns}:new"),
+        "inbox_filters": forms.InboxFilters(
+            actor=request.user,
+            initial={key: request.GET.get(key) for key in ("property", "unit", "tenant")},
         ),
-    )
+        "archived": archived,
+    }
+
+
+def index(request):
+    data = inbox_data(request)
+    return render(request, "communications/index.html", context(request, **data))
 
 
 def thread_context(request, row, form=None):
@@ -166,6 +177,7 @@ def thread_context(request, row, form=None):
         if last
         else ""
     )
+    manager = request.user.is_manager_or_above
     return context(
         request,
         conversation=row,
@@ -178,14 +190,21 @@ def thread_context(request, row, form=None):
         read_receipt=receipt,
         poll=not page.has_next(),
         work_form=forms.WorkForm(),
+        preference=ConversationPreference.objects.filter(
+            conversation=row, user=request.user
+        ).first(),
+        media=row.messages.filter(attachments__isnull=False).prefetch_related("attachments")
+        if manager
+        else [],
+        internal_notes=row.internal_notes.select_related("author") if manager else [],
+        note_form=forms.InternalNoteForm() if manager else None,
+        inbox=inbox_data(request),
         quick_replies=QuickReply.objects.filter(is_active=True)
         .filter(Q(property__isnull=True) | Q(property=row.lease.unit.property))
         .order_by("label", "pk")
-        if request.user.is_manager_or_above
+        if manager
         else [],
-        events=row.events.select_related("actor").order_by("pk")
-        if request.user.is_manager_or_above
-        else [],
+        events=row.events.select_related("actor").order_by("pk") if manager else [],
     )
 
 
@@ -195,15 +214,38 @@ def conversation(request, public_id):
     form = forms.MessageForm(request.POST or None, request.FILES or None)
     if request.method == "POST" and form.is_valid():
         try:
-            services.send_message(
+            sent = services.send_message(
                 row,
                 actor=request.user,
                 portal_base=request.build_absolute_uri("/"),
                 **form.cleaned_data,
             )
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                receipt = signing.dumps(
+                    {"actor": request.user.pk, "conversation": row.pk, "message": sent.pk},
+                    salt="communications.read",
+                )
+                return render(
+                    request,
+                    "communications/message_batch.html",
+                    context(
+                        request,
+                        message_rows=[sent],
+                        conversation=row,
+                        last_id=sent.pk,
+                        read_receipt=receipt,
+                    ),
+                )
             return redirect(f"{namespace(request)}:conversation", public_id=row.public_id)
         except ValidationError as error:
             feedback(form, error)
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return render(
+            request,
+            "communications/_composer_errors.html",
+            context(request, form=form),
+            status=422,
+        )
     return render(request, "communications/conversation.html", thread_context(request, row, form))
 
 

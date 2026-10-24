@@ -1,0 +1,14 @@
+{% if next_steps %}
+<section class="rhp-card" aria-labelledby="next-steps-title">
+  <p class="rhp-eyebrow">Things to do</p>
+  <h2 id="next-steps-title" class="mt-1 text-lg font-semibold">Your next steps</h2>
+  <div class="mt-4 divide-y divide-surface-muted">
+    {% for step in next_steps %}
+      <a class="flex flex-wrap items-center justify-between gap-3 py-3 text-sm" href="{{ step.url }}">
+        <span><strong class="block">{{ step.label }}</strong><span class="text-ink-muted">{{ step.detail }}</span></span>
+        <span class="rhp-link whitespace-nowrap">{{ step.action }} →</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

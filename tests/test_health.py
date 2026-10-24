@@ -13,6 +13,8 @@ def test_home_renders(client):
     assert response.status_code == 200
     assert b"Robert Hunter Properties" in response.content
     assert b"rhp.css" in response.content
+    assert b"favicon.svg" in response.content
+    assert b"apple-touch-icon.png" in response.content
 
 
 def test_healthz_reports_ok_when_database_answers(client, django_assert_num_queries):

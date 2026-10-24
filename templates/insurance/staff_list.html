@@ -1,11 +1,76 @@
 {% extends "base.html" %}
+
 {% block title %}Renters insurance — RHP{% endblock %}
+
 {% block content %}
-  <div class="mx-auto w-full max-w-4xl space-y-6">
-    <div><p class="rhp-eyebrow">Tenant compliance</p><h1 class="mt-1 text-2xl font-semibold tracking-tight">Renters insurance</h1><p class="mt-2 text-sm text-ink-muted">Required leases and whether proof is missing, waiting for review, accepted or rejected.</p></div>
-    <div class="rhp-card overflow-x-auto"><table class="rhp-table"><thead><tr><th>Tenancy</th><th>Property / unit</th><th>Status</th></tr></thead><tbody>
-      {% for row in rows %}<tr><td><a class="rhp-link" href="{% url 'insurance:staff-detail' row.lease.pk %}">{{ row.lease.tenant_names }}</a></td><td>{{ row.lease.unit.property.name }} · {{ row.lease.unit.label }}</td><td>{% if row.state == "MISSING" %}<span class="text-warning">Missing</span>{% elif row.state == "SUBMITTED" %}Submitted — pending review{% elif row.state == "ACCEPTED" %}Accepted{% elif row.state == "REJECTED" %}Rejected{% else %}Not required{% endif %}</td></tr>
-      {% empty %}<tr><td colspan="3" class="text-ink-muted">No leases require renters insurance.</td></tr>{% endfor %}
-    </tbody></table></div>
+  <div class="list-page-width space-y-6">
+    <div>
+      <h1 class="mt-1 text-2xl font-semibold tracking-tight">Renters insurance</h1>
+      <p class="mt-2 text-sm text-ink-muted">Track proof of insurance and record the manager's decision.</p>
+    </div>
+
+    <div class="rhp-card">
+      <h2 class="text-sm font-medium">Tenancies requiring proof</h2>
+      <p class="mt-1 text-sm text-ink-muted">Upcoming, active and ended leases with an insurance requirement. Submitted proof needs manager review; it is not automatically accepted.</p>
+    </div>
+
+    <div class="rhp-card overflow-x-auto" {% if rows %}role="region" aria-label="Insurance compliance" tabindex="0"{% endif %}>
+      {% if rows %}
+        <table class="w-full min-w-[640px] text-left text-sm">
+          <caption class="sr-only">Required renters insurance by tenancy, property, unit and proof status</caption>
+          <thead class="text-xs uppercase tracking-wide text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4">Tenancy</th>
+              <th scope="col" class="py-2 pr-4">Property / unit</th>
+              <th scope="col" class="py-2 pr-4">Proof status</th>
+              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-muted">
+            {% for row in rows %}
+              {% with tenancy_name=row.lease.tenant_names %}
+              <tr>
+                <th scope="row" class="py-3 pr-4 text-left font-medium">
+                  <div class="flex items-center gap-3">
+                    <span class="rhp-avatar" aria-hidden="true">{{ tenancy_name|slice:":1"|upper }}</span>
+                    <div class="text-ink">
+                      <span class="block">{{ tenancy_name }}</span>
+                      <span class="mt-1 block text-xs font-normal text-ink-muted">Lease #{{ row.lease.pk }}</span>
+                    </div>
+                  </div>
+                </th>
+                <td class="py-3 pr-4">
+                  <span class="block font-medium">{{ row.lease.unit.property.name }}</span>
+                  <span class="block text-ink-muted">{{ row.lease.unit.label }}</span>
+                </td>
+                <td class="py-3 pr-4">
+                  {% if row.state == "MISSING" %}
+                    <span class="rhp-status rhp-status-warning">Missing</span>
+                  {% elif row.state == "SUBMITTED" %}
+                    <span class="rhp-status rhp-status-warning">Submitted — pending manager review</span>
+                  {% elif row.state == "ACCEPTED" %}
+                    <span class="rhp-status rhp-status-success">Accepted</span>
+                  {% elif row.state == "REJECTED" %}
+                    <span class="rhp-status rhp-status-danger">Rejected</span>
+                  {% else %}
+                    <span class="rhp-status">Not required</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 text-right">
+                  <a href="{% url 'insurance:staff-detail' row.lease.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">{% if row.state == "SUBMITTED" %}Review{% else %}Open{% endif %}<span class="sr-only"> insurance for {{ tenancy_name }}, lease #{{ row.lease.pk }}</span></a>
+                </td>
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="rhp-empty">
+          <h2>No leases require renters insurance</h2>
+          <p>No non-draft leases have an insurance requirement. Requirements are recorded on the lease; this does not mean every tenancy has accepted proof.</p>
+          <a href="{% url 'leases:lease-list' %}" class="rhp-btn rhp-btn-secondary">View leases</a>
+        </div>
+      {% endif %}
+    </div>
   </div>
 {% endblock %}

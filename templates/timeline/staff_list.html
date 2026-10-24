@@ -3,21 +3,74 @@
 {% block title %}Tenant timelines — RHP{% endblock %}
 
 {% block content %}
-  <div class="mx-auto w-full max-w-4xl space-y-6">
+  <div class="list-page-width space-y-6">
     <div>
-      <p class="rhp-eyebrow">Tenant history</p>
       <h1 class="mt-1 text-2xl font-semibold tracking-tight">Timelines</h1>
-      <p class="mt-2 text-sm text-ink-muted">One authorized history per tenancy: lease, money, maintenance, documents, messages and staff activity.</p>
+      <p class="mt-2 text-sm text-ink-muted">Open a tenancy to see its lease, money, maintenance, documents and messages in one history.</p>
     </div>
-    <div class="rhp-card overflow-x-auto">
-      <table class="rhp-table">
-        <thead><tr><th>Tenancy</th><th>Property / unit</th><th>Status</th><th>Period</th></tr></thead>
-        <tbody>
-          {% for lease in leases %}
-            <tr><td><a class="rhp-link" href="{% url 'timeline:lease' lease.pk %}">{{ lease.tenant_names }}</a></td><td>{{ lease.unit.property.name }} · {{ lease.unit.label }}</td><td>{{ lease.get_status_display }}</td><td>{{ lease.start_date|date:"M j, Y" }}–{{ lease.end_date|date:"M j, Y" }}</td></tr>
-          {% empty %}<tr><td colspan="4" class="text-ink-muted">No tenancies yet.</td></tr>{% endfor %}
-        </tbody>
-      </table>
+
+    <div class="rhp-card">
+      <h2 class="text-sm font-medium">Upcoming, active and ended tenancies</h2>
+      <p class="mt-1 text-sm text-ink-muted">Draft leases are not included. Open a timeline to read activity or add a staff entry.</p>
+    </div>
+
+    <div class="rhp-card overflow-x-auto" {% if leases %}role="region" aria-label="Tenancy timelines" tabindex="0"{% endif %}>
+      {% if leases %}
+        <table class="w-full min-w-[640px] text-left text-sm">
+          <caption class="sr-only">Tenancy timelines with property, unit, lease status and term</caption>
+          <thead class="text-xs uppercase tracking-wide text-ink-muted">
+            <tr>
+              <th scope="col" class="py-2 pr-4">Tenancy</th>
+              <th scope="col" class="py-2 pr-4">Property / unit</th>
+              <th scope="col" class="py-2 pr-4">Status</th>
+              <th scope="col" class="py-2 pr-4">Term</th>
+              <th scope="col" class="py-2"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-surface-muted">
+            {% for lease in leases %}
+              {% with tenancy_name=lease.tenant_names %}
+              <tr>
+                <th scope="row" class="py-3 pr-4 text-left font-medium">
+                  <div class="flex items-center gap-3">
+                    <span class="rhp-avatar" aria-hidden="true">{{ tenancy_name|slice:":1"|upper }}</span>
+                    <div class="text-ink">
+                      <span class="block">{{ tenancy_name }}</span>
+                      <span class="mt-1 block text-xs font-normal text-ink-muted">Lease #{{ lease.pk }}</span>
+                    </div>
+                  </div>
+                </th>
+                <td class="py-3 pr-4">
+                  <span class="block font-medium">{{ lease.unit.property.name }}</span>
+                  <span class="block text-ink-muted">{{ lease.unit.label }}</span>
+                </td>
+                <td class="py-3 pr-4">
+                  {% if lease.status == "ACTIVE" %}
+                    <span class="rhp-status rhp-status-success">{{ lease.get_status_display }}</span>
+                  {% else %}
+                    <span class="rhp-status">{{ lease.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td class="py-3 pr-4">
+                  <span class="whitespace-nowrap">{{ lease.start_date|date:"M j, Y" }}</span>
+                  <span class="text-ink-muted"> to </span>
+                  <span class="whitespace-nowrap">{{ lease.end_date|date:"M j, Y" }}</span>
+                </td>
+                <td class="py-3 text-right">
+                  <a href="{% url 'timeline:lease' lease.pk %}" class="font-medium text-primary underline-offset-2 hover:underline">Open<span class="sr-only"> timeline for {{ tenancy_name }}, lease #{{ lease.pk }}</span></a>
+                </td>
+              </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="rhp-empty">
+          <h2>No tenancy timelines yet</h2>
+          <p>Timelines appear for upcoming, active and ended leases. Open the lease desk to review your tenancies; drafts are not shown here.</p>
+          <a href="{% url 'leases:lease-list' %}" class="rhp-btn rhp-btn-secondary">View leases</a>
+        </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

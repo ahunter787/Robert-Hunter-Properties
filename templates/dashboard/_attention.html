@@ -1,0 +1,16 @@
+{% if dashboard.attention %}
+<section class="space-y-3" aria-labelledby="attention-heading">
+  <div class="flex flex-wrap items-baseline justify-between gap-2">
+    <h2 id="attention-heading" class="text-xl font-semibold">Needs attention today</h2>
+    <span class="rhp-help">{{ dashboard.attention|length }} item{{ dashboard.attention|length|pluralize }}</span>
+  </div>
+  <div class="attention-list">
+    {% for item in dashboard.attention %}
+      <a class="rhp-attention attention-{{ item.severity }}" href="{{ item.url }}">
+        <span><strong>{{ item.label }}</strong><p>{{ item.detail }}</p></span>
+        <span class="rhp-link">{{ item.action }} →</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}

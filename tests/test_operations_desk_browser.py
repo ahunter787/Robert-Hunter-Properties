@@ -67,8 +67,8 @@ def test_disposable_operations_desk(live_server, settings):
     studio_b = make_unit(a, identifier="Studio B", square_feet=600)
     make_unit(b, identifier="Apartment 1", square_feet=900)
     lease = make_lease(u, tenants=[tenant])
-    tenant.tenant_profile.photo = sample("portrait.png")
-    tenant.tenant_profile.save()
+    tenant.photo = sample("portrait.png")
+    tenant.save()
     make_tenant(username="without-portrait", first_name="Zoe", last_name="Example")
     bill = make_cycle(
         make_responsibility(a, label="Electricity"), total_amount=Decimal("237.00"), months=3

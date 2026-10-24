@@ -31,12 +31,12 @@ urlpatterns = [
     ),
     path(
         "accounts/<int:pk>/photo/",
-        views.TenantPhotoView.as_view(),
+        views.AccountPhotoView.as_view(),
         name="account-photo",
     ),
     path(
         "accounts/<int:pk>/photo/set/",
-        views.TenantAccountPhotoUpdateView.as_view(),
+        views.AccountPhotoUpdateView.as_view(),
         name="account-photo-update",
     ),
     path(
