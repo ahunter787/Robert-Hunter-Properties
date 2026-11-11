@@ -58,6 +58,9 @@ green brand alternative must not recolor paid, pending or overdue states into am
   retaining labels. A financial table is not replaced with decorative summary cards.
 - Timeline: public conversation first, short status milestones, explicit staff-only notes, revisions
   and delivery details disclosed on demand. Group display events without rewriting stored history.
+- Live screen layout: use the shared disclosure, column and action primitives in
+  [layout-primitives.md](layout-primitives.md) and the `rhp-live-ui` skill; do not solve one card with an
+  inline flex layout that drifts from the rest of the page.
 - Empty states: explain the current state and give one appropriate next action. No placeholder features.
 - Feedback: state the completed action and object; avoid transient toast-only confirmations.
 - Accessibility: semantic landmarks, visible focus, meaningful names, 44px target preference on phones,

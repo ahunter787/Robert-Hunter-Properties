@@ -17,6 +17,10 @@ Sanitized screenshots of the E18 development branch using disposable synthetic d
 - `manager-profile-photo.png` — Profile & account photo upload for a manager;
 - `admin-account-photo.png` — admin Contact & photo on a tenant account;
 - `properties-navigator-expanded.png` — local property disclosure and aligned overview columns;
+- `properties-column-alignment.png` — page-wide column tracks across Occupants and Units;
+- `tenancy-actions.png` — peer lease actions in one action bar and one button variant;
+- `ledger-actions.png`, `ledger-actions-hover.png` — neutral action-row hover with no green panel;
+- `properties-columns-phone.png` — 390px collapsed row check;
 - `manager-inbox.png` — dense conversation list with snippets, unread counts and filter chips;
 - `manager-conversation.png` — two-pane inbox/thread, chat bubbles, pinned composer;
 - `tenant-dashboard.png` — next-step card before the financial card stack;

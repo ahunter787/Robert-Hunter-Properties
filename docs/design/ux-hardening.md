@@ -96,6 +96,23 @@ position. The property overview rows now use `.workspace-row-grid` explicit colu
 free-space flex distribution, so rent/status/square-foot values align down the page. The reusable rules
 and verification approach are in [layout-primitives.md](layout-primitives.md).
 
+### Live-UI primitives after the second review
+
+The second review found three remaining presentation drifts: property cards aligned rows internally but not
+with each other, peer lease actions used a button and a plain link, and the lease-ledger Actions row could
+read as a green panel on hover. The fixes are in the shared primitives rather than page-specific CSS:
+
+- the property workspace owns `--workspace-row-columns: minmax(0, 1.25fr) minmax(0, .75fr) 12rem`, so
+  Occupants and Units share the same track boundaries;
+- `.rhp-action-bar` gives peer actions equal height, spacing and variant; the tenancy card now uses two
+  secondary buttons and the ledger action card uses one action bar;
+- action-bar secondary hover is a neutral `#f7faf8` tint, not a large pale-green fill;
+- the rules are recorded in [layout-primitives.md](layout-primitives.md), [principles.md](principles.md)
+  and the new `.agents/skills/rhp-live-ui` skill.
+
+The accounting tab strip still navigates between pages; converting it to in-page section switching is a
+separate design step and was explicitly deferred.
+
 ## What this did not change
 
 No money arithmetic, ledger service, authorization rule, tenancy scope, document access, message
@@ -104,7 +121,7 @@ SDK, native app, SMS, AI, listings, applications, screening, e-sign or marketpla
 
 ## Verification and limitations
 
-- The full Django suite passes after the E18-A/B/C/D changes: **1,349 passed, 5 opt-in browser suites
+- The full Django suite passes after the E18-A/B/C/D changes: **1,351 passed, 5 opt-in browser suites
   skipped**. E18-specific tests cover grouped navigation, unread badges, chat shell, AJAX send/fallback,
   tenant/staff scope, next steps, attention ordering and the no-JavaScript read/composer fallback.
 - Visual review used disposable synthetic data at 1440px and 390px; no real tenant data is in the

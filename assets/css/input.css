@@ -106,7 +106,8 @@
   .portal-main { width: 100%; max-width: 2500px; margin-inline: auto; padding: 32px; }
   .list-page-width { width: 100%; max-width: 2000px; margin-inline: auto; }
   .portal-topbar .portal-menu { display: none; }
-  .properties-workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 26px; align-items: start; }
+  .properties-workspace { display: grid; grid-template-columns: 310px minmax(0, 1fr); gap: 26px; align-items: start;
+    --workspace-row-columns: minmax(0, 1.25fr) minmax(0, .75fr) 12rem; }
   .properties-content { min-width: 0; }
   .navigator-property { background: white; border: 1px solid #dce5e0; border-radius: 13px;
     overflow: hidden; margin-bottom: 18px; scroll-margin-top: 18px; }
@@ -156,7 +157,7 @@
     border-bottom: 1px solid #e3eae6; padding: 19px 0; font-size: 13px; overflow-wrap: anywhere; }
   .workspace-row:last-child { border-bottom: 0; }
   /* Explicit column tracks, not free space: values line up across every row. */
-  .workspace-row.workspace-row-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(140px, .8fr) max-content; gap: 20px; align-items: center; }
+  .workspace-row.workspace-row-grid { display: grid; grid-template-columns: var(--workspace-row-columns, minmax(0, 1.25fr) minmax(0, .75fr) 12rem); gap: 20px; align-items: center; }
   .workspace-row-grid > :last-child { justify-self: end; text-align: right; }
   .navigator-units-details > summary { list-style: none; cursor: pointer; }
   .navigator-units-details > summary::-webkit-details-marker { display: none; }
@@ -241,9 +242,11 @@
     .navigator-property-header { display: flex; }
     .navigator-property-header .location-image { width: 105px; height: 85px; margin: 0; }
   }
-  @media (max-width: 600px) {
+  @media (max-width: 1000px) {
     .workspace-row.workspace-row-grid { grid-template-columns: 1fr; gap: 6px; }
     .workspace-row-grid > :last-child { justify-self: start; text-align: left; }
+  }
+  @media (max-width: 600px) {
     .portal-main { padding: 23px 17px; }
     .portal-topbar { padding: 13px 17px; }
     .portal-topbar > span:last-child { display: none; }
@@ -329,6 +332,11 @@
   .rhp-btn-secondary {
     @apply border border-surface-muted bg-white text-ink hover:bg-surface-muted;
   }
+
+  .rhp-action-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .rhp-action-bar > form { display: flex; margin: 0; }
+  .rhp-action-bar .rhp-btn { min-height: 42px; }
+  .rhp-action-bar .rhp-btn-secondary:hover { background: #f7faf8; border-color: #b7c7bd; }
 
   /* --- Forms ----------------------------------------------------------- */
   .rhp-field {

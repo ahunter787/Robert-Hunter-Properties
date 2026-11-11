@@ -29,7 +29,7 @@
           <p class="mt-2 text-sm text-ink-muted">This financial account is settled and locked. Reopen it before making a correction.</p>
           <a href="{% url 'leases:lease-reopen' lease.pk %}" class="rhp-btn rhp-btn-secondary mt-4">Reopen financial account</a>
         {% else %}
-          <div class="mt-4 flex flex-wrap gap-3">
+          <div class="rhp-action-bar mt-4">
             {% if can_post_due_charges %}<form method="post" action="{% url 'ledger:rent-charges' lease.pk %}">{% csrf_token %}<button type="submit" class="rhp-btn rhp-btn-primary">Post due charges</button></form>{% endif %}
             <a href="{% url 'ledger:payment-create' lease.pk %}" class="rhp-btn rhp-btn-secondary">Record payment</a>
             {% if ledger.credit > 0 %}<a href="{% url 'ledger:credit-apply' lease.pk %}" class="rhp-btn rhp-btn-secondary">Apply available credit</a>{% endif %}
