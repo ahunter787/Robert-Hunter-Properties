@@ -51,15 +51,6 @@ def workspace_context(request, *, property=None, unit=None, properties=None):
         pid = str(p.pk)
         p.workspace_open = pid in opened
         p.workspace_url = url("portfolio:property-detail", p.pk, open_ids=opened | {pid})
-        p.toggle_url = (
-            url(
-                request.resolver_match.view_name,
-                request.resolver_match.kwargs.get("pk"),
-                open_ids=opened ^ {pid},
-                local=section,
-            )
-            + f"#property-{p.pk}"
-        )
         p.workspace_units = list(p.units.all())
         p.workspace_occupied = 0
         for u in p.workspace_units:

@@ -272,3 +272,16 @@ def test_rolled_back_deletion_keeps_photo(settings, django_capture_on_commit_cal
             unit.delete()
             raise RuntimeError("cancel deletion")
     assert (settings.MEDIA_ROOT / old).exists()
+
+
+def test_property_navigator_uses_local_disclosure_and_aligned_row_columns(client, manager):
+    prop = make_property(name="Disclosure Court")
+    make_unit(prop, identifier="Unit A")
+
+    response = client.get(reverse("portfolio:property-detail", args=[prop.pk]))
+    body = response.content.decode()
+
+    assert '<details class="navigator-units-details"' in body
+    assert "navigator-units-details summary" not in body
+    assert "workspace-row workspace-row-grid" in body
+    assert "#property-" not in body, "the expand control must not force a hash scroll"

@@ -1,10 +1,10 @@
 {% load rhp_format %}
 {% if workspace_section == 'maintenance' %}
 <section class="workspace-section"><div class="section-heading"><h2>Maintenance</h2><a href="{% url 'maintenance:list' %}?{% if unit %}unit={{ unit.pk }}{% else %}property={{ property.pk }}{% endif %}">Open portfolio maintenance</a></div>
-{% for ticket in workspace_requests %}<a class="workspace-row" href="{% url 'maintenance:detail' ticket.public_id %}"><strong>{{ ticket.title }}</strong><span>{{ ticket.get_status_display }}</span><span>{{ ticket.get_priority_display }} priority</span></a>{% empty %}<p>No maintenance requests for this location.</p>{% endfor %}</section>
+{% for ticket in workspace_requests %}<a class="workspace-row workspace-row-grid" href="{% url 'maintenance:detail' ticket.public_id %}"><strong>{{ ticket.title }}</strong><span>{{ ticket.get_status_display }}</span><span>{{ ticket.get_priority_display }} priority</span></a>{% empty %}<p>No maintenance requests for this location.</p>{% endfor %}</section>
 {% elif workspace_section == 'documents' %}
 <section class="workspace-section"><div class="section-heading"><h2>Documents</h2><a href="{% url 'documents:list' %}?property={{ workspace_location.pk }}{% if unit %}&amp;unit={{ unit.pk }}{% endif %}">Open portfolio documents</a></div>
-{% for document in workspace_documents %}<a class="workspace-row" href="{% url 'documents:download' document.pk %}"><strong>{{ document.title }}</strong><span>{{ document.get_category_display }}</span><span>{% if document.tenant_visible %}Shared with tenant{% else %}Staff only{% endif %}</span></a>{% empty %}<p>No documents filed for this location.</p>{% endfor %}</section>
+{% for document in workspace_documents %}<a class="workspace-row workspace-row-grid" href="{% url 'documents:download' document.pk %}"><strong>{{ document.title }}</strong><span>{{ document.get_category_display }}</span><span>{% if document.tenant_visible %}Shared with tenant{% else %}Staff only{% endif %}</span></a>{% empty %}<p>No documents filed for this location.</p>{% endfor %}</section>
 {% elif workspace_section == 'recoveries' %}
 <section class="workspace-section"><div class="section-heading"><h2>Expense recoveries</h2><a href="{% url 'responsibilities:responsibility-create' workspace_location.pk %}">Add expense recovery</a></div>
 {% if workspace_location.cam_rate %}<p>CAM {{ workspace_location.cam_rate|money }} a square foot{% if total_square_feet %} · {{ total_square_feet }} sq ft recorded{% endif %}</p>{% endif %}

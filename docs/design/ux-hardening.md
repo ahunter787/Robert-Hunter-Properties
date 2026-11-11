@@ -88,6 +88,14 @@ The browser tab now carries the RHP mark: an SVG favicon with a 32px PNG and a 1
 all using the same forest-green rounded square and serif R as the portal mark, plus a theme colour. The
 standalone 500 page carries the same icon.
 
+### Layout primitives added after review
+
+The property navigator no longer uses a server-round-trip anchor with a `#property-<pk>` fragment; an
+expand/collapse is now a native `<details>` disclosure that opens downward without changing scroll
+position. The property overview rows now use `.workspace-row-grid` explicit column tracks instead of
+free-space flex distribution, so rent/status/square-foot values align down the page. The reusable rules
+and verification approach are in [layout-primitives.md](layout-primitives.md).
+
 ## What this did not change
 
 No money arithmetic, ledger service, authorization rule, tenancy scope, document access, message
@@ -96,7 +104,7 @@ SDK, native app, SMS, AI, listings, applications, screening, e-sign or marketpla
 
 ## Verification and limitations
 
-- The full Django suite passes after the E18-A/B/C/D changes: **1,348 passed, 5 opt-in browser suites
+- The full Django suite passes after the E18-A/B/C/D changes: **1,349 passed, 5 opt-in browser suites
   skipped**. E18-specific tests cover grouped navigation, unread badges, chat shell, AJAX send/fallback,
   tenant/staff scope, next steps, attention ordering and the no-JavaScript read/composer fallback.
 - Visual review used disposable synthetic data at 1440px and 390px; no real tenant data is in the

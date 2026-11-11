@@ -16,6 +16,7 @@ Sanitized screenshots of the E18 development branch using disposable synthetic d
   with the avatar above the name, for a manager and a superadmin;
 - `manager-profile-photo.png` — Profile & account photo upload for a manager;
 - `admin-account-photo.png` — admin Contact & photo on a tenant account;
+- `properties-navigator-expanded.png` — local property disclosure and aligned overview columns;
 - `manager-inbox.png` — dense conversation list with snippets, unread counts and filter chips;
 - `manager-conversation.png` — two-pane inbox/thread, chat bubbles, pinned composer;
 - `tenant-dashboard.png` — next-step card before the financial card stack;

@@ -155,6 +155,15 @@
   .workspace-row { display: flex; justify-content: space-between; gap: 20px; align-items: center;
     border-bottom: 1px solid #e3eae6; padding: 19px 0; font-size: 13px; overflow-wrap: anywhere; }
   .workspace-row:last-child { border-bottom: 0; }
+  /* Explicit column tracks, not free space: values line up across every row. */
+  .workspace-row.workspace-row-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(140px, .8fr) max-content; gap: 20px; align-items: center; }
+  .workspace-row-grid > :last-child { justify-self: end; text-align: right; }
+  .navigator-units-details > summary { list-style: none; cursor: pointer; }
+  .navigator-units-details > summary::-webkit-details-marker { display: none; }
+  .navigator-toggle-open { display: inline; }
+  .navigator-toggle-close { display: none; }
+  .navigator-units-details[open] .navigator-toggle-open { display: none; }
+  .navigator-units-details[open] .navigator-toggle-close { display: inline; }
   .portfolio-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(130px, .65fr) minmax(95px, .4fr); }
   .portfolio-grid .portfolio-row { display: grid; grid-template-columns: subgrid; grid-column: 1 / -1; }
   .lease-sections { display: grid; gap: 5px; padding: 18px; background: white; border: 1px solid #dce4de; border-radius: 12px; }
@@ -233,6 +242,8 @@
     .navigator-property-header .location-image { width: 105px; height: 85px; margin: 0; }
   }
   @media (max-width: 600px) {
+    .workspace-row.workspace-row-grid { grid-template-columns: 1fr; gap: 6px; }
+    .workspace-row-grid > :last-child { justify-self: start; text-align: left; }
     .portal-main { padding: 23px 17px; }
     .portal-topbar { padding: 13px 17px; }
     .portal-topbar > span:last-child { display: none; }
